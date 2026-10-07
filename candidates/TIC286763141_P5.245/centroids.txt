@@ -1,0 +1,5 @@
+transit-diffImage PRF fit of the FFI difference image, offset from the TIC position
+S62: offset 9.5" (0.46 px), quality 0.39
+S63: offset 11.7" (0.57 px), quality 0.61
+Per-pixel 2-min TPF difference image (tpf_pixels.py), flux-weighted centroid offset from the TIC position
+S62: 2.8" (max pixel SNR 9.3); S9: 12.2"; S89: 19.3"; S90: 10.6" (max pixel SNR 3-4, low weight)

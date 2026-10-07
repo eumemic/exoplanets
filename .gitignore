@@ -1,0 +1,16 @@
+# environments
+.venv/
+.venv-trice/
+__pycache__/
+*.pyc
+.DS_Store
+
+# downloaded inputs (light curves, catalogs, third-party papers/packages) - fetched by pipeline/
+data/
+reference/
+
+# working outputs; the publishable subset lives in candidates/, figures/, results_public/, validation/
+results/
+
+# TRICERATOPS writes Gaia query caches into the working directory
+*_gaia_background.csv

@@ -1,0 +1,4 @@
+transit-diffImage PRF fit of the FFI difference image, offset from the TIC position
+S37: offset 5.9" (0.28 px), quality 0.65
+S64: offset 10.3" (0.50 px), quality 0.56
+S100: offset 4.7" (0.24 px), quality 0.59
