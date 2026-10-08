@@ -1,6 +1,8 @@
-"""Injection-recovery: compare coherent vs semi-coherent search on synthetic transits.
+"""Injection-recovery: compare search methods (coherent, semi-coherent, stack-slide) on
+synthetic transits injected into real light curves.
 
-Usage: python inject_test.py N_STARS [--snr 10] [--procs 10]
+Usage: python inject_test.py N_STARS [--snr 10] [--procs 10] [--methods coherent,semi,stack]
+Writes results/inject_snr<SNR>_n<N>.csv (one row per star and method).
 """
 import argparse
 import json
@@ -28,7 +30,7 @@ def inject(sectors, P, t0, depth, dur):
 
 
 def run(args):
-    tic, star, P, snr_target, semi, seed = args
+    tic, star, P, snr_target, method, seed = args
     rng = np.random.default_rng(seed)
     sectors = load_star(tic)
     t = np.concatenate([s["time"] for s in sectors])
@@ -40,7 +42,7 @@ def run(args):
     noise = np.median([search.robust_std(np.diff(s["flux"])) / np.sqrt(2) for s in sectors])
     depth = snr_target * noise / np.sqrt(max(n_in, 1))
     inj = inject(sectors, P, t0, depth, dur)
-    search.SEMICOHERENT = semi
+    search._set_method(method == "semi", 3, method == "stack")
     orig = search.load_star
     search.load_star = lambda _tic: inj
     try:
@@ -50,7 +52,7 @@ def run(args):
     hit = any(abs(s["period"] / (P * h) - 1) < 0.003 for s in res.get("signals", []) for h in (0.5, 1, 2))
     best = max((s["bls_snr"] for s in res.get("signals", [])
                 if any(abs(s["period"] / (P * h) - 1) < 0.003 for h in (0.5, 1, 2))), default=0)
-    return dict(tic=tic, P=P, depth_ppm=depth * 1e6, n_in=int(n_in), semi=semi, hit=hit,
+    return dict(tic=tic, P=P, depth_ppm=depth * 1e6, n_in=int(n_in), method=method, hit=hit,
                 rec_snr=best, runtime=res.get("runtime_s"))
 
 
@@ -59,29 +61,29 @@ def main():
     ap.add_argument("n", type=int)
     ap.add_argument("--snr", type=float, default=10)
     ap.add_argument("--procs", type=int, default=10)
-    ap.add_argument("--semi-only", action="store_true")
+    ap.add_argument("--methods", default="coherent,semi,stack")
     a = ap.parse_args()
+    methods = a.methods.split(",")
     stars = pd.read_parquet(CAT / "targets.parquet").set_index("ID")
-    done = [int(f.stem) for f in (RESULTS / "search").glob("*.json")]
+    done = sorted(int(f.stem) for f in (RESULTS / "search").glob("*.json"))
     random.seed(1)
     pick = random.sample(done, a.n)
     jobs = []
     for i, tic in enumerate(pick):
         P = float(np.exp(np.random.default_rng(i).uniform(np.log(1.0), np.log(15.0))))
-        for semi in ((True,) if a.semi_only else (False, True)):
-            jobs.append((tic, stars.loc[tic].to_dict(), P, a.snr, semi, i))
+        for m in methods:
+            jobs.append((tic, stars.loc[tic].to_dict(), P, a.snr, m, i))
     with Pool(a.procs) as pool:
         rows = pool.map(run, jobs, chunksize=1)
     df = pd.DataFrame(rows)
-    if a.semi_only:
-        prev = pd.read_csv(RESULTS / f"inject_snr{a.snr:g}.csv")
-        df = pd.concat([prev[~prev["semi"]], df], ignore_index=True)
-    df.to_csv(RESULTS / f"inject_snr{a.snr:g}.csv", index=False)
-    print(df.groupby("semi").agg(recovered=("hit", "mean"), n=("hit", "size"),
-                                 median_runtime=("runtime", "median")))
-    w = df.pivot_table(index=["tic", "P"], columns="semi", values="hit").dropna()
-    print("coherent only:", int(((w[False] == 1) & (w[True] == 0)).sum()),
-          " semi only:", int(((w[False] == 0) & (w[True] == 1)).sum()))
+    df["detected"] = df["hit"] & (df["rec_snr"] >= 9)
+    df.to_csv(RESULTS / f"inject_snr{a.snr:g}_n{a.n}.csv", index=False)
+    print(df.groupby("method").agg(recovered=("hit", "mean"), detected_snr9=("detected", "mean"),
+                                   n=("hit", "size"), median_runtime=("runtime", "median")))
+    w = df.pivot_table(index=["tic", "P"], columns="method", values="detected").dropna()
+    for m in methods[1:]:
+        print(f"SNR>=9 detections: {methods[0]} only {int(((w[methods[0]] == 1) & (w[m] == 0)).sum())}, "
+              f"{m} only {int(((w[methods[0]] == 0) & (w[m] == 1)).sum())}")
 
 
 if __name__ == "__main__":

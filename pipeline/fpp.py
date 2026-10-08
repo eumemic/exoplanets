@@ -2,7 +2,7 @@
 
 Usage: python fpp.py TIC FOLD.npz DEPTH_PPM [--runs N] [--draws N]
 Uses a 3x3-pixel aperture centred on the target in each sector. The FPP is a Monte Carlo
-estimate that scatters by tens of percent between runs (TIC 61816225: 0.012-0.051 over 11
+estimate that scatters by tens of percent between runs (TIC 61816225: 0.012-0.065 over 14
 runs), so several runs are averaged and their spread is reported.
 The Gaia field-star query is the slow part of the setup (~4 min); its result is cached next to
 the fold file and reused.

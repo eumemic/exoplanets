@@ -1,7 +1,8 @@
 """Multi-sector transit search: clean, detrend, bin, BLS on a stellar-density-aware grid.
 
-Usage: python search.py targets.txt [--procs N] [--out results/search]
-Writes one JSON per star with up to MAX_SIGNALS signals (iterative masking).
+Usage: python search.py targets.txt [--procs N] [--out results/search] [--mask-tois]
+Writes one JSON per star with up to MAX_SIGNALS signals (iterative masking). With --mask-tois,
+every TOI on the star is masked before the search, so it looks for additional planets.
 """
 import argparse
 import json
@@ -14,7 +15,7 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
-from common import CAT, RESULTS, load_star, tic_path
+from common import CAT, DATA, RESULTS, load_star, tic_path
 
 warnings.filterwarnings("ignore")
 
@@ -24,6 +25,10 @@ BIN_FINE = 10.0           # cadence (minutes) used to refine each peak
 MAX_SIGNALS = 3
 SNR_CONTINUE = 7.0        # keep iterating while the last signal is at least this strong
 SEMICOHERENT = True       # per-season scan + coherent refinement of the top peaks (fastbls.py)
+STACK = False             # phase-coherent stack-slide search (fastbls.stackslide); overrides SEMICOHERENT
+# False-alarm calibration: with EXO_INVERT=1 the detrended residuals are negated, so any dip
+# the pipeline finds is a false alarm (real transits become bumps and are not searched).
+INVERT = os.environ.get("EXO_INVERT") == "1"
 G = 2.959122e-4           # AU^3 / (Msun d^2)
 RSUN_AU = 0.00465047
 
@@ -119,6 +124,8 @@ def prepare(sectors, window):
         sig = robust_std(r[ok])
         ok &= r < 4 * sig            # flares / upward outliers only; dips are kept
         t, r = t[ok], r[ok]
+        if INVERT:
+            r = -r
         e = rolling_std(t, r)
         e = np.maximum(e, 0.5 * sig)
         out.append(dict(sector=s["sector"], prov=s["provenance"], t=t, r=r, e=e,
@@ -215,6 +222,35 @@ def semicoherent_peak(t, y, dy, rho, pmin, pmax, k_peaks=40):
     return best[1], float(np.sqrt(max(best[0], 0))), len(periods), z
 
 
+def stackslide_peak(t, y, dy, rho, pmin, pmax, os_coarse=2.0):
+    """Best period from a phase-coherent stack-slide spectrum: seasons folded on a grid set by
+    the longest season, then shifted and summed on the full-baseline grid."""
+    from fastbls import seasons, stackslide
+
+    if len(t) < 100:
+        return None, 0.0, 0, 0.0
+    span_season = max(10.0, max(t[i].max() - t[i].min() for i in seasons(t) if len(i)))
+    span_total = t.max() - t.min()
+    periods_c = period_grid(span_season, rho, pmin, pmax, oversample=os_coarse)
+    fc = 1.0 / periods_c
+    dexp = expected_duration(periods_c, rho)
+    dfc = 0.5 * dexp * fc / (span_season * os_coarse)
+    nfine = max(1, int(np.ceil(span_total / (span_season * os_coarse))))
+    durs = np.geomspace(max(0.4 * expected_duration(pmin, rho), 0.5 / 24),
+                        min(1.6 * expected_duration(pmax, rho), 8 / 24), 8)
+    dlo, dhi = 0.3 * dexp, 2.0 * dexp
+    shortest = np.array([durs[(durs >= a) & (durs <= b)].min() if np.any((durs >= a) & (durs <= b))
+                         else durs[0] for a, b in zip(dlo, dhi)])
+    binw = shortest / 3
+    freqs, power, _, _ = stackslide(t, y, dy, fc, dfc, nfine, binw, durs, dlo, dhi)
+    periods = 1.0 / freqs
+    ok = (periods >= pmin) & (periods <= pmax)
+    periods, power = periods[ok], power[ok]
+    z = sde(power, periods)
+    i = int(np.argmax(power))
+    return float(periods[i]), float(np.sqrt(max(power[i], 0))), len(periods), float(z[i])
+
+
 def refine(t, y, dy, P, rho, span):
     """Fine BLS around a coarse peak: +-3 coarse steps in frequency, denser durations."""
     from astropy.timeseries import BoxLeastSquares
@@ -305,8 +341,33 @@ def event_stats(t, r, e, P, t0, dur):
     )
 
 
+def toi_windows(t, toi, P_fit=None, t0_fit=None, dur_fit=None):
+    """In-transit mask for one TOI: catalogue ephemeris widened by its propagated timing error,
+    plus our own refit ephemeris when the signal is detected in our data."""
+    dur = toi["dur_h"] / 24 if np.isfinite(toi["dur_h"]) and toi["dur_h"] > 0 else 0.25
+    P, T0 = toi["P"], toi["T0"]
+    if not (np.isfinite(P) and P > 0):
+        return np.abs(t - T0) < max(1.5 * dur, 0.5)
+    eP = toi["eP"] if np.isfinite(toi["eP"]) and toi["eP"] > 0 else 1e-4 * P
+    eT = toi["eT0"] if np.isfinite(toi["eT0"]) and toi["eT0"] > 0 else 0.01
+    n = np.round((t - T0) / P)
+    hw = np.minimum(0.75 * dur + 3 * np.sqrt(eT**2 + (n * eP) ** 2), 0.25 * P)
+    m = np.abs(t - (T0 + n * P)) < hw
+    if P_fit is not None:
+        m |= np.abs(((t - t0_fit + 0.5 * P_fit) % P_fit) - 0.5 * P_fit) < dur_fit
+    return m
+
+
 def search_star(args):
-    tic, star = args
+    try:
+        return _search_star(args)
+    except Exception as ex:
+        return args[0], {"tic": int(args[0]), "error": f"search: {ex!r}"}
+
+
+def _search_star(args):
+    tic, star = args[:2]
+    tois = args[2] if len(args) > 2 else []
     t_start = time.time()
     try:
         sectors = load_star(tic)
@@ -340,7 +401,7 @@ def search_star(args):
     o = np.argsort(tu); tu, ru, eu = tu[o], ru[o], eu[o]
     span = tc.max() - tc.min()
     pmax = min(P_MAX, span / 2)
-    periods = None if SEMICOHERENT else period_grid(span, rho, P_MIN, pmax)
+    periods = None if (SEMICOHERENT or STACK) else period_grid(span, rho, P_MIN, pmax)
     result = dict(tic=int(tic), rho=rho, window=window, n_points=int(len(tc)), span=float(span),
                   sectors=[p["sector"] for p in prep], provs=[p["prov"] for p in prep],
                   n_periods=0 if periods is None else int(len(periods)),
@@ -348,9 +409,26 @@ def search_star(args):
                   prot=[float(p["prot"]) for p in prep], var_snr=[float(p["var_snr"]) for p in prep],
                   n_prewhitened=int(sum(p["prewhitened"] for p in prep)), signals=[])
     masks = [np.ones(len(x), bool) for x in (tc, tf, tu)]
+    result["masked_tois"] = []
+    for toi in tois:
+        fit = None
+        if np.isfinite(toi["P"]) and toi["P"] > 0 and toi["P"] < span / 2:
+            P, t0, dur, dep, snr = refine(tf, yf, ef, toi["P"], rho, span)
+            if snr >= 7 and abs(P / toi["P"] - 1) < 0.01:
+                fit = (P, t0, dur)
+        for arr_t, m in zip((tc, tf, tu), masks):
+            m &= ~toi_windows(arr_t, toi, *(fit or (None, None, None)))
+        result["masked_tois"].append(dict(toi, refit=fit is not None, P_fit=fit[0] if fit else None,
+                                          t0_fit=fit[1] if fit else None, dur_fit=fit[2] if fit else None))
+    result["frac_masked"] = float(1 - masks[2].mean())
     for k in range(MAX_SIGNALS):
         mc, mf, mu = masks
-        if SEMICOHERENT:
+        if mc.sum() < 100 or mf.sum() < 100:
+            break
+        if STACK:
+            Pc, coarse_snr, nper, sde_val = stackslide_peak(tc[mc], yc[mc], ec[mc], rho, P_MIN, pmax)
+            result["n_periods"] = int(nper)
+        elif SEMICOHERENT:
             Pc, coarse_snr, nper, z = semicoherent_peak(tc[mc], yc[mc], ec[mc], rho, P_MIN, pmax)
             result["n_periods"] = int(nper)
             sde_val = float(np.max(z))
@@ -369,13 +447,15 @@ def search_star(args):
         # Same period again after masking = leftover variability, not a new planet. Real pairs
         # near 2:1 sit >~0.5% from exact commensurability, hence the tighter harmonic tolerance.
         prev = [x["period"] for x in result["signals"]]
+        sig["toi_alias"] = any(np.isfinite(x["P"]) and x["P"] > 0 and known_alias(P, x["P"])
+                               for x in result["masked_tois"])
         sig["repeat"] = any(abs(P / q - 1) < 0.005 or abs(P / q / 2 - 1) < 0.002
                             or abs(P / q * 2 - 1) < 0.002 for q in prev)
         rots = [p["prot"] for p in prep if p["var_snr"] > 3 and np.isfinite(p["prot"])]
         sig["rot_alias"] = any(abs(P / (pr * h) - 1) < 0.02 for pr in rots
                                for h in (1 / 3, 1 / 2, 1, 2, 3))
         result["signals"].append(sig)
-        if sig["bls_snr"] < SNR_CONTINUE or sig["repeat"]:
+        if sig["bls_snr"] < SNR_CONTINUE or (sig["repeat"] and not sig["toi_alias"]):
             break
         for arr_t, m in zip((tc, tf, tu), masks):
             ph = ((arr_t - t0 + 0.5 * P) % P) - 0.5 * P
@@ -384,9 +464,23 @@ def search_star(args):
     return tic, result
 
 
-def _set_method(semi):
-    global SEMICOHERENT
+def known_alias(P, Pk, tol=0.003):
+    """P within tol of a 1/3...3 harmonic of a known period: leakage from an imperfect mask."""
+    return any(abs(P / (Pk * h) - 1) < tol for h in (1 / 3, 1 / 2, 2 / 3, 1, 3 / 2, 2, 3))
+
+
+def star_tois(tic, toi_table):
+    rows = toi_table[toi_table["TIC ID"] == tic]
+    return [dict(toi=float(r["TOI"]), P=float(r["Period (days)"]), eP=float(r["Period (days) err"]),
+                 T0=float(r["Epoch (BJD)"]) - 2457000, eT0=float(r["Epoch (BJD) err"]),
+                 dur_h=float(r["Duration (hours)"])) for _, r in rows.iterrows()]
+
+
+def _set_method(semi, max_signals=3, stack=False):
+    global SEMICOHERENT, MAX_SIGNALS, STACK
     SEMICOHERENT = semi
+    MAX_SIGNALS = max_signals
+    STACK = stack
 
 
 def main():
@@ -395,19 +489,24 @@ def main():
     ap.add_argument("--procs", type=int, default=12)
     ap.add_argument("--out", default=str(RESULTS / "search"))
     ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
-    ap.add_argument("--method", choices=("semi", "coherent"), default="semi")
+    ap.add_argument("--method", choices=("semi", "coherent", "stack"), default="semi")
+    ap.add_argument("--mask-tois", action="store_true", help="mask every TOI on the star first")
+    ap.add_argument("--max-signals", type=int, default=MAX_SIGNALS)
     a = ap.parse_args()
-    global SEMICOHERENT
+    global SEMICOHERENT, STACK
     SEMICOHERENT = a.method == "semi"
+    STACK = a.method == "stack"
     os.makedirs(a.out, exist_ok=True)
     stars = pd.read_parquet(a.stars).set_index("ID")
     tics = [int(x) for x in open(a.targets).read().split()]
-    todo = [(tic, stars.loc[tic].to_dict()) for tic in tics
+    toi_table = pd.read_csv(DATA / "known" / "toi.csv") if a.mask_tois else None
+    todo = [(tic, stars.loc[tic].to_dict(), star_tois(tic, toi_table) if a.mask_tois else [])
+            for tic in tics
             if not os.path.exists(f"{a.out}/{tic}.json") and tic in stars.index
             and tic_path(tic).exists()]
     print(f"{len(todo)} stars to search", flush=True)
     t0 = time.time()
-    with Pool(a.procs, initializer=_set_method, initargs=(SEMICOHERENT,)) as pool:
+    with Pool(a.procs, initializer=_set_method, initargs=(SEMICOHERENT, a.max_signals, STACK)) as pool:
         for i, (tic, res) in enumerate(pool.imap_unordered(search_star, todo, chunksize=1), 1):
             with open(f"{a.out}/{tic}.json", "w") as fh:
                 json.dump(res, fh, default=float)

@@ -135,3 +135,91 @@ def coherent(t, y, dy, freqs, durs, binw):
     w = 1.0 / dy**2
     p, t0, k, d = _coherent_best(t - t[0], y, w, freqs, binw, durs)
     return p, t0 + t[0], k, d
+
+
+@njit(cache=True)
+def _stackslide(t, y, w, sidx, tmid, fc, dfc, nfine, binw, durs, dlo, dhi, power, t0s, depth):
+    """Phase-coherent BLS by stack-slide. Each season is folded once per coarse frequency fc[j];
+    for nfine frequencies tiling [fc - dfc/2, fc + dfc/2], each season's folded sums are shifted
+    by the phase it accumulates (season mid-time x frequency offset) and summed, then searched
+    for the best box. The phase drift within one season is neglected, which the coarse spacing
+    keeps below ~1/12 of a transit duration."""
+    wtot = w.sum()
+    ytot = (w * y).sum()
+    ns = len(tmid)
+    for j in range(len(fc)):
+        f = fc[j]
+        nb = int(1.0 / f / binw[j]) + 1
+        SW = np.zeros((ns, nb))
+        SWY = np.zeros((ns, nb))
+        for s in range(ns):
+            for i in range(sidx[s], sidx[s + 1]):
+                b = int(((t[i] * f) % 1.0) * nb)
+                if b >= nb:
+                    b = nb - 1
+                SW[s, b] += w[i]
+                SWY[s, b] += w[i] * y[i]
+        sw = np.zeros(2 * nb)
+        swy = np.zeros(2 * nb)
+        cw = np.zeros(2 * nb + 1)
+        cy = np.zeros(2 * nb + 1)
+        for kf in range(nfine):
+            delta = -0.5 * dfc[j] + (kf + 0.5) * dfc[j] / nfine
+            Pk = 1.0 / (f + delta)
+            for b in range(nb):
+                sw[b] = 0.0
+                swy[b] = 0.0
+            for s in range(ns):
+                sh = int(np.floor(tmid[s] * delta * nb + 0.5)) % nb
+                if sh < 0:
+                    sh += nb
+                for b in range(nb):
+                    bb = b + sh
+                    if bb >= nb:
+                        bb -= nb
+                    sw[bb] += SW[s, b]
+                    swy[bb] += SWY[s, b]
+            for b in range(nb):
+                sw[nb + b] = sw[b]
+                swy[nb + b] = swy[b]
+            for b in range(2 * nb):
+                cw[b + 1] = cw[b] + sw[b]
+                cy[b + 1] = cy[b] + swy[b]
+            idx = j * nfine + kf
+            for k in range(len(durs)):
+                if durs[k] < dlo[j] or durs[k] > dhi[j]:
+                    continue
+                q = int(durs[k] / Pk * nb + 0.5)
+                if q < 1:
+                    q = 1
+                if q >= nb:
+                    continue
+                for s0 in range(nb):
+                    win = cw[s0 + q] - cw[s0]
+                    if win <= 0.0 or win >= wtot:
+                        continue
+                    wy = cy[s0 + q] - cy[s0]
+                    d = (ytot - wy) / (wtot - win) - wy / win
+                    if d <= 0.0:
+                        continue
+                    c = d * d / (1.0 / win + 1.0 / (wtot - win))
+                    if c > power[idx]:
+                        power[idx] = c
+                        t0s[idx] = (s0 + 0.5 * q) / nb * Pk
+                        depth[idx] = d
+
+
+def stackslide(t, y, dy, fc, dfc, nfine, binw, durs, dlo, dhi, gap=20.0):
+    """Coherent BLS spectrum on the fine grid; returns frequencies, delta-chi2, t0 and depth."""
+    w = 1.0 / dy**2
+    t_ref = t[0]
+    tr = t - t_ref
+    idx = seasons(t, gap)
+    sidx = np.array([i[0] for i in idx] + [len(t)], np.int64)
+    tmid = np.array([np.mean(tr[i]) for i in idx])
+    n = len(fc) * nfine
+    power, t0s, depth = np.zeros(n), np.zeros(n), np.zeros(n)
+    _stackslide(tr, y, w, sidx, tmid, fc, dfc, nfine, binw, durs, dlo, dhi, power, t0s, depth)
+    off = (-0.5 + (np.arange(nfine) + 0.5) / nfine)
+    freqs = (fc[:, None] + dfc[:, None] * off[None, :]).ravel()
+    return freqs, power, t0s + t_ref, depth

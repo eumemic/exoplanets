@@ -1,4 +1,5 @@
-"""Match a signal against known planets/candidates/TCEs on the same star and on neighbours."""
+"""Match a signal against known planets/candidates/TCEs on the same star and on neighbours, and
+against published lists outside ExoFOP (literature.py)."""
 from functools import lru_cache
 
 import numpy as np
@@ -10,6 +11,8 @@ from common import DATA
 
 K = DATA / "known"
 HARMONICS = (1 / 3, 1 / 2, 2 / 3, 1, 3 / 2, 2, 3)
+# Literature periods are numbers scraped from paper text, so only close aliases count.
+HARMONICS_LIT = (1 / 2, 1, 2)
 
 
 def _sexa(ra, dec):
@@ -44,14 +47,16 @@ def tables():
         d = d[np.isfinite(d["tic"])]
         d["tic"] = d["tic"].astype(np.int64)
         out[name] = d.reset_index(drop=True)
+    if (K / "literature.parquet").exists():
+        out["literature"] = pd.read_parquet(K / "literature.parquet")
     return out
 
 
-def period_match(p1, p2, tol=0.003):
+def period_match(p1, p2, tol=0.003, harmonics=HARMONICS):
     """Return the harmonic ratio p2/p1 within tolerance, or None."""
     if not (np.isfinite(p1) and np.isfinite(p2)) or p2 <= 0:
         return None
-    for h in HARMONICS:
+    for h in harmonics:
         if abs(p2 / (p1 * h) - 1) < tol:
             return h
     return None
@@ -61,11 +66,14 @@ def check(tic, period, ra, dec, radius_arcmin=2.5):
     """Known objects on this TIC (any period) and period matches on neighbours."""
     res = {"same_star": [], "same_star_period_match": [], "neighbour_period_match": []}
     for name, d in tables().items():
+        harm = HARMONICS_LIT if name == "literature" else HARMONICS
         same = d[d["tic"] == tic]
         for _, r in same.iterrows():
-            h = period_match(period, r["period"])
-            res["same_star"].append(f"{name}:{r['label']}:P={r['period']:.4f}")
-            if h is not None:
+            h = period_match(period, r["period"], harmonics=harm)
+            entry = f"{name}:{r['label']}" if name == "literature" else f"{name}:{r['label']}:P={r['period']:.4f}"
+            if entry not in res["same_star"]:
+                res["same_star"].append(entry)
+            if h is not None and f"{name}:{r['label']}:x{h:.3g}" not in res["same_star_period_match"]:
                 res["same_star_period_match"].append(f"{name}:{r['label']}:x{h:.3g}")
         near = d[(np.abs(d["dec_deg"] - dec) < radius_arcmin / 60) & (d["tic"] != tic)]
         if len(near):
@@ -73,7 +81,7 @@ def check(tic, period, ra, dec, radius_arcmin=2.5):
                 SkyCoord(ra * u.deg, dec * u.deg)).arcmin
             for (_, r), s in zip(near.iterrows(), sep):
                 if s < radius_arcmin:
-                    h = period_match(period, r["period"])
+                    h = period_match(period, r["period"], harmonics=harm)
                     if h is not None:
                         res["neighbour_period_match"].append(
                             f"{name}:TIC{r['tic']}:{r['label']}:{s:.2f}':x{h:.3g}")

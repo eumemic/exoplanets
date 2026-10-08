@@ -20,6 +20,8 @@ def main():
                     default=[str(RESULTS / "search"), str(RESULTS / "search_semi")])
     ap.add_argument("--snr", type=float, default=9.0)
     ap.add_argument("--out", default=str(RESULTS / "cands.csv"))
+    ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
+    ap.add_argument("--signals", default=str(RESULTS / "signals.parquet"))
     a = ap.parse_args()
     rows, errors = [], 0
     files = [f for d in a.search for f in glob.glob(f"{d}/*.json")]
@@ -33,10 +35,11 @@ def main():
             d = {k: v for k, v in s.items() if k != "events"}
             d.update(tic=r["tic"], method="semi" if "search_semi" in f else "coherent",
                      rho=r["rho"], n_sectors=len(r["sectors"]), n_new_sectors=n_new,
-                     span=r["span"], noise_ppm=r["noise_ppm"], events=json.dumps(s["events"]))
+                     span=r["span"], noise_ppm=r["noise_ppm"], events=json.dumps(s["events"]),
+                     masked_tois=json.dumps(r.get("masked_tois", [])))
             rows.append(d)
     df = pd.DataFrame(rows)
-    df.to_parquet(str(RESULTS / "signals.parquet"))
+    df.to_parquet(a.signals)
     print(f"{df.tic.nunique()} stars, {len(df)} signals, {errors} errors")
     dur_ratio = df["duration_h"] / df["exp_duration_h"]
     sel = ((df["bls_snr"] >= a.snr) & (df["n_good_events"] >= 3) & (df["max_ses_frac"] <= 0.6)
@@ -47,12 +50,16 @@ def main():
     c["pkey"] = c["period"].round(2)
     c = c.drop_duplicates(["tic", "pkey"]).drop(columns="pkey")
     c["rank"] = c["rank"] + np.where(c["method"] == "semi", 10, 0)  # unique vetting file names
-    stars = pd.read_parquet(CAT / "targets.parquet").set_index("ID")
+    stars = pd.read_parquet(a.stars).set_index("ID")
     status, detail = [], []
     for _, r in c.iterrows():
         k = known_check(int(r.tic), r.period, float(stars.loc[r.tic, "ra"]), float(stars.loc[r.tic, "dec"]))
-        if k["same_star_period_match"]:
-            status.append("known"); detail.append(k["same_star_period_match"][0])
+        exofop = [m for m in k["same_star_period_match"] if not m.startswith("literature:")]
+        if exofop:
+            status.append("known"); detail.append(exofop[0])
+        elif k["same_star_period_match"]:
+            # reported in a paper or survey table but not on ExoFOP/NEA/SPOC lists
+            status.append("reported"); detail.append(";".join(k["same_star_period_match"][:3]))
         elif k["neighbour_period_match"]:
             status.append("neighbour"); detail.append(k["neighbour_period_match"][0])
         else:

@@ -18,13 +18,14 @@ import pandas as pd
 
 from common import CAT, RESULTS, load_star
 from known import check as known_check
-from search import bin_sector, expected_duration, robust_std, rolling_std
+from search import INVERT, bin_sector, expected_duration, robust_std, rolling_std, toi_windows
 
 warnings.filterwarnings("ignore")
 
 
-def detrend_masked(sectors, P, t0, dur, window):
-    """Biweight trend fitted with in-transit points removed, then evaluated everywhere."""
+def detrend_masked(sectors, P, t0, dur, window, known=()):
+    """Biweight trend fitted with in-transit points removed, then evaluated everywhere. Transits
+    of `known` planets (TOIs masked by the search) are removed from the light curve first."""
     from wotan import flatten
 
     out = []
@@ -32,6 +33,11 @@ def detrend_masked(sectors, P, t0, dur, window):
         o = np.argsort(s["time"])
         t, f = s["time"][o], s["flux"][o]
         cx, cy = s["cx"][o].astype(float), s["cy"][o].astype(float)
+        if known:
+            keep = np.ones(len(t), bool)
+            for k in known:
+                keep &= ~toi_windows(t, k, k.get("P_fit"), k.get("t0_fit"), k.get("dur_fit"))
+            t, f, cx, cy = t[keep], f[keep], cx[keep], cy[keep]
         ph = ((t - t0 + 0.5 * P) % P) - 0.5 * P
         oot = np.abs(ph) > 0.75 * dur
         if oot.sum() < 200:
@@ -52,6 +58,8 @@ def detrend_masked(sectors, P, t0, dur, window):
         sig = robust_std(r[ok & oot])
         ok &= r < 4 * sig
         t, r, cx, cy, ph = t[ok], r[ok], cx[ok], cy[ok], ph[ok]
+        if INVERT:
+            r = -r
         e = np.maximum(rolling_std(t, r), 0.5 * sig)
         out.append(dict(sector=s["sector"], prov=s["provenance"], t=t, r=r, e=e, cx=cx, cy=cy,
                         exptime=s["exptime"]))
@@ -215,7 +223,8 @@ def vet_one(args):
         sectors = load_star(tic)
         rho = float(sig.get("rho", row.get("rho", 2.0)))
         window = float(np.clip(3.0 * expected_duration(30.0, rho), 0.5, 1.0))
-        prep = detrend_masked(sectors, P, t0, dur, window)
+        known_tois = json.loads(sig["masked_tois"]) if isinstance(sig.get("masked_tois"), str) else []
+        prep = detrend_masked(sectors, P, t0, dur, window, known_tois)
         tb, rb, eb = [], [], []
         for p in prep:
             if p["exptime"] < 540:
