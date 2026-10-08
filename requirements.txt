@@ -82,4 +82,3 @@ wotan==1.10
 wrapt==2.5.0
 xyzservices==2026.9.1
 yarl==1.25.1
-transitDiffImage @ git+https://github.com/stevepur/transit-diffImage.git
