@@ -70,7 +70,8 @@ def package_list(list_csv):
         shutil.copy(ROOT / r.vet_dir / f"tic{r.tic}_{r.rank}.png", d / "vetting.png")
         shutil.copy(ROOT / r.vet_dir / f"tic{r.tic}_{r.rank}.json", d / "vetting.json")
         shutil.copy(ROOT / r.followup_dir / f"tic{r.tic}_{r.rank}.json", d / "followup.json")
-        for f in glob.glob(str(RESULTS / f"fit_tic{r.tic}_P*.json")):
+        fit_dir = ROOT / r.fit_dir if isinstance(getattr(r, "fit_dir", None), str) else RESULTS
+        for f in glob.glob(str(fit_dir / f"fit_tic{r.tic}_P*.json")):
             if abs(json.load(open(f))["P"][1] / P - 1) < 1e-3:
                 shutil.copy(f, d / "transit_fit.json")
         for f in glob.glob(str(RESULTS / "fpp" / f"tic{r.tic}_P*_fpp.json")):
