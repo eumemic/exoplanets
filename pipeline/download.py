@@ -96,8 +96,12 @@ def main():
     ap.add_argument("--manifest", default=str(CAT / "manifest.parquet"))
     a = ap.parse_args()
     m = pd.read_parquet(a.manifest)
+    if a.targets:
+        order = [int(x) for x in open(a.targets).read().split()]
+        m = m[m["tic"].isin(set(order))]      # the all-sky manifest has 22 million rows
+    else:
+        order = list(m["tic"].unique())
     groups = dict(list(m.groupby("tic")))
-    order = [int(x) for x in open(a.targets).read().split()] if a.targets else list(groups)
     groups = [(tic, groups[tic]) for tic in order if tic in groups and not tic_path(tic).exists()]
     t0 = time.time()
     with ProcessPoolExecutor(a.workers, initializer=_init, initargs=(a.threads,)) as ex:
