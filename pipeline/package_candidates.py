@@ -74,7 +74,7 @@ def package_list(list_csv):
             if abs(json.load(open(f))["P"][1] / P - 1) < 1e-3:
                 shutil.copy(f, d / "transit_fit.json")
         for f in glob.glob(str(RESULTS / "fpp" / f"tic{r.tic}_P*_fpp.json")):
-            if abs(float(f.split("_P")[1].split("_")[0]) / P - 1) < 2e-3:
+            if abs(float(f.split("_P")[1].split("_")[0]) - P) < 0.006:  # file names round P to 0.01 d
                 shutil.copy(f, d / "triceratops_fpp.json")
         print(d.name, "files:", sorted(p.name for p in d.iterdir()))
 

@@ -1,6 +1,6 @@
 """Transit signals reported outside ExoFOP: the RAVEN (Lafarga et al. 2026) and T16 (Roth et al.
-2026) candidate tables, and TIC/TOI mentions in the text and tables of arXiv astro-ph.EP papers
-whose abstracts mention TESS, TOIs or TICs.
+2026) candidate tables, a short list of other reports (OTHER), and TIC/TOI mentions in the text
+and tables of arXiv astro-ph.EP papers whose abstracts mention TESS, TOIs or TICs.
 
 Usage: python literature.py [--max-papers N] [--extra 2607.23781,...]
 Writes data/known/literature.parquet (tic, period, ra_deg, dec_deg, label), which known.py
@@ -44,6 +44,10 @@ DELAY = 3.1
 # e-print tarballs download at ~0.2 MB/s, so by default papers without an HTML rendering are
 # recorded as "no_html" and fetched from source only with --source (cached results are reused)
 SOURCE_FALLBACK = False
+
+# Reports outside arXiv and the survey tables: (tic, period, label)
+OTHER = [(4206066, 3.182785, "Rabtsevich 2026, Zenodo 22967456"),
+         (4206066, 11.13274, "Rabtsevich 2026, Zenodo 22967456")]
 
 TIC_RE = re.compile(r"TIC[\s~\-:]*(?:ID[\s~:]*)?(\d{3,10})")
 TOI_RE = re.compile(r"TOI[\s~\-–]*(\d{2,5})(?:\.\d{2})?")
@@ -229,7 +233,8 @@ def main():
     ARXIV.mkdir(parents=True, exist_ok=True)
     toi = pd.read_csv(K / "toi.csv")
     toi_host = dict(zip(toi["TOI"].astype(int), toi["TIC ID"].astype(np.int64)))
-    tables = [raven(), t16()]
+    other = pd.DataFrame(OTHER, columns=["tic", "period", "label"]).assign(ra_deg=np.nan, dec_deg=np.nan)
+    tables = [raven(), t16(), other]
     print("RAVEN + T16 rows:", sum(len(t) for t in tables), flush=True)
     ids = list(dict.fromkeys(arxiv_ids(a.max_papers) + [x for x in a.extra.split(",") if x]))
     print(len(ids), "arXiv papers", flush=True)
