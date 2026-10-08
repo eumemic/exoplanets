@@ -5,6 +5,7 @@ Resumable: stars whose npz exists are skipped. FITS are parsed in memory, never 
 """
 import argparse
 import io
+import os
 import sys
 import threading
 import time
@@ -14,7 +15,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from common import CAT, mast_url, read_lc_fits, tic_path
+from common import CAT, mast_url, read_lc_fits, s3_url, tic_path
 
 _local = threading.local()
 
@@ -26,6 +27,14 @@ def session():
 
 
 def fetch(uri):
+    # EXO_DATA_SOURCE=s3: try the AWS mirror first (fast and free inside AWS us-east-1), then MAST
+    if os.environ.get("EXO_DATA_SOURCE") == "s3" and s3_url(uri):
+        try:
+            r = session().get(s3_url(uri), timeout=120)
+            if r.status_code == 200 and r.content[:6] == b"SIMPLE":
+                return r.content
+        except requests.RequestException:
+            pass
     for attempt in range(6):
         try:
             r = session().get(mast_url(uri), timeout=120)

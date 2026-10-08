@@ -29,6 +29,20 @@ def tic_path(tic: int) -> Path:
     return LC_DIR / s[-4:-2] / f"tic{int(tic)}.npz"
 
 
+S3 = "https://stpubdata.s3.amazonaws.com/"
+
+
+def s3_url(uri: str):
+    """Same product on the STScI AWS open-data mirror (stpubdata), or None. The mirror lags MAST
+    for HLSPs (in Oct 2026: QLP to Sector 98, TESS-SPOC to 81, SPOC 2-min to 107)."""
+    url = mast_url(uri)
+    if url.startswith("https://archive.stsci.edu/missions/tess/tid/"):
+        return S3 + "tess/public/tid/" + url[len("https://archive.stsci.edu/missions/tess/tid/"):]
+    if url.startswith("https://archive.stsci.edu/hlsps/"):
+        return S3 + "mast/hlsp/" + url[len("https://archive.stsci.edu/hlsps/"):]
+    return None
+
+
 def mast_url(uri: str) -> str:
     """Direct archive URL (skips the MAST API redirect) for SPOC and HLSP products."""
     if uri.startswith("mast:HLSP/"):
