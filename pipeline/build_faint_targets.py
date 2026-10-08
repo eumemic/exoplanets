@@ -11,6 +11,7 @@ from common import CAT
 
 def main():
     d = pd.read_parquet(CAT / "tic_faint_mdwarfs.parquet")
+    d["ID"] = d["ID"].astype("int64")      # MAST returns TIC IDs as strings
     d = d[(d["Teff"] <= 3900) & (d["rad"] <= 0.6) & (d["Tmag"] > 11.5)]
     done = set(pd.read_parquet(CAT / "targets.parquet")["ID"]) | set(pd.read_parquet(CAT / "toi_hosts.parquet")["ID"])
     d = d[~d["ID"].isin(done)].sort_values("Tmag")

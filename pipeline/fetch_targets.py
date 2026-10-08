@@ -51,6 +51,7 @@ with ThreadPoolExecutor(6) as ex:
     parts = list(ex.map(fetch, slices))
 df = pd.concat(parts, ignore_index=True)
 # Slice boundaries are inclusive on both ends at MAST; drop the overlap.
+df["ID"] = df["ID"].astype("int64")    # MAST returns TIC IDs as strings
 df = df.drop_duplicates("ID")
 df = df[df["disposition"].isna() | (df["disposition"] != "ARTIFACT")]
 df = df[df["disposition"].isna() | (df["disposition"] != "DUPLICATE")]
