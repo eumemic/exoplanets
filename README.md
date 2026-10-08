@@ -12,6 +12,12 @@ Objects of Interest (TOIs) after masking the known TOIs.
   6 from completing the fully coherent search of the K/M dwarfs and 14 from the TOI-host search,
   plus two further signals on TIC 231725883. Every TOI-host candidate is on a star that already
   has a TOI, which makes it less likely to be a false positive.
+- **Update 2 (8 October 2026):** 6 more candidates for which we found no prior report, from
+  re-checking SPOC detections that have not become TOIs and from a search for periods of 20–100
+  days, plus independent recoveries of 2 signals that other independent researchers posted on
+  Zenodo days earlier. They include possible second planets around the confirmed-planet hosts
+  TOI-669 (matching a weak radial-velocity signal) and TOI-5997, a 50.3 d signal on TOI-4566, and a
+  sub-Earth-sized signal on GJ 774, an M-dwarf pair 13 pc away.
 
 **These are planet candidates, not confirmed planets.** Each passes automated and pixel-level
 vetting, but TESS alone cannot rule out every false-positive scenario. Ground-based photometry,
@@ -105,6 +111,60 @@ with the other signals that pass everything except the 15″ neighbour check.
 
 **TIC 143168991 (TOI-7580), 26.56 d: rejected.** The K/M dwarf search found it with 4 transits,
 but two of them fall within 0.2 h of TOI-7580.01 transits; with the TOIs masked only two remain.
+
+### Added 8 October 2026: unpromoted SPOC detections and longer periods
+
+Two more searches found 8 signals that pass every check: 6 for which we found no prior report, and
+2 that other independent researchers posted on Zenodo a few days earlier (TRICERATOPS not yet run):
+
+- **SPOC detections that have not become TOIs.** SPOC reports every signal above its threshold as
+  a threshold-crossing event (TCE); TOIs are selected from these, and many TCEs are never followed
+  up. We re-measured the 14,112 TCEs on 8,698 FGKM dwarfs that are not TOIs or CTOIs, adding all
+  later sectors, and vetted them like our own signals (`build_tce_targets.py`, `tce_refit.py`,
+  `triage_tce.sh`). ExoMiner++ ([Valizadegan et al. 2025](https://arxiv.org/abs/2502.09790),
+  [2026](https://arxiv.org/abs/2601.14877)), a neural network that classifies every SPOC TCE,
+  lists 17 of the 79 signals that passed every LEO-Vetter test as planet candidates, so those count
+  as reported. Most of the signals it scores as false positives also fail our centroid test. TCEs
+  from SPOC's latest multi-sector search (Sectors 1–96) have not yet been through TOI vetting, so
+  some of these may still become TOIs.
+- **Periods of 20–100 days.** A stack-slide search of the 3,661 K/M dwarfs and 3,271 TOI hosts
+  with at least six sectors, with the TOIs and the signals from the earlier searches masked.
+
+![Candidates from the TCE re-check and the 20-100 d search](figures/candidates_update2_grid.png)
+
+| TIC | Period (d) | Radius (R⊕) | Host (Teff, T mag, distance) | Known on star | Notes |
+|---|---|---|---|---|---|
+| 105506140 | 0.706375 | 1.42 | 5216 K, 8.0, 44 pc | – | TCE re-check; HD 85706; weakest: centroid 13.8" in the best difference image but 17.1" on average, grazing (b = 0.95), and ExoMiner++ scores its SPOC TCEs 0.34 and 0.45 (below its 0.5 threshold) |
+| 300381700 | 3.145257 | 4.87 | 5999 K, 12.4, 598 pc | TOI-7387.01 (PC, 9.09 d) | TCE re-check; second signal on TOI-7387; reported on 4 October by Tovar Contreras (Zenodo 23134068) |
+| 373017346 | 3.521493 | 1.79 | 5844 K, 10.6, 211 pc | TOI-4450.01 (PC, 10.69 d) | TCE re-check; second signal on TOI-4450 |
+| 351339274 | 4.225136 | 0.75 | 3529 K, 9.2, 13 pc | – | TCE re-check; GJ 774 A; its companion GJ 774 B, 17.6" away and 1.2 mag fainter, could be the host instead (0.75 R⊕ on A, about 0.9 R⊕ on B) |
+| 257484419 | 4.353306 | 2.45 | 4184 K, 11.2, 81 pc | – | TCE re-check; second signal on the star of our 18.06 d update candidate; reported on 3 October by Ozturk (Zenodo 23118499) |
+| 124573851 | 9.529248 | 2.48 | 5625 K, 10.2, 143 pc | TOI-669.01 (CP, 3.94 d) | TCE re-check; second signal on TOI-669; matches a weak radial-velocity signal at 9.61 ± 0.52 d (Akana Murphy et al. 2023); confirmed: TOI-669 b |
+| 39516274 | 14.216035 | 1.36 | 4674 K, 9.3, 46 pc | TOI-5997.01 (CP, 5.66 d) | TCE re-check; HIP 85850; second signal on TOI-5997 |
+| 269728501 | 50.319649 | 2.98 | 4443 K, 11.6, 119 pc | TOI-4566.01 (PC, 2.08 d) | 20-100 d; second signal on TOI-4566 (see below) |
+
+**TIC 269728501 (TOI-4566), 50.32 d.** Six transits in 17 sectors. SPOC's Sectors 1–96 search
+listed two of them as a 754.8 d TCE, 15 times this period.
+
+**TIC 235005571, 1.33 d: rejected.** It passed every automated check, but
+[an RNAAS note](https://ui.adsabs.harvard.edu/abs/2026RNAAS..10..220R) shows the star is an
+Algol-type eclipsing binary.
+
+| Stage | TCE re-check | 20–100 d, K/M dwarfs | 20–100 d, TOI hosts |
+|---|---|---|---|
+| Stars searched | 8,698 | 3,661 | 3,271 |
+| Signals | 14,112 | 9,179 | 6,421 |
+| Pass pre-filters | 4,393 | 333 | 167 |
+| Match a known planet, TOI or CTOI | 14 | 15 | 8 |
+| Reported elsewhere (literature check, including ExoMiner++) | 251 | 2 | 3 |
+| Match a neighbour's known signal | 30 | 4 | 0 |
+| Unmatched and passing every LEO-Vetter test | 62 | 2 | 3 |
+| … centroid more than 15″ from the target | 35 | 1 | 2 |
+| … a TIC star within 15″ could produce the dip | 15 | 1 | 0 |
+| … no FFI difference image, and SPOC's centroid is more than 15″ off | 3 | 0 | 0 |
+| … none of these, MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 8 | 0 | 1 |
+
+The TCE re-check's last row includes TIC 235005571 and the two signals reported on Zenodo.
 
 ### Predicted transit times
 
@@ -269,11 +329,12 @@ cd pipeline
 ../.venv/bin/python inject_test.py 300 --methods coherent,semi,stack
 EXO_INVERT=1 ../.venv/bin/python search.py sample.txt --method stack --out ../results/search_inv
 
-# extensions in progress (results not yet published)
+# update 2: unpromoted SPOC TCEs, and periods of 20-100 d
 ../.venv/bin/python build_tce_targets.py    # SPOC TCEs on dwarfs that never became TOIs or CTOIs
 ./triage_tce.sh                             # re-measure them with later sectors, vet, follow up
 ../.venv/bin/python search.py stars.txt --method stack --pmin 20 --pmax 100 \
     --premask ../results/search --out ../results/search_long      # 20-100 d, earlier signals masked
+# in progress (results not yet published): faint M dwarfs
 ../.venv/bin/python fetch_targets.py --tmin 11.5 --tmax 13.5 --rmax 0.6 --step 0.02 \
     --out ../data/catalogs/tic_faint_mdwarfs.parquet && ../.venv/bin/python build_faint_targets.py
 ../.venv/bin/python ads_check.py candidates.csv ads.csv                 # needs an ADS API token

@@ -35,3 +35,20 @@ The update candidates were checked automatically and by web search.
 Not checked: papers not on arXiv, arXiv papers without an HTML version (54 of those scanned), periods
 quoted with fewer than four significant digits, QLP's internal detections, and NASA ADS full text
 (which needs an API token).
+
+# Novelty check for update 2 (2026-10-08)
+
+The 8 candidates from the TCE re-check and the 20–100 d search, and TIC 235005571.
+
+| Source | Result |
+|---|---|
+| ExoFOP TOI list (8,148 rows) and CTOI list (5,137 rows) | No entry at any candidate period (harmonics 1/3–3) on these stars or TIC neighbours within 2.5′ |
+| NASA Exoplanet Archive `pscomppars` | Only TOI-669 b (3.945 d) |
+| SPOC TCE tables on MAST | By construction the TCE re-check signals are SPOC TCEs that have not become TOIs. TIC 269728501's 50.32 d transits include two that the Sectors 1–96 search listed as a 754.8 d TCE (15 × P) |
+| ExoMiner++ (Valizadegan et al. 2025, Zenodo 15466293; 2026, Zenodo 17707413) | None of the 8 is an ExoMiner++ planet candidate. TIC 105506140's TCEs score 0.34 and 0.45 (threshold 0.5); the other seven have no ExoMiner++ entry at their periods |
+| RAVEN, T16, LEO-Vetter M dwarfs (Kunimoto et al. 2025), Eschen et al. (2024) | No entry at any candidate period. On the TOI hosts, RAVEN, T16 and ExoMiner++ list only the TOI signals or their harmonics |
+| arXiv: 2,037 astro-ph.EP papers (`literature.py`) | No TIC/TOI mention with a number within 0.3% of a candidate period (or half/double). TIC 257484419 is in the target list of the pterodactyls young-planet search (Fernandes et al. 2022) |
+| NASA ADS full-text search on every TIC ID and host TOI (`ads_check.py`) | TIC 235005571 is an Algol-type eclipsing binary ([RNAAS 10, 220](https://ui.adsabs.harvard.edu/abs/2026RNAAS..10..220R)): rejected. A TOI-669 paper (2025MNRAS.544L..51B) matched the period string, but its text does not mention a 9.53 d signal. No other matches |
+| Web, Zenodo, ExoFOP target pages and SIMBAD for each star and host TOI (2026-10-08) | TIC 300381700's 3.145 d signal was reported by Tovar Contreras ([Zenodo 23134068](https://zenodo.org/records/23134068), 2026-10-04) and TIC 257484419's 4.353 d signal by Ozturk ([Zenodo 23118499](https://zenodo.org/records/23118499), 2026-10-03), which does not mention the 18.06 d signal: both are independent recoveries. For TOI-669, Akana Murphy et al. (2023, AJ 166, 153, §10.4) see a weak radial-velocity signal at 9.61 ± 0.52 d (ΔAIC < 1, not adopted), which our 9.529 d transit signal matches. TIC 351339274 is GJ 774 A; its companion GJ 774 B (TIC 351339273, ΔT = 1.18) is 17.6″ away. TIC 105506140 is HD 85706; SPOC's TCEs on it have the same epoch at 0.70663 d. No other reports |
+
+Not checked automatically: Zenodo, where two of these signals had been posted days earlier (found by a manual search), and SPOC's TOI vetting of the Sectors 1–96 TCEs, which has not been released.

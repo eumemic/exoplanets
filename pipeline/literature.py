@@ -63,7 +63,9 @@ VIZIER_TABLES = [("J/AJ/170/280/table3", "TIC", "Per", "Kunimoto et al. 2025, LE
 # 5053) list their nine M-dwarf candidates without periods outside the paper (Zenodo 13112476).
 EK24 = "Eschen et al. 2024, MNRAS 531, 5053"
 OTHER = [(4206066, 3.182785, "Rabtsevich 2026, Zenodo 22967456"),
-         (4206066, 11.13274, "Rabtsevich 2026, Zenodo 22967456")] + \
+         (4206066, 11.13274, "Rabtsevich 2026, Zenodo 22967456"),
+         (300381700, 3.1452736, "Tovar Contreras 2026, Zenodo 23134068"),
+         (257484419, 4.353304, "Ozturk 2026, Zenodo 23118499")] + \
         [(t, np.nan, EK24) for t in (303682623, 268727719, 262605715, 231949697, 290048573, 231080232,
                                      12999193, 251090642, 311276853)]
 

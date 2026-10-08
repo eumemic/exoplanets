@@ -1,7 +1,8 @@
 """Publication figures: candidate transit grid, the TOI-4342 system, and the TIC 4206066 check.
 
 Usage: python make_figures.py            (reads results/candidates.csv and results/fit_*.json)
-       python make_figures.py --update   (candidates added on 2026-10-08)
+       python make_figures.py --update [CSV OUT.png]   (a batch of added candidates; default: the
+                                                       2026-10-08 update)
 """
 import glob
 import json
@@ -131,26 +132,28 @@ def validation():
     plt.close(fig)
 
 
-def update_grid():
-    """Folded transits of the candidates added on 2026-10-08, TOIs on the same star masked."""
+def update_grid(csv="candidates_2026-10-08.csv", out="candidates_update_grid.png"):
+    """Folded transits of a batch of added candidates (results_public/CSV), with the TOIs and every
+    other published candidate on the same star masked."""
     global STARS
     from common import DATA
 
-    STARS = pd.concat([STARS, pd.read_parquet(CAT / "toi_hosts.parquet").set_index("ID")])
+    STARS = pd.concat([STARS] + [pd.read_parquet(CAT / f).set_index("ID")
+                                 for f in ("toi_hosts.parquet", "tce_hosts.parquet")])
     STARS = STARS[~STARS.index.duplicated()]
-    c = pd.read_csv(ROOT / "results_public" / "candidates_2026-10-08.csv")
-    c = c[c["status"].str.startswith("candidate")]
+    pub = pd.concat([pd.read_csv(f, usecols=["TIC", "P_d", "T0_BJD", "T14_h"])
+                     for f in sorted((ROOT / "results_public").glob("candidates*.csv"))])
+    c = pd.read_csv(ROOT / "results_public" / csv)
+    c = c[~c["status"].str.startswith("close neighbour")]
     toi = pd.read_csv(DATA / "known" / "toi.csv")
-    cols = 5
+    cols = 5 if len(c) > 8 else 4
     rows = int(np.ceil(len(c) / cols))
-    fig, axs = plt.subplots(rows, cols, figsize=(3.2 * cols, 2.5 * rows))
+    fig, axs = plt.subplots(rows, cols, figsize=(3.2 * cols, 2.5 * rows), squeeze=False)
     for ax, r in zip(axs.flat, c.itertuples()):
         masks = [(t["Period (days)"], t["Epoch (BJD)"] - 2457000, t["Duration (hours)"])
                  for _, t in toi[toi["TIC ID"] == r.TIC].iterrows() if t["Period (days)"] > 0]
-        if r.TIC == 231725883:  # the other two signals on this star
-            masks += [(P, t0 - 2457000, d) for P, t0, d in zip(c[c.TIC == r.TIC].P_d, c[c.TIC == r.TIC].T0_BJD,
-                                                              c[c.TIC == r.TIC].T14_h) if abs(P - r.P_d) > 0.01]
-            masks.append((9.098778, 1416.87047, 2.5))
+        masks += [(o.P_d, o.T0_BJD - 2457000, o.T14_h) for o in pub[pub.TIC == r.TIC].itertuples()
+                  if abs(o.P_d - r.P_d) > 0.01]
         panel(ax, r.TIC, r.P_d, r.T0_BJD - 2457000, r.T14_h,
               f"TIC {r.TIC}  {r.P_d:.3f} d  {r.Rp_Re:.1f} R$_\\oplus$", masks)
     for ax in axs.flat[len(c):]:
@@ -158,14 +161,14 @@ def update_grid():
     for ax in axs[:, 0]:
         ax.set_ylabel("ppm", fontsize=8)
     fig.tight_layout()
-    fig.savefig(FIG / "candidates_update_grid.png", dpi=100)
+    fig.savefig(FIG / out, dpi=100)
     plt.close(fig)
 
 
 if __name__ == "__main__":
     import sys
     if "--update" in sys.argv:
-        update_grid()
+        update_grid(*sys.argv[sys.argv.index("--update") + 1:])
         sys.exit()
     FIG.mkdir(exist_ok=True)
     candidates_grid()
