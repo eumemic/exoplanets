@@ -263,7 +263,20 @@ cd pipeline
 # validation
 ../.venv/bin/python inject_test.py 300 --methods coherent,semi,stack
 EXO_INVERT=1 ../.venv/bin/python search.py sample.txt --method stack --out ../results/search_inv
+
+# extensions in progress (results not yet published)
+../.venv/bin/python build_tce_targets.py    # SPOC TCEs on dwarfs that never became TOIs or CTOIs
+./triage_tce.sh                             # re-measure them with later sectors, vet, follow up
+../.venv/bin/python search.py stars.txt --method stack --pmin 20 --pmax 100 \
+    --premask ../results/search --out ../results/search_long      # 20-100 d, earlier signals masked
+../.venv/bin/python fetch_targets.py --tmin 11.5 --tmax 13.5 --rmax 0.6 --step 0.02 \
+    --out ../data/catalogs/tic_faint_mdwarfs.parquet && ../.venv/bin/python build_faint_targets.py
+../.venv/bin/python ads_check.py candidates.csv ads.csv                 # needs an ADS API token
+EXO_DATA_SOURCE=s3 ../.venv/bin/python download.py ...                  # read from the AWS mirror
 ```
+
+`EXO_DATA_SOURCE=s3` reads light curves from the STScI open-data bucket and falls back to MAST.
+Inside AWS us-east-1 this is about 20 times faster than downloading from MAST.
 
 `targets.txt` is one TIC ID per line. Per-candidate follow-up: `fit_transit.py`, `export_fold.py`,
 `fpp.py` (in `.venv-trice`), `candidate_table.py`, `predict.py`, `make_figures.py`,

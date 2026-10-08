@@ -15,3 +15,4 @@ results/
 # TRICERATOPS writes Gaia query caches into the working directory
 *_gaia_background.csv
 drafts/
+results_cloud/
