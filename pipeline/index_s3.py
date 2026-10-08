@@ -29,12 +29,12 @@ TIC_RE = {"QLP": re.compile(r"_s(\d{4})-(\d{16})_tess_v01_llc\.fits$"),
           "TESS-SPOC": re.compile(r"_phot_(\d{16})-s(\d{4})_tess_v1_lc\.fits$"),
           "SPOC": re.compile(r"-s(\d{4})-(\d{16})-\d{4}-s_lc\.fits$")}
 _s3 = None
-_want = set()
+_want = np.zeros(0, np.int64)       # sorted target TIC IDs (a Python set of millions costs ~0.4 GB per process)
 
 
 def _init(targets):
     global _want
-    _want = set(pd.read_parquet(targets, columns=["ID"])["ID"].astype("int64"))
+    _want = np.unique(pd.read_parquet(targets, columns=["ID"])["ID"].astype("int64").values)
 
 
 def s3():
@@ -75,12 +75,11 @@ def uri(prov, key):
 
 def scan(job):
     prov, prefix = job
-    rows = []
-    for k in keys(prefix):
-        p = parse(prov, k)
-        if p and p[0] in _want:
-            rows.append((p[0], p[1], prov, uri(prov, k)))
-    return rows
+    found = [(p, k) for k in keys(prefix) for p in [parse(prov, k)] if p]
+    if not found:
+        return []
+    keep = np.isin(np.array([p[0] for p, _ in found], np.int64), _want)
+    return [(p[0], p[1], prov, uri(prov, k)) for (p, k), ok in zip(found, keep) if ok]
 
 
 def leaf_prefixes(prov, sectors):
@@ -108,10 +107,10 @@ def script_rows(prov, sectors_have, want):
             continue
         txt = requests.get(SCRIPTS[prov] + name, timeout=600).text
         n0 = len(rows)
-        for u in re.findall(r"uri=(mast:HLSP/[^'\s]+)", txt):
-            p = parse(prov, u)
-            if p and p[0] in want:
-                rows.append((p[0], p[1], prov, u))
+        found = [(p, u) for u in re.findall(r"uri=(mast:HLSP/[^'\s]+)", txt) for p in [parse(prov, u)] if p]
+        if found:
+            keep = np.isin(np.array([p[0] for p, _ in found], np.int64), want)
+            rows += [(p[0], p[1], prov, u) for (p, u), ok in zip(found, keep) if ok]
         print(f"  {prov} s{s} from MAST script: {len(rows) - n0} products", flush=True)
     return rows
 
@@ -120,7 +119,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("targets")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--procs", type=int, default=2 * (os.cpu_count() or 8))
+    ap.add_argument("--procs", type=int, default=int(1.5 * (os.cpu_count() or 8)))
     a = ap.parse_args()
     _init(a.targets)
     want = _want
