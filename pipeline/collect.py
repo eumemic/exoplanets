@@ -62,12 +62,17 @@ def main():
     for _, r in c.iterrows():
         k = known_check(int(r.tic), r.period, float(stars.loc[r.tic, "ra"]), float(stars.loc[r.tic, "dec"]),
                         skip=("tce",) if a.ignore_tce else ())
-        exofop = [m for m in k["same_star_period_match"] if not m.startswith("literature:")]
+        matches = k["same_star_period_match"]
+        exofop = [m for m in matches if not m.startswith(("literature:", "ours:"))]
+        lit = [m for m in matches if m.startswith("literature:")]
         if exofop:
             status.append("known"); detail.append(exofop[0])
-        elif k["same_star_period_match"]:
+        elif lit:
             # reported in a paper or survey table but not on ExoFOP/NEA/SPOC lists
-            status.append("reported"); detail.append(";".join(k["same_star_period_match"][:3]))
+            status.append("reported"); detail.append(";".join(lit[:3]))
+        elif matches:
+            # one of this project's published candidates, found again
+            status.append("ours"); detail.append(matches[0])
         elif k["neighbour_period_match"]:
             status.append("neighbour"); detail.append(k["neighbour_period_match"][0])
         else:

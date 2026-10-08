@@ -13,6 +13,7 @@ batman-package==2.5.3 ; platform_machine != "aarch64"
 batman-package @ git+https://github.com/lkreidberg/batman.git@3c69c4381d9785cd4d06e898c2cdf83b22ffb365 ; platform_machine == "aarch64"
 beautifulsoup4==4.15.0
 bokeh==3.10.0
+boto3==1.43.106
 botocore==1.43.106
 brokenaxes==0.6.2
 certifi==2026.7.22

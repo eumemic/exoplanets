@@ -37,6 +37,7 @@ def main():
     print(f"vetted {len(v)}: known {sum(v.known_status == 'known')}, "
           f"known passing all {sum((v.known_status == 'known') & (v.n_fail == 0))}; "
           f"reported elsewhere {sum(v.known_status == 'reported')}; "
+          f"ours already {sum(v.known_status == 'ours')}; "
           f"new {sum(v.known_status == 'new')}, new with <= {a.max_fails} fails: {len(s)}")
     cols = ["tic", "rank", "period", "duration_h", "depth_ppm", "rp", "MES", "vet_snr", "sde",
             "n_good_events", "snr_old", "snr_new", "chi2_sec", "n_sectors", "n_fail", "fails"]

@@ -1,5 +1,6 @@
-"""Match a signal against known planets/candidates/TCEs on the same star and on neighbours, and
-against published lists outside ExoFOP (literature.py)."""
+"""Match a signal against known planets/candidates/TCEs on the same star and on neighbours,
+against published lists outside ExoFOP (literature.py), and against this project's own published
+candidates (results_public/candidates*.csv), so a re-detection is not counted as new."""
 from functools import lru_cache
 
 import numpy as np
@@ -7,7 +8,7 @@ import pandas as pd
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from common import DATA
+from common import DATA, ROOT
 
 K = DATA / "known"
 HARMONICS = (1 / 3, 1 / 2, 2 / 3, 1, 3 / 2, 2, 3)
@@ -49,6 +50,12 @@ def tables():
         out[name] = d.reset_index(drop=True)
     if (K / "literature.parquet").exists():
         out["literature"] = pd.read_parquet(K / "literature.parquet")
+    ours = [pd.read_csv(f, usecols=["TIC", "P_d"]).assign(label=f.stem)
+            for f in sorted((ROOT / "results_public").glob("candidates*.csv"))]
+    if ours:
+        d = pd.concat(ours).rename(columns={"TIC": "tic", "P_d": "period"})
+        d["ra_deg"], d["dec_deg"] = np.nan, np.nan
+        out["ours"] = d[["tic", "period", "ra_deg", "dec_deg", "label"]].reset_index(drop=True)
     return out
 
 

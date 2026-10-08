@@ -2,7 +2,7 @@
 synthetic transits injected into real light curves.
 
 Usage: python inject_test.py N_STARS [--snr 10] [--procs 10] [--methods coherent,semi,stack]
-                              [--pick stars.txt] [--tag NAME]
+                              [--pick stars.txt] [--stars catalog.parquet] [--tag NAME]
 Writes results/inject_snr<SNR>_n<N>[_NAME].csv (one row per star and method). Stars are drawn from
 the K/M search results, or from --pick.
 """
@@ -65,10 +65,11 @@ def main():
     ap.add_argument("--procs", type=int, default=10)
     ap.add_argument("--methods", default="coherent,semi,stack")
     ap.add_argument("--pick", help="file of TIC IDs to draw the stars from")
+    ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
     ap.add_argument("--tag", default="")
     a = ap.parse_args()
     methods = a.methods.split(",")
-    stars = pd.read_parquet(CAT / "targets.parquet").set_index("ID")
+    stars = pd.read_parquet(a.stars).set_index("ID")
     done = (sorted(int(x) for x in open(a.pick).read().split()) if a.pick
             else sorted(int(f.stem) for f in (RESULTS / "search").glob("*.json")))
     random.seed(1)
