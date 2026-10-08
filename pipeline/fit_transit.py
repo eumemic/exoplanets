@@ -49,8 +49,9 @@ def main():
     ap.add_argument("dur_h", type=float)
     ap.add_argument("--mask", nargs="*", default=[])
     ap.add_argument("--steps", type=int, default=3000)
+    ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
     a = ap.parse_args()
-    row = pd.read_parquet(CAT / "targets.parquet").set_index("ID").loc[a.tic].to_dict()
+    row = pd.read_parquet(a.stars).set_index("ID").loc[a.tic].to_dict()
     star = star_dict(row)
     sectors = load_star(a.tic)
     dur = a.dur_h / 24

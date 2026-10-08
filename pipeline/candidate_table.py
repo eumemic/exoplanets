@@ -25,8 +25,8 @@ def fit_for(tic, P):
 
 def fpp_for(tic, P):
     for f in glob.glob(str(RESULTS / "fpp" / f"tic{tic}_P*_fpp.json")):
-        p = float(f.split("_P")[1].split("_")[0])
-        if abs(p / P - 1) < 2e-3:
+        p = float(f.split("_P")[1].split("_")[0])   # period rounded to 0.01 d in the file name
+        if abs(p - P) < 0.006:
             return json.load(open(f))
     return None
 
@@ -43,6 +43,7 @@ def main():
         fit, fpp = fit_for(r.tic, P), fpp_for(r.tic, P)
         k = check(r.tic, P, float(star["ra"]), float(star["dec"]))
         host = toi[toi["TIC ID"] == r.tic]
+        planets = [x.split(":")[1] for x in k["same_star"] if x.startswith("planet:")]
         q = lambda key, i=1: round(fit[key][i], 6) if fit else np.nan
         rows.append(dict(
             TIC=r.tic, P_d=q("P") if fit else round(P, 6),
@@ -63,6 +64,7 @@ def main():
             NFPP=float(f"{fpp['NFPP_max']:.2g}") if fpp else np.nan,
             host_tois=";".join(f"TOI-{t:.2f} ({d}, {p:.3f} d)" for t, d, p in zip(
                 host["TOI"], host["TFOPWG Disposition"].fillna("PC"), host["Period (days)"])),
+            confirmed_planets=";".join(planets),
             literature=";".join(x for x in k["same_star"] if x.startswith("literature")),
             period_match=";".join(k["same_star_period_match"]),
             notes=r.notes if isinstance(r.notes, str) else ""))
