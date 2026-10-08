@@ -22,6 +22,9 @@ Objects of Interest (TOIs) after masking the known TOIs.
   (11.5 < T ≤ 12.5), including GJ 3514, an M4.5 dwarf 17.6 pc away, and a star with two signals.
   The same search found two of our earlier candidates again, and one signal that another
   independent project had posted on GitHub three days earlier.
+- **Update 4 (8 October 2026):** 12 more from the faintest M dwarfs searched so far
+  (12.5 < T ≤ 13.5, 84,863 stars), including LHS 1083 (36 pc) and a possible member of the young
+  Octans association.
 
 **These are planet candidates, not confirmed planets.** Each passes automated and pixel-level
 vetting, but TESS alone cannot rule out every false-positive scenario. Ground-based photometry,
@@ -217,6 +220,44 @@ project ([tess-transit-hunter](https://comdex4.github.io/tess-transit-hunter/fin
 | … no FFI difference image | 2 |
 | … none of these, MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 21 (18 new, 2 ours, 1 on GitHub) |
 
+### Added 8 October 2026: fainter M dwarfs
+
+The same search of 84,863 M dwarfs with 12.5 < T ≤ 13.5. It recovered 625 known TOIs, planets
+or TCEs. 104 new signals pass every LEO-Vetter test; the pixel checks reject 91 of them (in these
+crowded fields mostly for a centroid offset or a capable neighbour), leaving 13. TIC 9994636
+(0.894 d) is rejected: it is a double-lined spectroscopic binary (Kounkel et al. 2021), so its
+5%-deep dip is probably an eclipse.
+
+![Fainter M-dwarf candidates](figures/candidates_update4_grid.png)
+
+| TIC | Period (d) | Radius (R⊕) | Host (Teff, T mag, distance) | Notes |
+|---|---|---|---|---|
+| 44453747 | 1.106646 | 1.29 | 3088 K, 13.4, 36 pc | LHS 1083, an M4.5 dwarf 36 pc away |
+| 239585318 | 1.983922 | 1.37 | 3121 K, 13.4, 37 pc | an equally bright star is 32" away |
+| 1441057 | 2.093531 | 2.74 | 3602 K, 12.5, 109 pc | possible member of the young Octans association (~30 Myr); spot rotation 3.05 d |
+| 377097159 | 2.604427 | 1.74 | 3315 K, 12.9, 50 pc | slow rotator (57-60 d) |
+| 26986661 | 3.996223 | 2.03 | 3395 K, 13.3, 67 pc | LP 371-15 |
+| 165502832 | 5.085657 | 2.24 | 3616 K, 13.5, 132 pc | – |
+| 257433294 | 5.345440 | 1.75 | 3276 K, 12.8, 57 pc | flaring M dwarf |
+| 211405734 | 7.297477 | 7.75 | 3488 K, 13.5, 127 pc | listed without a period in a giant-planet (GEMS) team's observing plan, so it may be their unpublished candidate |
+| 357945537 | 8.887083 | 2.60 | 3451 K, 12.9, 77 pc | LP 335-28 |
+| 233409999 | 9.578851 | 2.30 | 3475 K, 13.1, 90 pc | – |
+| 142472039 | 10.086808 | 2.39 | 3848 K, 12.7, 114 pc | – |
+| 394657305 | 13.941080 | 3.69 | 3606 K, 13.4, 113 pc | a brighter star (T = 11.0) 18.5" away could be the source (TIC contamination ratio 1.23) |
+
+| Stage | Faint M dwarfs, 12.5 < T ≤ 13.5 |
+|---|---|
+| Stars searched | 84,863 |
+| Signals found | 139,231 |
+| Pass pre-filters | 8,521 |
+| Match a known planet, TOI, CTOI or TCE | 625 (83 pass every LEO-Vetter test) |
+| Reported elsewhere (literature check) | 27 |
+| Match a neighbour's known signal | 130 |
+| Unmatched and passing every LEO-Vetter test | 104 |
+| … centroid more than 15″ from the target | 73 |
+| … a TIC star within 15″ could produce the dip | 18 |
+| … none of these, MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 13 (12 candidates; TIC 9994636 rejected) |
+
 ### Predicted transit times
 
 [`candidates/predictions.csv`](candidates/predictions.csv) lists every predicted transit of the
@@ -405,7 +446,7 @@ EXO_INVERT=1 ../.venv/bin/python search.py sample.txt --method stack --out ../re
 ./triage_tce.sh                             # re-measure them with later sectors, vet, follow up
 ../.venv/bin/python search.py stars.txt --method stack --pmin 20 --pmax 100 \
     --premask ../results/search --out ../results/search_long      # 20-100 d, earlier signals masked
-# update 3 and in progress: faint M dwarfs (tier 1 published, tier 2 running)
+# updates 3 and 4: faint M dwarfs
 ../.venv/bin/python fetch_targets.py --tmin 11.5 --tmax 13.5 --rmax 0.6 --step 0.02 \
     --out ../data/catalogs/tic_faint_mdwarfs.parquet && ../.venv/bin/python build_faint_targets.py
 ../.venv/bin/python ads_check.py candidates.csv ads.csv                 # NASA ADS + Zenodo; ADS token

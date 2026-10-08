@@ -65,3 +65,13 @@ The 21 faint M-dwarf signals that pass every check.
 | ExoFOP target pages, SIMBAD, web search, Planet Hunters TESS Talk, TESS and Gaia DR3 eclipsing-binary tables, VizieR position search (2026-10-08) | TIC 417732194 (G 249-11) at 5.307419 d was posted on 5 October by the tess-transit-hunter project (GitHub, Comdex4/tess-transit-hunter); it is now read by `literature.py`. No reports for the other 18. TIC 102034645: the radio galaxy ESO 243-29 is 25″ away and adds ~39% of the flux. TIC 117798466: space motion matches the AB Doradus moving group. TIC 355815567 is GJ 3514 (17.6 pc) |
 
 Not checked automatically: GitHub repositories (code search had not indexed the one above).
+
+# Novelty check for update 4 (2026-10-08)
+
+The 13 fainter M-dwarf signals that pass every check.
+
+| Source | Result |
+|---|---|
+| ExoFOP TOI and CTOI lists, NASA Exoplanet Archive, SPOC TCEs, ExoMiner++, RAVEN, T16, LEO-Vetter M dwarfs, Eschen et al. (2024), arXiv scan, this project's candidates, tess-transit-hunter | No entry at any candidate period |
+| NASA ADS full text and Zenodo (`ads_check.py`) | No matches |
+| ExoFOP target pages, SIMBAD, web and GitHub search, Villanova TESS EB catalog, Kostov et al. (2025), Gaia DR3 eclipsing-binary, transit and orbit tables, VSX (via VizieR) (2026-10-08) | No reports at our periods. TIC 9994636 is a double-lined spectroscopic binary (APOGEE; Kounkel et al. 2021, AJ 162, 184): rejected. TIC 211405734 heads a 2026-10-02 observing list of the GEMS giant-planets-around-M-dwarfs survey on GitHub (no period given), so that team may have an unpublished candidate. TIC 394657305: a T = 11.0 star 18.5″ away (contamination ratio 1.23). TIC 1441057: candidate member of the Octans association |
