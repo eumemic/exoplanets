@@ -32,7 +32,7 @@ def inject(sectors, P, t0, depth, dur):
 
 
 def run(args):
-    tic, star, P, snr_target, method, seed = args
+    tic, star, P, snr_target, method, seed, max_signals = args
     rng = np.random.default_rng(seed)
     sectors = load_star(tic)
     t = np.concatenate([s["time"] for s in sectors])
@@ -44,7 +44,7 @@ def run(args):
     noise = np.median([search.robust_std(np.diff(s["flux"])) / np.sqrt(2) for s in sectors])
     depth = snr_target * noise / np.sqrt(max(n_in, 1))
     inj = inject(sectors, P, t0, depth, dur)
-    search._set_method(method == "semi", 3, method == "stack")
+    search._set_method(method == "semi", max_signals, method == "stack")
     orig = search.load_star
     search.load_star = lambda _tic: inj
     try:
@@ -67,6 +67,7 @@ def main():
     ap.add_argument("--pick", help="file of TIC IDs to draw the stars from")
     ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
     ap.add_argument("--tag", default="")
+    ap.add_argument("--max-signals", type=int, default=3, help="signals searched per star")
     a = ap.parse_args()
     methods = a.methods.split(",")
     stars = pd.read_parquet(a.stars).set_index("ID")
@@ -79,7 +80,7 @@ def main():
     for i, tic in enumerate(pick):
         P = float(np.exp(np.random.default_rng(i).uniform(np.log(1.0), np.log(15.0))))
         for m in methods:
-            jobs.append((tic, stars.loc[tic].to_dict(), P, a.snr, m, i))
+            jobs.append((tic, stars.loc[tic].to_dict(), P, a.snr, m, i, a.max_signals))
     with Pool(a.procs) as pool:
         rows = pool.map(run, jobs, chunksize=1)
     df = pd.DataFrame(rows)

@@ -30,6 +30,7 @@ def detrend_masked(sectors, P, t0, dur, window, known=()):
     out = []
     for s in sectors:
         o = np.argsort(s["time"])
+        o = o[(s["flux"][o] > 0) & (s["flux"][o] < 5)]        # non-stellar values (see search.prepare)
         t, f = s["time"][o], s["flux"][o]
         cx, cy = s["cx"][o].astype(float), s["cy"][o].astype(float)
         if known:

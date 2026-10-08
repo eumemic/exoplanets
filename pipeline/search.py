@@ -114,6 +114,12 @@ def prepare(sectors, window):
         t, f = s["time"], s["flux"]
         o = np.argsort(t)
         t, f = t[o], f[o]
+        # Normalized flux outside (0, 5) is not stellar (one QLP sector had a 9e20 point, on which
+        # wotan's biweight never converged).
+        ok = (f > 0) & (f < 5)
+        t, f = t[ok], f[ok]
+        if len(t) < 200:
+            continue
         prot, var_snr = rotation_period(t, f)
         fast = bool(np.isfinite(prot) and prot < 3.0 and var_snr > 3.0)
         if fast:

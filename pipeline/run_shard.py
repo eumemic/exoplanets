@@ -10,6 +10,7 @@ Shards are every N-th star of TARGETS sorted by TIC ID.
 import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -32,6 +33,7 @@ def main():
     ap.add_argument("--chunk", type=int, default=10000)
     ap.add_argument("--procs", type=int, default=(os.cpu_count() or 8) - 1)
     ap.add_argument("--keep-snr", type=float, default=9.0)
+    ap.add_argument("--chunk-timeout", type=int, default=3600, help="seconds allowed for one chunk's search")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -46,8 +48,18 @@ def main():
         lst.write_text("\n".join(map(str, chunk)) + "\n")
         subprocess.run([PY, "download.py", str(lst), "--manifest", a.manifest, "--workers", "64"],
                        check=True, stdout=subprocess.DEVNULL)
-        subprocess.run([PY, "search.py", str(lst), "--stars", a.targets, "--out", str(out), "--method",
-                        "stack", "--procs", str(a.procs)], check=True, stdout=subprocess.DEVNULL)
+        p = subprocess.Popen([PY, "search.py", str(lst), "--stars", a.targets, "--out", str(out), "--method",
+                              "stack", "--procs", str(a.procs)], stdout=subprocess.DEVNULL, start_new_session=True)
+        try:
+            p.wait(timeout=a.chunk_timeout)
+        except subprocess.TimeoutExpired:
+            # a pathological star must not stall the shard: stop the chunk and record what is unfinished
+            os.killpg(p.pid, signal.SIGKILL)
+            p.wait()
+            stuck = [t for t in chunk if not (out / f"{t}.json").exists() and tic_path(t).exists()]
+            for t in stuck:
+                (out / f"{t}.json").write_text(json.dumps({"tic": t, "error": "search timed out"}))
+            print(f"chunk timed out after {a.chunk_timeout} s; {len(stuck)} stars recorded as timed out", flush=True)
         kept = 0
         for tic in chunk:
             f = out / f"{tic}.json"
