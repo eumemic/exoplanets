@@ -15,6 +15,7 @@ from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
+from numba import njit
 
 from common import CAT, RESULTS, load_star
 from known import check as known_check
@@ -113,9 +114,128 @@ def star_dict(row):
                 rho=rho)
 
 
+@njit(cache=True, error_model="numpy")
+def _ses_mes_loop(time, flux, flux_err, near_tran, phase, phase_sorted_idxs, phase_sorted, per,
+                  dur, qtran, zpt):
+    """LEO-Vetter's per-cadence SES/MES loop (TCELightCurve.get_SES_MES), compiled. For each
+    cadence: depth and count of points within +-dur/2 in time (SES) and within +-qtran/2 in
+    phase (MES), the number of distinct transits in the MES window, and the out-of-transit
+    weighted mean and error in the SES window."""
+    N = len(time)
+    dep_SES = np.zeros(N)
+    n_SES = np.zeros(N)
+    dep_MES = np.zeros(N)
+    n_MES = np.zeros(N)
+    N_transit_MES = np.zeros(N)
+    bin_flux = np.zeros(N)
+    bin_flux_err = np.zeros(N)
+    w = 1.0 / flux_err**2
+    h = 0.5 * qtran
+    e0 = int(np.floor((time[0] - time[-1]) / per)) - 1
+    seen = np.zeros(int(np.ceil((time[-1] - time[0]) / per)) * 2 + 4, np.int64)
+    left, right = 0, 0
+    for i in range(N):
+        while left < N and time[left] < time[i] - 0.5 * dur:
+            left += 1
+        if right < left:
+            right = left
+        while right < N and time[right] <= time[i] + 0.5 * dur:
+            right += 1
+        sw = 0.0
+        swy = 0.0
+        sw_o = 0.0
+        swy_o = 0.0
+        for j in range(left, right):
+            sw += w[j]
+            swy += w[j] * flux[j]
+            if not near_tran[j]:
+                sw_o += w[j]
+                swy_o += w[j] * flux[j]
+        n_SES[i] = right - left
+        dep_SES[i] = zpt - swy / sw
+        bin_flux[i] = swy_o / sw_o
+        bin_flux_err[i] = 1.0 / np.sqrt(sw_o)
+        p = phase[i]
+        lo = np.searchsorted(phase_sorted, p - h, side="right")
+        hi = np.searchsorted(phase_sorted, p + h, side="left")
+        a2, b2 = 0, 0
+        if p < h:
+            a2 = np.searchsorted(phase_sorted, p - h + 1.0, side="left")
+            b2 = N
+        elif p > 1.0 - h:
+            a2 = 0
+            b2 = np.searchsorted(phase_sorted, p + h - 1.0, side="right")
+        sw = 0.0
+        swy = 0.0
+        n = 0
+        ntr = 0
+        stamp = i + 1
+        for lohi in range(2):
+            a, b = (lo, hi) if lohi == 0 else (a2, b2)
+            for k in range(a, b):
+                j = phase_sorted_idxs[k]
+                if lohi == 1 and lo <= k < hi:
+                    continue  # already counted (np.unique in the original)
+                sw += w[j]
+                swy += w[j] * flux[j]
+                n += 1
+                ep = int(np.round((time[j] - time[i]) / per)) - e0
+                if seen[ep] != stamp:
+                    seen[ep] = stamp
+                    ntr += 1
+        n_MES[i] = n
+        dep_MES[i] = zpt - swy / sw
+        N_transit_MES[i] = ntr
+    return dep_SES, n_SES, dep_MES, n_MES, N_transit_MES, bin_flux, bin_flux_err
+
+
+def _get_ses_mes(self, replace=False):
+    """Drop-in replacement for TCELightCurve.get_SES_MES using the compiled loop; the noise
+    estimates after the loop are LEO-Vetter's own code."""
+    from leo_vetter.utils import phasefold, weighted_std
+
+    if hasattr(self, "MES_series") and not replace:
+        return
+    phase = phasefold(self.time, self.per, self.epo)
+    phase[phase < 0] += 1
+    order = np.argsort(phase)
+    dep_SES, n_SES, dep_MES, n_MES, N_transit_MES, bin_flux, bin_flux_err = _ses_mes_loop(
+        np.asarray(self.time, float), np.asarray(self.flux, float), np.asarray(self.flux_err, float),
+        np.asarray(self.near_tran, bool), phase, order, phase[order], float(self.per),
+        float(self.dur), float(self.qtran), float(self.zpt))
+    mask = ~np.isnan(bin_flux) & ~self.near_tran
+    std = weighted_std(self.flux[mask], self.flux_err[mask])
+    bin_std = weighted_std(bin_flux[mask], bin_flux_err[mask])
+    expected_bin_std = (std * np.sqrt(np.nanmean(bin_flux_err[mask] ** 2))
+                        / np.sqrt(np.nanmean(self.flux_err[mask] ** 2)))
+    self.sig_w = std
+    sig_r2 = bin_std**2 - expected_bin_std**2
+    self.sig_r = np.sqrt(sig_r2) if sig_r2 > 0 else 0
+    self.err = np.sqrt((self.sig_w**2 / self.n_in) + (self.sig_r**2 / self.N_transit))
+    err_SES = np.sqrt((self.sig_w**2 / n_SES) + self.sig_r**2)
+    err_MES = np.sqrt((self.sig_w**2 / n_MES) + (self.sig_r**2 / N_transit_MES))
+    self.SES_series = dep_SES / err_SES
+    self.dep_series = dep_MES
+    self.err_series = err_MES
+    self.MES_series = dep_MES / err_MES
+    self.metrics["sig_w"] = self.sig_w
+    self.metrics["sig_r"] = self.sig_r
+    self.metrics["err"] = self.err
+    self.metrics["MES"] = self.dep / self.err
+    Fmin = np.nanmin(-self.dep_series)
+    Fmax = np.nanmax(-self.dep_series)
+    self.metrics["SHP"] = Fmax / (Fmax - Fmin)
+
+
+FAST_LEO = os.environ.get("EXO_SLOW_LEO") != "1"
+
+
 def leo(tic, rank, t, r, e, P, t0, dur, star):
     from leo_vetter.main import TCELightCurve
     from leo_vetter.thresholds import check_thresholds
+
+    if FAST_LEO:
+        TCELightCurve.get_SES_MES = _get_ses_mes
 
     tlc = TCELightCurve(tic, t, 1 + r, 1 + r, e, P, t0, dur, planetno=rank)
     with contextlib.redirect_stdout(io.StringIO()):

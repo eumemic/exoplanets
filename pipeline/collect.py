@@ -22,6 +22,8 @@ def main():
     ap.add_argument("--out", default=str(RESULTS / "cands.csv"))
     ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
     ap.add_argument("--signals", default=str(RESULTS / "signals.parquet"))
+    ap.add_argument("--dwarfs", action="store_true",
+                    help="keep only stars with Teff < 6500 K, R < 1.5 Rsun and logg > 4 (or no logg)")
     a = ap.parse_args()
     rows, errors = [], 0
     files = [f for d in a.search for f in glob.glob(f"{d}/*.json")]
@@ -51,6 +53,9 @@ def main():
     c = c.drop_duplicates(["tic", "pkey"]).drop(columns="pkey")
     c["rank"] = c["rank"] + np.where(c["method"] == "semi", 10, 0)  # unique vetting file names
     stars = pd.read_parquet(a.stars).set_index("ID")
+    if a.dwarfs:
+        ok = (stars["Teff"] < 6500) & (stars["rad"] < 1.5) & ((stars["logg"] > 4.0) | stars["logg"].isna())
+        c = c[c["tic"].isin(stars.index[ok])]
     status, detail = [], []
     for _, r in c.iterrows():
         k = known_check(int(r.tic), r.period, float(stars.loc[r.tic, "ra"]), float(stars.loc[r.tic, "dec"]))

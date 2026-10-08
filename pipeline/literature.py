@@ -239,6 +239,8 @@ def main():
         if i % 100 == 0 or i == len(ids):
             # written as it goes, so the known-signal check can use a partial scan
             lit = pd.concat(tables + [arxiv_rows(papers, toi_host)], ignore_index=True)
+            for col in ("tic", "period", "ra_deg", "dec_deg"):
+                lit[col] = pd.to_numeric(lit[col], errors="coerce")
             lit = lit[np.isfinite(lit["tic"])]
             lit["tic"] = lit["tic"].astype(np.int64)
             lit.to_parquet(K / "literature.parquet")
