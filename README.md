@@ -147,10 +147,15 @@ single-sector threshold while reaching 10–20σ when all sectors are combined.
 5. **Known-signal matching** (`known.py`, `fetch_known.py`): ExoFOP TOIs and CTOIs, NASA Exoplanet
    Archive planets, all public SPOC TCE tables, including period harmonics and TIC neighbours
    within 2.5′.
-6. **Literature check** (`literature.py`, added in the update): the RAVEN and T16 candidate tables,
-   and TIC IDs, TOI designations and nearby periods in the tables and text of 2,037
+6. **Literature check** (`literature.py`, added in the update): the RAVEN and T16 candidate tables;
+   the SPOC TCEs that ExoMiner++ classifies as planet candidates
+   ([Valizadegan et al. 2025](https://arxiv.org/abs/2502.09790),
+   [2026](https://arxiv.org/abs/2601.14877)); the LEO-Vetter M-dwarf candidates (Kunimoto et al.
+   2025, VizieR J/AJ/170/280); the Eschen et al. (2024) M-dwarf candidates; and TIC IDs, TOI
+   designations and nearby periods in the tables and text of 2,037
    arXiv astro-ph.EP papers whose abstracts mention TESS, TOIs or TICs (read from arXiv's HTML
-   versions). A matching signal is tagged `reported`. Run on the first release, it flags exactly
+   versions, plus the e-print for papers whose candidate tables are machine-readable only). A
+   matching signal is tagged `reported`. Run on the first release, it flags exactly
    the two signals that our manual check had found already published.
 7. **Vetting** (`vet.py`): transit-masked re-detrending, the 13 false-alarm and 4 false-positive
    tests of [LEO-Vetter](https://github.com/mkunimoto/LEO-vetter) (Kunimoto et al. 2025),

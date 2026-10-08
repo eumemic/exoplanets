@@ -1,6 +1,8 @@
 """Transit signals reported outside ExoFOP: the RAVEN (Lafarga et al. 2026) and T16 (Roth et al.
-2026) candidate tables, a short list of other reports (OTHER), and TIC/TOI mentions in the text
-and tables of arXiv astro-ph.EP papers whose abstracts mention TESS, TOIs or TICs.
+2026) candidate tables, the TCEs that ExoMiner++ classifies as planet candidates (Valizadegan et
+al. 2025, 2026), candidate tables on VizieR (VIZIER_TABLES), a short list of other reports (OTHER),
+and TIC/TOI mentions in the text and tables of arXiv astro-ph.EP papers whose abstracts mention
+TESS, TOIs or TICs.
 
 Usage: python literature.py [--max-papers N] [--extra 2607.23781,...]
 Writes data/known/literature.parquet (tic, period, ra_deg, dec_deg, label), which known.py
@@ -36,6 +38,14 @@ RAVEN = "https://zenodo.org/api/records/19661443/files/{}/content"
 RAVEN_TABLES = ("nsfp09_table.csv", "vet_table.csv", "val_table.csv", "val_rp8_table.csv")
 T16_FILES = ("https://dataverse.harvard.edu/api/access/datafile/13605255?format=original",
              "https://dataverse.harvard.edu/api/access/datafile/13605256?format=original")
+# ExoMiner++ scores for SPOC TCEs: S1-67 2-min (Valizadegan et al. 2025, Zenodo 15466293) and the
+# 2.0 catalogs for 2-min and FFI TCEs (Zenodo 17707413). Score > 0.5 is their planet-candidate class.
+EXOMINER = [("https://zenodo.org/api/records/15466293/files/exominerplusplus_catalog_unk_tces_s1-s67_"
+             "tess-spoc-2min_complete_1-16-2025_1014.csv/content", "emp_unk_s1-s67.csv", "ExoMiner++ S1-67"),
+            ("https://zenodo.org/api/records/17707413/files/vetting_catalog_2-min.csv/content",
+             "emp2_2min.csv", "ExoMiner++ 2.0 2-min"),
+            ("https://zenodo.org/api/records/17707413/files/vetting_catalog_FFI.csv/content",
+             "emp2_ffi.csv", "ExoMiner++ 2.0 FFI")]
 ARXIV_API = "https://export.arxiv.org/api/query"
 ARXIV_QUERY = "cat:astro-ph.EP AND (abs:TESS OR abs:TOI OR abs:TIC)"
 EPRINT = "https://export.arxiv.org/e-print/{}"
@@ -45,9 +55,17 @@ DELAY = 3.1
 # recorded as "no_html" and fetched from source only with --source (cached results are reused)
 SOURCE_FALLBACK = False
 
-# Reports outside arXiv and the survey tables: (tic, period, label)
+# Candidate tables on VizieR: (table, TIC column, period column, label)
+VIZIER = "https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source={}&-out.max=unlimited&-out={},{}"
+VIZIER_TABLES = [("J/AJ/170/280/table3", "TIC", "Per", "Kunimoto et al. 2025, LEO-Vetter M dwarfs")]
+
+# Reports outside arXiv and the survey tables: (tic, period, label). Eschen et al. (2024, MNRAS 531,
+# 5053) list their nine M-dwarf candidates without periods outside the paper (Zenodo 13112476).
+EK24 = "Eschen et al. 2024, MNRAS 531, 5053"
 OTHER = [(4206066, 3.182785, "Rabtsevich 2026, Zenodo 22967456"),
-         (4206066, 11.13274, "Rabtsevich 2026, Zenodo 22967456")]
+         (4206066, 11.13274, "Rabtsevich 2026, Zenodo 22967456")] + \
+        [(t, np.nan, EK24) for t in (303682623, 268727719, 262605715, 231949697, 290048573, 231080232,
+                                     12999193, 251090642, 311276853)]
 
 TIC_RE = re.compile(r"TIC[\s~\-:]*(?:ID[\s~:]*)?(\d{3,10})")
 TOI_RE = re.compile(r"TOI[\s~\-–]*(\d{2,5})(?:\.\d{2})?")
@@ -88,6 +106,39 @@ def t16():
         else:
             rows.append(pd.DataFrame(dict(tic=d["TICID"], period=np.nan, ra_deg=np.nan,
                                           dec_deg=np.nan, label="T16 single transit")))
+    return pd.concat(rows, ignore_index=True)
+
+
+def vizier():
+    rows = []
+    for table, tic_col, per_col, label in VIZIER_TABLES:
+        # tab-separated: column names, units and dashes, then the data
+        lines = [x for x in get(VIZIER.format(table, tic_col, per_col)).text.splitlines()
+                 if x.strip() and not x.startswith("#")]
+        d = pd.read_csv(io.StringIO("\n".join([lines[0]] + lines[3:])), sep="\t")
+        rows.append(pd.DataFrame(dict(tic=d[tic_col], period=d[per_col], ra_deg=np.nan, dec_deg=np.nan,
+                                      label=label)))
+    return pd.concat(rows, ignore_index=True)
+
+
+def exominer():
+    """TCEs that ExoMiner++ classifies as planet candidates, one row per TIC and period. The
+    catalogs (~220 MB) are downloaded once into data/known/exominer/."""
+    rows = []
+    for url, fname, label in EXOMINER:
+        f = K / "exominer" / fname
+        if not f.exists():
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(get(url).content)
+        d = pd.read_csv(f, comment="#", low_memory=False)
+        if "ExoMiner Score" in d:
+            d = d.rename(columns={"TIC ID": "target_id", "Orbital Period [day]": "tce_period",
+                                  "ExoMiner Score": "mean_score"})
+        d = d[d["mean_score"] > 0.5]
+        d = d.assign(p=d["tce_period"].round(3)).sort_values("mean_score", ascending=False)
+        d = d.drop_duplicates(["target_id", "p"])
+        rows.append(pd.DataFrame(dict(tic=d["target_id"], period=d["tce_period"], ra_deg=np.nan,
+                                      dec_deg=np.nan, label=label + " PC")))
     return pd.concat(rows, ignore_index=True)
 
 
@@ -207,6 +258,22 @@ def scan(aid):
     return res
 
 
+def add_source(aid):
+    """A paper's records plus those of its e-print (LaTeX and machine-readable tables). For papers
+    whose long candidate tables are published only in machine-readable form, which the HTML
+    rendering omits."""
+    res = scan(aid)
+    if "source" in str(res.get("kind")):
+        return res
+    r = get(EPRINT.format(aid))
+    time.sleep(DELAY)
+    if r is not None:
+        recs = [rec for name, text in source_text(r.content) for rec in records(name, text)]
+        res.update(ok=True, kind=f"{res.get('kind')}+source", records=res["records"] + mentions(recs))
+        (ARXIV / f"{aid.replace('/', '_')}.json").write_text(json.dumps(res))
+    return res
+
+
 def arxiv_rows(papers, toi_host):
     rows = []
     for p in papers:
@@ -227,6 +294,10 @@ def main():
     ap.add_argument("--max-papers", type=int, default=5000)
     ap.add_argument("--extra", default="2607.23781", help="comma-separated arXiv IDs to scan as well")
     ap.add_argument("--source", action="store_true", help="read papers without HTML from their source")
+    # M-dwarf candidate lists (Eschen & Kunimoto 2024; Kunimoto et al. 2025, LEO-Vetter; Gillis et
+    # al. 2026) whose full tables are not in the HTML
+    ap.add_argument("--with-source", default="2406.06688,2509.10619,2602.23364",
+                    help="comma-separated arXiv IDs to read from their e-print as well as the HTML")
     a = ap.parse_args()
     global SOURCE_FALLBACK
     SOURCE_FALLBACK = a.source
@@ -234,22 +305,26 @@ def main():
     toi = pd.read_csv(K / "toi.csv")
     toi_host = dict(zip(toi["TOI"].astype(int), toi["TIC ID"].astype(np.int64)))
     other = pd.DataFrame(OTHER, columns=["tic", "period", "label"]).assign(ra_deg=np.nan, dec_deg=np.nan)
-    tables = [raven(), t16(), other]
-    print("RAVEN + T16 rows:", sum(len(t) for t in tables), flush=True)
-    ids = list(dict.fromkeys(arxiv_ids(a.max_papers) + [x for x in a.extra.split(",") if x]))
+    tables = [raven(), t16(), exominer(), vizier(), other]
+    print("survey and catalog rows:", sum(len(t) for t in tables), flush=True)
+    with_source = {x for x in a.with_source.split(",") if x}
+    extra = [x for x in a.extra.split(",") if x] + sorted(with_source)
+    ids = list(dict.fromkeys(arxiv_ids(a.max_papers) + extra))
     print(len(ids), "arXiv papers", flush=True)
-    papers = []
+    papers, last_write = [], time.time()
     for i, aid in enumerate(ids, 1):
-        papers.append(scan(aid))
-        if i % 100 == 0 or i == len(ids):
-            # written as it goes, so the known-signal check can use a partial scan
+        papers.append(add_source(aid) if aid in with_source else scan(aid))
+        if i == len(ids) or time.time() - last_write > 300:
+            # written every 5 minutes, so the known-signal check can use a partial scan
+            last_write = time.time()
             lit = pd.concat(tables + [arxiv_rows(papers, toi_host)], ignore_index=True)
             for col in ("tic", "period", "ra_deg", "dec_deg"):
                 lit[col] = pd.to_numeric(lit[col], errors="coerce")
             lit = lit[np.isfinite(lit["tic"])]
             lit["tic"] = lit["tic"].astype(np.int64)
             lit.to_parquet(K / "literature.parquet")
-            n_read = sum(p.get("kind") in ("html", "source") or (p["ok"] and "kind" not in p) for p in papers)
+            n_read = sum(str(p.get("kind")).startswith(("html", "source")) or (p["ok"] and "kind" not in p)
+                         for p in papers)
             print(f"{i}/{len(ids)} papers: {len(lit)} rows on {lit.tic.nunique()} stars; "
                   f"{n_read} read, {sum(p.get('kind') == 'no_html' for p in papers)} without HTML",
                   flush=True)
