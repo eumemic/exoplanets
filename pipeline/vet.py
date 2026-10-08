@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from numba import njit
 
-from common import CAT, RESULTS, load_star
+from common import CAT, RESULTS, biweight_trend, load_star
 from known import check as known_check
 from search import INVERT, bin_sector, expected_duration, robust_std, rolling_std, toi_windows
 
@@ -27,8 +27,6 @@ warnings.filterwarnings("ignore")
 def detrend_masked(sectors, P, t0, dur, window, known=()):
     """Biweight trend fitted with in-transit points removed, then evaluated everywhere. Transits
     of `known` planets (TOIs masked by the search) are removed from the light curve first."""
-    from wotan import flatten
-
     out = []
     for s in sectors:
         o = np.argsort(s["time"])
@@ -43,8 +41,7 @@ def detrend_masked(sectors, P, t0, dur, window, known=()):
         oot = np.abs(ph) > 0.75 * dur
         if oot.sum() < 200:
             continue
-        _, trend = flatten(t[oot], f[oot], method="biweight", window_length=window,
-                           break_tolerance=0.5, edge_cutoff=0.0, return_trend=True)
+        trend = biweight_trend(t[oot], f[oot], window)
         good = np.isfinite(trend)
         if good.sum() < 100:
             continue
@@ -228,6 +225,9 @@ def _get_ses_mes(self, replace=False):
 
 
 FAST_LEO = os.environ.get("EXO_SLOW_LEO") != "1"
+# Vetting plots take ~1 s each and are only looked at for signals that (nearly) pass, so by default
+# they are drawn only for signals with at most this many LEO-Vetter failures (-1: always).
+PLOT_MAX_FAILS = 1
 
 
 def leo(tic, rank, t, r, e, P, t0, dur, star):
@@ -333,6 +333,11 @@ def plot(path, tic, row, sig, prep, P, t0, dur, per_sector, info):
     plt.close(fig)
 
 
+def _set_plot_max_fails(n):
+    global PLOT_MAX_FAILS
+    PLOT_MAX_FAILS = n
+
+
 def vet_one(args):
     sig, row, outdir = args
     if isinstance(sig.get("events"), str):
@@ -385,7 +390,8 @@ def vet_one(args):
             info["leo"], info["leo_fails"] = leo(tic, rank, t, r, e, P, t0, dur, star_dict(row))
         except Exception as ex:
             info["leo"], info["leo_fails"] = {}, [f"LEO error: {ex}"]
-        plot(f"{outdir}/tic{tic}_{rank}.png", tic, row, sig, prep, P, t0, dur, per_sector, info)
+        if PLOT_MAX_FAILS < 0 or len(info["leo_fails"]) <= PLOT_MAX_FAILS:
+            plot(f"{outdir}/tic{tic}_{rank}.png", tic, row, sig, prep, P, t0, dur, per_sector, info)
     except Exception as ex:
         info = dict(tic=tic, rank=rank, error=repr(ex))
     with open(f"{outdir}/tic{tic}_{rank}.json", "w") as fh:
@@ -399,6 +405,9 @@ def main():
     ap.add_argument("--procs", type=int, default=12)
     ap.add_argument("--out", default=str(RESULTS / "vet"))
     ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
+    ap.add_argument("--plot-max-fails", type=int, default=PLOT_MAX_FAILS,
+                    help="draw the vetting plot only for signals with at most this many LEO-Vetter "
+                         "failures (-1: always)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     stars = pd.read_parquet(a.stars).set_index("ID")
@@ -406,7 +415,7 @@ def main():
     todo = [(c.to_dict(), stars.loc[int(c.tic)].to_dict(), a.out) for _, c in cands.iterrows()
             if not os.path.exists(f"{a.out}/tic{int(c.tic)}_{int(c['rank'])}.json")]
     print(len(todo), "signals to vet", flush=True)
-    with Pool(a.procs) as pool:
+    with Pool(a.procs, initializer=_set_plot_max_fails, initargs=(a.plot_max_fails,)) as pool:
         for i, info in enumerate(pool.imap_unordered(vet_one, todo), 1):
             if i % 25 == 0 or i == len(todo):
                 print(f"{i}/{len(todo)}", flush=True)

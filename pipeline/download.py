@@ -1,7 +1,9 @@
 """Download the selected light curves per star and store compact arrays (one npz per star).
 
-Usage: python download.py [targets.txt] [--workers N]
+Usage: python download.py [targets.txt] [--workers N] [--threads M]
 Resumable: stars whose npz exists are skipped. FITS are parsed in memory, never stored.
+Each of N worker processes handles one star at a time and fetches its sectors with M threads.
+(Parsing holds Python's GIL, so a single process with many threads used only ~2 cores.)
 """
 import argparse
 import io
@@ -9,7 +11,7 @@ import os
 import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 
 import numpy as np
 import pandas as pd
@@ -18,6 +20,7 @@ import requests
 from common import CAT, mast_url, read_lc_fits, s3_url, tic_path
 
 _local = threading.local()
+THREADS = 4               # concurrent fetches per star
 
 
 def session():
@@ -53,8 +56,9 @@ def do_star(tic, rows):
     if out.exists():
         return tic, "skip"
     arrays, sectors = {}, []
-    for _, r in rows.iterrows():
-        blob = fetch(r.uri)
+    with ThreadPoolExecutor(min(THREADS, len(rows))) as fx:
+        blobs = list(fx.map(fetch, rows.uri))
+    for (_, r), blob in zip(rows.iterrows(), blobs):
         if blob is None:
             continue
         try:
@@ -79,18 +83,24 @@ def do_star(tic, rows):
     return tic, f"{len(sectors)} sectors"
 
 
+def _init(threads):
+    global THREADS
+    THREADS = threads
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("targets", nargs="?", help="file with one TIC per line (default: all in manifest)")
-    ap.add_argument("--workers", type=int, default=16)
+    ap.add_argument("--workers", type=int, default=16, help="worker processes")
+    ap.add_argument("--threads", type=int, default=THREADS, help="concurrent fetches per star")
     ap.add_argument("--manifest", default=str(CAT / "manifest.parquet"))
     a = ap.parse_args()
     m = pd.read_parquet(a.manifest)
     groups = dict(list(m.groupby("tic")))
     order = [int(x) for x in open(a.targets).read().split()] if a.targets else list(groups)
-    groups = [(tic, groups[tic]) for tic in order if tic in groups]
+    groups = [(tic, groups[tic]) for tic in order if tic in groups and not tic_path(tic).exists()]
     t0 = time.time()
-    with ThreadPoolExecutor(a.workers) as ex:
+    with ProcessPoolExecutor(a.workers, initializer=_init, initargs=(a.threads,)) as ex:
         futs = [ex.submit(do_star, tic, rows) for tic, rows in groups]
         for i, f in enumerate(as_completed(futs), 1):
             tic, status = f.result()

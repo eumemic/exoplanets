@@ -188,8 +188,10 @@ single-sector threshold while reaching 10–20σ when all sectors are combined.
    stars.
 2. **Light curves** (`index_products.py`, `download.py`): one product per star and sector,
    preferring SPOC 2-min PDCSAP, then TESS-SPOC FFI PDCSAP, then QLP. 73,226 light curves for the
-   K/M dwarfs and 54,189 for the TOI hosts.
-3. **Search** (`search.py`, `fastbls.py`): per-sector biweight detrending (wotan), Lomb–Scargle
+   K/M dwarfs and 54,189 for the TOI hosts. Each worker process fetches one star's sectors
+   concurrently and stores them as one compressed array file.
+3. **Search** (`search.py`, `fastbls.py`): per-sector biweight detrending (wotan, fitted to
+   10-minute means and interpolated; see Performance), Lomb–Scargle
    prewhitening of fast rotators (P_rot < 3 d), and box least squares over 0.5–30 d on a
    period grid set by each star's density. Three variants:
    - *coherent*: astropy BLS on the full-baseline grid (~17 s per star);
@@ -220,7 +222,8 @@ single-sector threshold while reaching 10–20σ when all sectors are combined.
 7. **Vetting** (`vet.py`): transit-masked re-detrending, the 13 false-alarm and 4 false-positive
    tests of [LEO-Vetter](https://github.com/mkunimoto/LEO-vetter) (Kunimoto et al. 2025),
    per-sector depth consistency, and old-vs-new sector detection. LEO-Vetter's per-cadence loop
-   is replaced by a compiled equivalent (same results, 2–5× faster vetting).
+   is replaced by a compiled equivalent (same results, 2–5× faster vetting). The diagnostic plot
+   is drawn only for signals with at most one LEO-Vetter failure (`--plot-max-fails`).
 8. **Pixel and field checks** (`followup.py`, automated in the update): TIC stars within 2.5′
    that could produce the depth as eclipsing binaries (`neighbors.py`), and FFI difference-image
    PRF centroids with [transit-diffImage](https://github.com/stevepur/transit-diffImage) in the
@@ -291,6 +294,23 @@ rejected by hand.
 - **Compiled LEO-Vetter loop.** On 6 test signals the compiled version gives the same pass/fail
   results and metrics equal to ~10⁻⁹ (`EXO_SLOW_LEO=1` runs the original).
 
+### Performance
+
+Measured on 200 random K/M dwarfs (median 5 sectors), with the stack-slide search:
+
+| Change | Speed-up | Effect on results |
+|---|---|---|
+| Download in worker processes instead of threads (parsing was serialized by Python's GIL) | 3× on 16 vCPUs, more on larger machines | identical files |
+| Stack-slide kernel: no division per trial box, branch-free shift-and-add, `floor` instead of `%` | 1.42× | same first signal and SNR on all 200 stars |
+| Biweight trend fitted to 10-minute means (`EXO_TREND_BIN=0` restores full cadence) | 1.16× (14× for the trend itself) | residuals differ by ~30 ppm on quiet stars, within the trend's own noise; 100 injections at SNR 10: 30 detections against 28 |
+| AWS Graviton4 (c8g) instead of Intel (c6i), same number of vCPUs | 2.6× | same first signal and SNR on all 200 stars; identical vetting results |
+
+Together a star costs about 5× less to search than before (200 stars in 70 s on a 16-core
+c8g.4xlarge). On Graviton, `batman-package` is built from source (`requirements.txt`). Splitting
+long continuous stretches into shorter blocks for stack-slide (`EXO_SEASON_MAX`) gained only 10%
+on this sample and changed some weak peaks, so it is off by default. Before these changes the
+stack-slide kernel took 81% of the search time and detrending 14%.
+
 ## Reproducing
 
 ```bash
@@ -337,7 +357,7 @@ EXO_INVERT=1 ../.venv/bin/python search.py sample.txt --method stack --out ../re
 # in progress (results not yet published): faint M dwarfs
 ../.venv/bin/python fetch_targets.py --tmin 11.5 --tmax 13.5 --rmax 0.6 --step 0.02 \
     --out ../data/catalogs/tic_faint_mdwarfs.parquet && ../.venv/bin/python build_faint_targets.py
-../.venv/bin/python ads_check.py candidates.csv ads.csv                 # needs an ADS API token
+../.venv/bin/python ads_check.py candidates.csv ads.csv                 # NASA ADS + Zenodo; ADS token
 EXO_DATA_SOURCE=s3 ../.venv/bin/python download.py ...                  # read from the AWS mirror
 ```
 

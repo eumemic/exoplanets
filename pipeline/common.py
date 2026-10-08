@@ -113,3 +113,39 @@ def load_star(tic: int):
                         cx=z[k + "cx"], cy=z[k + "cy"], bkg=z[k + "bkg"],
                         exptime=float(z[k + "exptime"])))
     return out
+
+
+# Cadence (minutes) of the means the biweight trend is fitted to; 0 fits every cadence.
+# EXO_TREND_BIN overrides it for tests.
+import os as _os
+TREND_BIN_MIN = float(_os.environ.get("EXO_TREND_BIN", "10"))
+
+
+def biweight_trend(t, f, window, bin_min=None):
+    """wotan biweight trend (window in days, segments split at gaps > 0.5 d) evaluated at t (sorted).
+    When the cadence is finer than bin_min minutes, the trend is fitted to bin_min-minute means
+    and interpolated within each segment: it varies on the window scale (0.5-1 d), and fitting
+    ~5x fewer points with ~5x fewer points per window is much faster than fitting every cadence."""
+    from wotan import flatten
+
+    bin_min = TREND_BIN_MIN if bin_min is None else bin_min
+    if len(t) < 2 or not bin_min or np.median(np.diff(t)) > 0.5 * bin_min / 1440:
+        _, trend = flatten(t, f, method="biweight", window_length=window, break_tolerance=0.5,
+                           edge_cutoff=0.0, return_trend=True)
+        return trend
+    w = bin_min / 1440
+    k = np.floor((t - t[0]) / w).astype(np.int64)
+    _, idx, cnt = np.unique(k, return_index=True, return_counts=True)
+    tb = np.add.reduceat(t, idx) / cnt
+    fb = np.add.reduceat(f, idx) / cnt
+    _, trb = flatten(tb, fb, method="biweight", window_length=window, break_tolerance=0.5,
+                     edge_cutoff=0.0, return_trend=True)
+    out = np.full(len(t), np.nan)
+    seg_b = np.concatenate([[0], np.cumsum(np.diff(tb) > 0.5)])       # same breaks as wotan
+    seg_t = np.repeat(seg_b, cnt)
+    for s in np.unique(seg_b):
+        ib, it = seg_b == s, seg_t == s
+        g = ib & np.isfinite(trb)
+        if g.sum() >= 2:
+            out[it] = np.interp(t[it], tb[g], trb[g])
+    return out

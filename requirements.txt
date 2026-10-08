@@ -8,7 +8,9 @@ astropy==8.0.1
 astropy-iers-data==0.2026.10.5.1.0.7
 astroquery==0.4.11
 attrs==26.1.0
-batman-package==2.5.3
+batman-package==2.5.3 ; platform_machine != "aarch64"
+# no Linux ARM wheel on PyPI: on Graviton, build it from the GitHub source (package version 2.5.3)
+batman-package @ git+https://github.com/lkreidberg/batman.git@3c69c4381d9785cd4d06e898c2cdf83b22ffb365 ; platform_machine == "aarch64"
 beautifulsoup4==4.15.0
 bokeh==3.10.0
 botocore==1.43.106

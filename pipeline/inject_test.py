@@ -2,7 +2,9 @@
 synthetic transits injected into real light curves.
 
 Usage: python inject_test.py N_STARS [--snr 10] [--procs 10] [--methods coherent,semi,stack]
-Writes results/inject_snr<SNR>_n<N>.csv (one row per star and method).
+                              [--pick stars.txt] [--tag NAME]
+Writes results/inject_snr<SNR>_n<N>[_NAME].csv (one row per star and method). Stars are drawn from
+the K/M search results, or from --pick.
 """
 import argparse
 import json
@@ -62,10 +64,13 @@ def main():
     ap.add_argument("--snr", type=float, default=10)
     ap.add_argument("--procs", type=int, default=10)
     ap.add_argument("--methods", default="coherent,semi,stack")
+    ap.add_argument("--pick", help="file of TIC IDs to draw the stars from")
+    ap.add_argument("--tag", default="")
     a = ap.parse_args()
     methods = a.methods.split(",")
     stars = pd.read_parquet(CAT / "targets.parquet").set_index("ID")
-    done = sorted(int(f.stem) for f in (RESULTS / "search").glob("*.json"))
+    done = (sorted(int(x) for x in open(a.pick).read().split()) if a.pick
+            else sorted(int(f.stem) for f in (RESULTS / "search").glob("*.json")))
     random.seed(1)
     pick = random.sample(done, a.n)
     jobs = []
@@ -77,7 +82,7 @@ def main():
         rows = pool.map(run, jobs, chunksize=1)
     df = pd.DataFrame(rows)
     df["detected"] = df["hit"] & (df["rec_snr"] >= 9)
-    df.to_csv(RESULTS / f"inject_snr{a.snr:g}_n{a.n}.csv", index=False)
+    df.to_csv(RESULTS / f"inject_snr{a.snr:g}_n{a.n}{'_' + a.tag if a.tag else ''}.csv", index=False)
     print(df.groupby("method").agg(recovered=("hit", "mean"), detected_snr9=("detected", "mean"),
                                    n=("hit", "size"), median_runtime=("runtime", "median")))
     w = df.pivot_table(index=["tic", "P"], columns="method", values="detected").dropna()

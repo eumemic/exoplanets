@@ -17,7 +17,7 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
-from common import CAT, DATA, RESULTS, load_star, tic_path
+from common import CAT, DATA, RESULTS, biweight_trend, load_star, tic_path
 
 warnings.filterwarnings("ignore")
 
@@ -28,6 +28,9 @@ MAX_SIGNALS = 3
 SNR_CONTINUE = 7.0        # keep iterating while the last signal is at least this strong
 SEMICOHERENT = True       # per-season scan + coherent refinement of the top peaks (fastbls.py)
 STACK = False             # phase-coherent stack-slide search (fastbls.stackslide); overrides SEMICOHERENT
+# Longest stretch of continuous data folded as one block by stack-slide (days; 0 = whole seasons).
+# Shorter blocks mean fewer coarse frequencies to fold all the data at (EXO_SEASON_MAX for tests).
+SEASON_MAX = float(os.environ.get("EXO_SEASON_MAX", "0")) or None
 # False-alarm calibration: with EXO_INVERT=1 the detrended residuals are negated, so any dip
 # the pipeline finds is a false alarm (real transits become bumps and are not searched).
 INVERT = os.environ.get("EXO_INVERT") == "1"
@@ -106,8 +109,6 @@ def prewhiten(t, f, pvar, nharm=4):
 def prepare(sectors, window):
     """Detrend each sector, clip flares, attach empirical errors. Spot modulation faster than
     ~3 d survives a 0.5-1 d biweight, so such sectors are prewhitened first."""
-    from wotan import flatten
-
     out = []
     for s in sectors:
         t, f = s["time"], s["flux"]
@@ -117,9 +118,7 @@ def prepare(sectors, window):
         fast = bool(np.isfinite(prot) and prot < 3.0 and var_snr > 3.0)
         if fast:
             f = prewhiten(t, f, prot)
-        flat = flatten(t, f, method="biweight", window_length=window,
-                       break_tolerance=0.5, edge_cutoff=0.0)
-        r = flat - 1.0
+        r = f / biweight_trend(t, f, window) - 1.0
         ok = np.isfinite(r)
         if ok.sum() < 200:
             continue
@@ -231,7 +230,8 @@ def stackslide_peak(t, y, dy, rho, pmin, pmax, os_coarse=2.0):
 
     if len(t) < 100:
         return None, 0.0, 0, 0.0
-    span_season = max(10.0, max(t[i].max() - t[i].min() for i in seasons(t) if len(i)))
+    span_season = max(10.0, max(t[i].max() - t[i].min()
+                                for i in seasons(t, max_len=SEASON_MAX) if len(i)))
     span_total = t.max() - t.min()
     periods_c = period_grid(span_season, rho, pmin, pmax, oversample=os_coarse)
     fc = 1.0 / periods_c
@@ -244,7 +244,7 @@ def stackslide_peak(t, y, dy, rho, pmin, pmax, os_coarse=2.0):
     shortest = np.array([durs[(durs >= a) & (durs <= b)].min() if np.any((durs >= a) & (durs <= b))
                          else durs[0] for a, b in zip(dlo, dhi)])
     binw = shortest / 3
-    freqs, power, _, _ = stackslide(t, y, dy, fc, dfc, nfine, binw, durs, dlo, dhi)
+    freqs, power, _, _ = stackslide(t, y, dy, fc, dfc, nfine, binw, durs, dlo, dhi, max_len=SEASON_MAX)
     periods = 1.0 / freqs
     ok = (periods >= pmin) & (periods <= pmax)
     periods, power = periods[ok], power[ok]
