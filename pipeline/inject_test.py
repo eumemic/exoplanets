@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 import search
-from common import CAT, RESULTS, load_star
+from common import CAT, RESULTS, load_star, tic_path
 
 
 def inject(sectors, P, t0, depth, dur):
@@ -72,6 +72,7 @@ def main():
     stars = pd.read_parquet(a.stars).set_index("ID")
     done = (sorted(int(x) for x in open(a.pick).read().split()) if a.pick
             else sorted(int(f.stem) for f in (RESULTS / "search").glob("*.json")))
+    done = [t for t in done if tic_path(t).exists()]          # stars whose download failed have no file
     random.seed(1)
     pick = random.sample(done, a.n)
     jobs = []
