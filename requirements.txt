@@ -4,6 +4,7 @@ aiohttp==3.14.4
 aioitertools==0.13.0
 aiosignal==1.4.0
 asteval==1.0.10
+astrocut==1.4.0
 astropy==8.0.1
 astropy-iers-data==0.2026.10.5.1.0.7
 astroquery==0.4.11
