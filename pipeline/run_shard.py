@@ -1,6 +1,7 @@
 """Search one shard of a large target list in chunks, so light curves never pile up on disk: for
 each chunk, download, run the stack-slide search, then delete the light curves of stars with no
-signal at SNR >= 7 (the rest are kept for vetting). Resumable: searched stars are skipped.
+signal at SNR >= 9 (the vetting threshold; the rest are kept for vetting). Resumable: searched
+stars are skipped.
 
 Usage: python run_shard.py TARGETS.parquet MANIFEST.parquet --shard K --nshards N --out DIR
                            [--chunk 10000] [--procs 63]
@@ -30,7 +31,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--chunk", type=int, default=10000)
     ap.add_argument("--procs", type=int, default=(os.cpu_count() or 8) - 1)
-    ap.add_argument("--keep-snr", type=float, default=7.0)
+    ap.add_argument("--keep-snr", type=float, default=9.0)
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
