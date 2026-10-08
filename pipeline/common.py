@@ -13,7 +13,7 @@ RESULTS = ROOT / "results"
 SPOC_MULTISECTOR_LAST = 96
 
 # Per-sector product preference: lower is better.
-PROV_RANK = {"SPOC": 0, "TESS-SPOC": 1, "QLP": 2}
+PROV_RANK = {"SPOC": 0, "TESS-SPOC": 1, "QLP": 2, "TGLC": 3}
 
 # SPOC / TESS-SPOC quality bits treated as bad: lightkurve's default bitmask
 # (17087) plus SPOC's scattered-light exclude (8192).
@@ -56,11 +56,33 @@ def mast_url(uri: str) -> str:
     return f"https://mast.stsci.edu/api/v0.1/Download/file?uri={uri}"
 
 
+def read_tglc(h):
+    """TGLC light curve (Han & Brandt 2023; Gaia-informed PSF photometry of FFIs, T <= 16). The
+    calibrated PSF flux is used, as recommended for faint stars. There are no flux errors, so each
+    sector gets a constant error from its point-to-point scatter (the search and vetting estimate
+    the noise empirically anyway)."""
+    d = h[1].data
+    t = np.asarray(d["time"], float)
+    f = np.asarray(d["cal_psf_flux"], float)
+    q = np.asarray(d["TESS_flags"]).astype(np.int64) | np.asarray(d["TGLC_flags"]).astype(np.int64)
+    good = (q == 0) & np.isfinite(t) & np.isfinite(f)
+    med = np.nanmedian(f[good]) if good.any() else np.nan
+    fn = f[good] / med
+    err = 1.4826 * np.nanmedian(np.abs(np.diff(fn) - np.nanmedian(np.diff(fn)))) / np.sqrt(2) if good.sum() > 2 else np.nan
+    zeros = np.zeros(good.sum(), np.float32)
+    return dict(time=t[good], flux=fn.astype(np.float32), flux_err=np.full(good.sum(), err, np.float32),
+                cx=zeros, cy=zeros, bkg=np.asarray(d["background"], float)[good].astype(np.float32),
+                camera=int(h[0].header.get("CAMERA", -1) or -1), ccd=int(h[0].header.get("CCD", -1) or -1),
+                exptime=float(np.nanmedian(np.diff(t[good]))) * 86400.0 if good.sum() > 2 else np.nan)
+
+
 def read_lc_fits(path, provenance):
-    """Return dict of clean arrays from a SPOC/TESS-SPOC/QLP light-curve FITS."""
+    """Return dict of clean arrays from a SPOC/TESS-SPOC/QLP/TGLC light-curve FITS."""
     from astropy.io import fits
 
     with fits.open(path, memmap=False) as h:
+        if provenance == "TGLC":
+            return read_tglc(h)
         d = h[1].data
         hdr0 = h[0].header
         cols = d.columns.names
