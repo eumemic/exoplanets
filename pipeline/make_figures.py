@@ -139,7 +139,8 @@ def update_grid(csv="candidates_2026-10-08.csv", out="candidates_update_grid.png
     from common import DATA
 
     STARS = pd.concat([STARS] + [pd.read_parquet(CAT / f).set_index("ID")
-                                 for f in ("toi_hosts.parquet", "tce_hosts.parquet")])
+                                 for f in ("toi_hosts.parquet", "tce_hosts.parquet", "faint_targets.parquet",
+                                           "allsky.parquet") if (CAT / f).exists()])
     STARS = STARS[~STARS.index.duplicated()]
     pub = pd.concat([pd.read_csv(f, usecols=["TIC", "P_d", "T0_BJD", "T14_h"])
                      for f in sorted((ROOT / "results_public").glob("candidates*.csv"))])

@@ -59,6 +59,11 @@ SOURCE_FALLBACK = False
 VIZIER = "https://vizier.cds.unistra.fr/viz-bin/asu-tsv?-source={}&-out.max=unlimited&-out={},{}"
 VIZIER_TABLES = [("J/AJ/170/280/table3", "TIC", "Per", "Kunimoto et al. 2025, LEO-Vetter M dwarfs")]
 
+# Pages of other independent searches that post candidates outside journals and Zenodo, read
+# section by section (a heading and the text under it) for TIC IDs and periods.
+WEB_PAGES = [("https://raw.githubusercontent.com/Comdex4/tess-transit-hunter/HEAD/docs/findings.md",
+              "Comdex4 tess-transit-hunter (GitHub)")]
+
 # Reports outside arXiv and the survey tables: (tic, period, label). Eschen et al. (2024, MNRAS 531,
 # 5053) list their nine M-dwarf candidates without periods outside the paper (Zenodo 13112476).
 EK24 = "Eschen et al. 2024, MNRAS 531, 5053"
@@ -276,6 +281,19 @@ def add_source(aid):
     return res
 
 
+def web_rows(toi_host):
+    rows = []
+    for url, label in WEB_PAGES:
+        r = get(url, retries=3)
+        if r is None:
+            print("could not read", url, flush=True)
+            continue
+        sections = re.split(r"\n(?=#+ )", r.text)
+        papers = [dict(id=label, records=mentions([html.unescape(sec) for sec in sections]))]
+        rows.append(arxiv_rows(papers, toi_host).assign(label=label))
+    return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+
+
 def arxiv_rows(papers, toi_host):
     rows = []
     for p in papers:
@@ -307,7 +325,7 @@ def main():
     toi = pd.read_csv(K / "toi.csv")
     toi_host = dict(zip(toi["TOI"].astype(int), toi["TIC ID"].astype(np.int64)))
     other = pd.DataFrame(OTHER, columns=["tic", "period", "label"]).assign(ra_deg=np.nan, dec_deg=np.nan)
-    tables = [raven(), t16(), exominer(), vizier(), other]
+    tables = [raven(), t16(), exominer(), vizier(), web_rows(toi_host), other]
     print("survey and catalog rows:", sum(len(t) for t in tables), flush=True)
     with_source = {x for x in a.with_source.split(",") if x}
     extra = [x for x in a.extra.split(",") if x] + sorted(with_source)

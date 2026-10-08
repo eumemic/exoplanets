@@ -18,6 +18,10 @@ Objects of Interest (TOIs) after masking the known TOIs.
   Zenodo days earlier. They include possible second planets around the confirmed-planet hosts
   TOI-669 (matching a weak radial-velocity signal) and TOI-5997, a 50.3 d signal on TOI-4566, and a
   sub-Earth-sized signal on GJ 774, an M-dwarf pair 13 pc away.
+- **Update 3 (8 October 2026):** 18 more from a search of 22,448 fainter M dwarfs
+  (11.5 < T ≤ 12.5), including GJ 3514, an M4.5 dwarf 17.6 pc away, and a star with two signals.
+  The same search found two of our earlier candidates again, and one signal that another
+  independent project had posted on GitHub three days earlier.
 
 **These are planet candidates, not confirmed planets.** Each passes automated and pixel-level
 vetting, but TESS alone cannot rule out every false-positive scenario. Ground-based photometry,
@@ -165,6 +169,53 @@ Algol-type eclipsing binary.
 | … none of these, MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 8 | 0 | 1 |
 
 The TCE re-check's last row includes TIC 235005571 and the two signals reported on Zenodo.
+
+### Added 8 October 2026: faint M dwarfs
+
+A stack-slide search of 22,448 M dwarfs (Teff ≤ 3,900 K, R ≤ 0.6 R☉) with 11.5 < T ≤ 12.5, fainter
+than the first K/M sample and mostly observed only in full-frame images (TESS-SPOC and QLP light
+curves, Sectors 1–104), vetted and checked at the pixel level in the same way. It recovered 346
+signals already known as TOIs, planets or TCEs. 18 signals pass every check and have no prior
+report; TIC 165827520 (2.00 d) and TIC 383313006 (4.25 d), from our update 2 list, were found
+again; and TIC 417732194 (G 249-11, 5.307 d) had been posted on 5 October by another independent
+project ([tess-transit-hunter](https://comdex4.github.io/tess-transit-hunter/findings.html)).
+
+![Faint M-dwarf candidates](figures/candidates_update3_grid.png)
+
+| TIC | Period (d) | Radius (R⊕) | Host (Teff, T mag, distance) | Notes |
+|---|---|---|---|---|
+| 100624547 | 1.922279 | 8.58 | 3541 K, 12.3, 77 pc | grazing (b ≈ 1), so the radius is poorly constrained (5.7–13.5 R⊕); crowded field (TIC contamination 0.32) |
+| 308023474 | 2.074868 | 1.24 | 3687 K, 12.1, 62 pc | G 203-64 |
+| 38017042 | 2.695824 | 1.44 | 3496 K, 12.4, 54 pc | two signals on this star (2.70 d and 4.14 d) |
+| 355815567 | 3.519453 | 0.89 | 3149 K, 12.3, 18 pc | GJ 3514, an M4.5 dwarf 17.6 pc away |
+| 38017042 | 4.141260 | 1.64 | 3496 K, 12.4, 54 pc | two signals on this star (2.70 d and 4.14 d) |
+| 59214833 | 4.145226 | 2.00 | 3587 K, 12.2, 58 pc | crowded field (TIC contamination 0.25) |
+| 137609439 | 4.294043 | 2.25 | 3339 K, 12.4, 61 pc | LSPM J1004+8023 |
+| 102034645 | 4.760759 | 1.67 | 3671 K, 11.6, 56 pc | the radio galaxy ESO 243-29, 25" away and not in the TIC, adds ~39% of the flux, so the radius is underestimated |
+| 333114636 | 7.510269 | 2.43 | 3894 K, 11.9, 87 pc | LSPM J0044+1748 |
+| 386518973 | 9.159667 | 1.94 | 3467 K, 12.5, 55 pc | – |
+| 380095420 | 9.574513 | 1.97 | 3745 K, 11.9, 77 pc | chromospherically active |
+| 459222850 | 9.810046 | 2.03 | 3752 K, 12.3, 99 pc | – |
+| 118244692 | 10.249236 | 2.16 | 3509 K, 12.2, 56 pc | H-alpha emission |
+| 435924571 | 11.422839 | 2.60 | 3759 K, 12.4, 94 pc | HG 7-176 |
+| 435255286 | 13.726825 | 2.10 | 3477 K, 12.2, 57 pc | G 5-38 |
+| 117798466 | 14.286705 | 1.80 | 3653 K, 11.9, 67 pc | possibly young (space motion matches the AB Doradus moving group) |
+| 32154846 | 16.107661 | 1.62 | 3816 K, 12.4, 102 pc | in the southern continuous viewing zone |
+| 193718989 | 24.532923 | 2.58 | 3745 K, 12.2, 86 pc | – |
+
+| Stage | Faint M dwarfs, 11.5 < T ≤ 12.5 |
+|---|---|
+| Stars searched | 22,448 |
+| Signals found | 38,545 |
+| Pass pre-filters | 2,281 |
+| Match a known planet, TOI, CTOI or TCE | 346 (96 pass every LEO-Vetter test) |
+| Reported elsewhere (literature check) | 8 |
+| Match a neighbour's known signal | 18 |
+| Unmatched and passing every LEO-Vetter test | 47 |
+| … centroid more than 15″ from the target | 14 |
+| … a TIC star within 15″ could produce the dip | 9 |
+| … no FFI difference image | 2 |
+| … none of these, MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 21 (18 new, 2 ours, 1 on GitHub) |
 
 ### Predicted transit times
 
@@ -354,7 +405,7 @@ EXO_INVERT=1 ../.venv/bin/python search.py sample.txt --method stack --out ../re
 ./triage_tce.sh                             # re-measure them with later sectors, vet, follow up
 ../.venv/bin/python search.py stars.txt --method stack --pmin 20 --pmax 100 \
     --premask ../results/search --out ../results/search_long      # 20-100 d, earlier signals masked
-# in progress (results not yet published): faint M dwarfs
+# update 3 and in progress: faint M dwarfs (tier 1 published, tier 2 running)
 ../.venv/bin/python fetch_targets.py --tmin 11.5 --tmax 13.5 --rmax 0.6 --step 0.02 \
     --out ../data/catalogs/tic_faint_mdwarfs.parquet && ../.venv/bin/python build_faint_targets.py
 ../.venv/bin/python ads_check.py candidates.csv ads.csv                 # NASA ADS + Zenodo; ADS token

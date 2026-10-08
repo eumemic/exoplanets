@@ -52,3 +52,16 @@ The 8 candidates from the TCE re-check and the 20–100 d search, and TIC 235005
 | Web, Zenodo, ExoFOP target pages and SIMBAD for each star and host TOI (2026-10-08) | TIC 300381700's 3.145 d signal was reported by Tovar Contreras ([Zenodo 23134068](https://zenodo.org/records/23134068), 2026-10-04) and TIC 257484419's 4.353 d signal by Ozturk ([Zenodo 23118499](https://zenodo.org/records/23118499), 2026-10-03), which does not mention the 18.06 d signal: both are independent recoveries. For TOI-669, Akana Murphy et al. (2023, AJ 166, 153, §10.4) see a weak radial-velocity signal at 9.61 ± 0.52 d (ΔAIC < 1, not adopted), which our 9.529 d transit signal matches. TIC 351339274 is GJ 774 A; its companion GJ 774 B (TIC 351339273, ΔT = 1.18) is 17.6″ away. TIC 105506140 is HD 85706; SPOC's TCEs on it have the same epoch at 0.70663 d. No other reports |
 
 Not checked automatically: Zenodo, where two of these signals had been posted days earlier (found by a manual search), and SPOC's TOI vetting of the Sectors 1–96 TCEs, which has not been released.
+
+# Novelty check for update 3 (2026-10-08)
+
+The 21 faint M-dwarf signals that pass every check.
+
+| Source | Result |
+|---|---|
+| ExoFOP TOI and CTOI lists, NASA Exoplanet Archive, SPOC TCEs, ExoMiner++, RAVEN, T16, LEO-Vetter M dwarfs, Eschen et al. (2024), arXiv scan | No entry at any candidate period |
+| This project's published candidates | TIC 165827520 (2.0045 d) and TIC 383313006 (4.2518 d) are update 2 candidates found again |
+| NASA ADS full text and Zenodo (`ads_check.py`) | No matches (TIC 165827520 matches papers on TOI-3494 by period string only) |
+| ExoFOP target pages, SIMBAD, web search, Planet Hunters TESS Talk, TESS and Gaia DR3 eclipsing-binary tables, VizieR position search (2026-10-08) | TIC 417732194 (G 249-11) at 5.307419 d was posted on 5 October by the tess-transit-hunter project (GitHub, Comdex4/tess-transit-hunter); it is now read by `literature.py`. No reports for the other 18. TIC 102034645: the radio galaxy ESO 243-29 is 25″ away and adds ~39% of the flux. TIC 117798466: space motion matches the AB Doradus moving group. TIC 355815567 is GJ 3514 (17.6 pc) |
+
+Not checked automatically: GitHub repositories (code search had not indexed the one above).
