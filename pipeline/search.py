@@ -1,8 +1,10 @@
 """Multi-sector transit search: clean, detrend, bin, BLS on a stellar-density-aware grid.
 
 Usage: python search.py targets.txt [--procs N] [--out results/search] [--mask-tois]
+                         [--pmin 0.5] [--pmax 30] [--premask results/search]
 Writes one JSON per star with up to MAX_SIGNALS signals (iterative masking). With --mask-tois,
-every TOI on the star is masked before the search, so it looks for additional planets.
+every TOI on the star is masked before the search, so it looks for additional planets; with
+--premask, so is every signal (SNR >= 7) an earlier search found on the star.
 """
 import argparse
 import json
@@ -368,6 +370,7 @@ def search_star(args):
 def _search_star(args):
     tic, star = args[:2]
     tois = args[2] if len(args) > 2 else []
+    premask = args[3] if len(args) > 3 else []
     t_start = time.time()
     try:
         sectors = load_star(tic)
@@ -420,6 +423,12 @@ def _search_star(args):
             m &= ~toi_windows(arr_t, toi, *(fit or (None, None, None)))
         result["masked_tois"].append(dict(toi, refit=fit is not None, P_fit=fit[0] if fit else None,
                                           t0_fit=fit[1] if fit else None, dur_fit=fit[2] if fit else None))
+    # signals found by an earlier search of the same star (--premask), so a longer-period search
+    # does not rediscover them or combine their transits
+    for P, t0, dur in premask:
+        for arr_t, m in zip((tc, tf, tu), masks):
+            m &= np.abs(((arr_t - t0 + 0.5 * P) % P) - 0.5 * P) > dur
+    result["premasked"] = [list(x) for x in premask]
     result["frac_masked"] = float(1 - masks[2].mean())
     for k in range(MAX_SIGNALS):
         mc, mf, mu = masks
@@ -476,11 +485,21 @@ def star_tois(tic, toi_table):
                  dur_h=float(r["Duration (hours)"])) for _, r in rows.iterrows()]
 
 
-def _set_method(semi, max_signals=3, stack=False):
-    global SEMICOHERENT, MAX_SIGNALS, STACK
+def _set_method(semi, max_signals=3, stack=False, pmin=0.5, pmax=30.0):
+    global SEMICOHERENT, MAX_SIGNALS, STACK, P_MIN, P_MAX
     SEMICOHERENT = semi
     MAX_SIGNALS = max_signals
     STACK = stack
+    P_MIN, P_MAX = pmin, pmax
+
+
+def previous_signals(path, snr_min=7.0):
+    """(P, t0, duration) of the signals in an earlier search result for the same star."""
+    if not os.path.exists(path):
+        return []
+    r = json.load(open(path))
+    return [(s["period"], s["t0"], s["duration_h"] / 24) for s in r.get("signals", [])
+            if s["bls_snr"] >= snr_min]
 
 
 def main():
@@ -492,6 +511,9 @@ def main():
     ap.add_argument("--method", choices=("semi", "coherent", "stack"), default="semi")
     ap.add_argument("--mask-tois", action="store_true", help="mask every TOI on the star first")
     ap.add_argument("--max-signals", type=int, default=MAX_SIGNALS)
+    ap.add_argument("--pmin", type=float, default=P_MIN)
+    ap.add_argument("--pmax", type=float, default=P_MAX)
+    ap.add_argument("--premask", help="directory of an earlier search; its signals are masked first")
     a = ap.parse_args()
     global SEMICOHERENT, STACK
     SEMICOHERENT = a.method == "semi"
@@ -500,13 +522,15 @@ def main():
     stars = pd.read_parquet(a.stars).set_index("ID")
     tics = [int(x) for x in open(a.targets).read().split()]
     toi_table = pd.read_csv(DATA / "known" / "toi.csv") if a.mask_tois else None
-    todo = [(tic, stars.loc[tic].to_dict(), star_tois(tic, toi_table) if a.mask_tois else [])
+    todo = [(tic, stars.loc[tic].to_dict(), star_tois(tic, toi_table) if a.mask_tois else [],
+             previous_signals(f"{a.premask}/{tic}.json") if a.premask else [])
             for tic in tics
             if not os.path.exists(f"{a.out}/{tic}.json") and tic in stars.index
             and tic_path(tic).exists()]
     print(f"{len(todo)} stars to search", flush=True)
     t0 = time.time()
-    with Pool(a.procs, initializer=_set_method, initargs=(SEMICOHERENT, a.max_signals, STACK)) as pool:
+    with Pool(a.procs, initializer=_set_method,
+              initargs=(SEMICOHERENT, a.max_signals, STACK, a.pmin, a.pmax)) as pool:
         for i, (tic, res) in enumerate(pool.imap_unordered(search_star, todo, chunksize=1), 1):
             with open(f"{a.out}/{tic}.json", "w") as fh:
                 json.dump(res, fh, default=float)

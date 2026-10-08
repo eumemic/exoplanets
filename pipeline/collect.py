@@ -22,6 +22,8 @@ def main():
     ap.add_argument("--out", default=str(RESULTS / "cands.csv"))
     ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
     ap.add_argument("--signals", default=str(RESULTS / "signals.parquet"))
+    ap.add_argument("--ignore-tce", action="store_true",
+                    help="do not count SPOC TCE matches as known (for signals that came from TCEs)")
     ap.add_argument("--dwarfs", action="store_true",
                     help="keep only stars with Teff < 6500 K, R < 1.5 Rsun and logg > 4 (or no logg)")
     a = ap.parse_args()
@@ -58,7 +60,8 @@ def main():
         c = c[c["tic"].isin(stars.index[ok])]
     status, detail = [], []
     for _, r in c.iterrows():
-        k = known_check(int(r.tic), r.period, float(stars.loc[r.tic, "ra"]), float(stars.loc[r.tic, "dec"]))
+        k = known_check(int(r.tic), r.period, float(stars.loc[r.tic, "ra"]), float(stars.loc[r.tic, "dec"]),
+                        skip=("tce",) if a.ignore_tce else ())
         exofop = [m for m in k["same_star_period_match"] if not m.startswith("literature:")]
         if exofop:
             status.append("known"); detail.append(exofop[0])

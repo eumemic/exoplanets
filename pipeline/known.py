@@ -62,10 +62,13 @@ def period_match(p1, p2, tol=0.003, harmonics=HARMONICS):
     return None
 
 
-def check(tic, period, ra, dec, radius_arcmin=2.5):
-    """Known objects on this TIC (any period) and period matches on neighbours."""
+def check(tic, period, ra, dec, radius_arcmin=2.5, skip=()):
+    """Known objects on this TIC (any period) and period matches on neighbours; tables named in
+    `skip` (e.g. "tce" when the signals come from TCEs) are ignored."""
     res = {"same_star": [], "same_star_period_match": [], "neighbour_period_match": []}
     for name, d in tables().items():
+        if name in skip:
+            continue
         harm = HARMONICS_LIT if name == "literature" else HARMONICS
         same = d[d["tic"] == tic]
         for _, r in same.iterrows():

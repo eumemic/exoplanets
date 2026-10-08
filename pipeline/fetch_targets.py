@@ -1,4 +1,9 @@
-"""Fetch TIC 8.2 small dwarfs (R <= 0.75 Rsun, T <= 11.5) from MAST in Tmag slices."""
+"""Fetch TIC 8.2 small dwarfs from MAST in Tmag slices.
+
+Usage: python fetch_targets.py                         (R <= 0.75 Rsun, T <= 11.5: the first search)
+       python fetch_targets.py --tmin 11.5 --tmax 13.5 --rmax 0.6 --step 0.02 --out faint.parquet
+"""
+import argparse
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -13,11 +18,14 @@ KEEP = ["ID", "GAIA", "ra", "dec", "pmRA", "pmDEC", "plx", "eclat", "Tmag", "Vma
         "rho", "d", "lumclass", "contratio", "numcont", "disposition", "duplicate_id", "objType"]
 
 
+RMAX = 0.75
+
+
 def fetch(lo_hi):
     lo, hi = lo_hi
     for attempt in range(4):
         try:
-            r = Catalogs.query_criteria(catalog="Tic", Tmag=[lo, hi], rad=[0.08, 0.75],
+            r = Catalogs.query_criteria(catalog="Tic", Tmag=[lo, hi], rad=[0.08, RMAX],
                                         lumclass="DWARF", objType="STAR").to_pandas()
             return r[[c for c in KEEP if c in r.columns]]
         except Exception as e:  # MAST is flaky under load; retry
@@ -25,7 +33,19 @@ def fetch(lo_hi):
     raise RuntimeError(f"failed {lo}-{hi}")
 
 
-edges = np.round(np.concatenate([[-2.0, 7.0, 8.0], np.arange(8.5, 11.5001, 0.1)]), 2)
+ap = argparse.ArgumentParser()
+ap.add_argument("--tmin", type=float)
+ap.add_argument("--tmax", type=float)
+ap.add_argument("--rmax", type=float, default=0.75)
+ap.add_argument("--step", type=float, default=0.1)
+ap.add_argument("--out", default=str(OUT))
+a = ap.parse_args()
+RMAX = a.rmax
+OUT = Path(a.out)
+if a.tmin is None:
+    edges = np.round(np.concatenate([[-2.0, 7.0, 8.0], np.arange(8.5, 11.5001, 0.1)]), 2)
+else:
+    edges = np.round(np.arange(a.tmin, a.tmax + 1e-6, a.step), 3)
 slices = list(zip(edges[:-1], edges[1:]))
 with ThreadPoolExecutor(6) as ex:
     parts = list(ex.map(fetch, slices))
