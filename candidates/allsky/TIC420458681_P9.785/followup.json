@@ -1,0 +1,1 @@
+{"tic": 420458681, "rank": 1, "period": 9.784687988352848, "depth_ppm": 8357.739468104463, "neighbour_error": "HTTPError('429 Client Error: Too Many Requests for url: https://mast.stsci.edu/api/v0/invoke')", "pixel_error": "HTTPError('429 Client Error: Too Many Requests for url: https://mast.stsci.edu/api/v0/invoke')", "flags": ["no_pixel"]}

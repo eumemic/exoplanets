@@ -5,9 +5,13 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **Full-sky search (8 October 2026): 400 more candidates** (tier A or B below), from a search of
-  4.04 million FGKM dwarfs brighter than T = 13.5 that combines all of their TESS sectors (1–104);
-  184 more are listed as lower-confidence tier C.
+- **Full-sky search, second release (9 October 2026): 491 candidates** (tiers A, B and N below) from
+  4.04 million FGKM dwarfs brighter than T = 13.5, combining all of their TESS sectors (1–104). New in
+  this release: 169 tier N candidates recovered from crowded fields with TRICERATOPS and a centroid
+  test calibrated on 1,000 known planets; false-alarm rates measured on the inverted light curves of
+  400,000 stars, which moved 78 low-signal candidates of the first full-sky release to tier C; and a
+  search of the SNR 7.5–9 band, which turned out to be mostly noise (92 signals listed as tier L, not
+  counted). With the 60 earlier candidates below, the running total is **551 candidates**.
 - **First release (7 October 2026):** 10 transit-candidate signals on 9 stars for which we found
   no prior report, including a possible third transiting planet in the TOI-4342 system, and two
   signals that others had reported earlier in 2026.
@@ -263,6 +267,8 @@ crowded fields mostly for a centroid offset or a capable neighbour), leaving 13.
 
 ### Full-sky search (8 October 2026)
 
+First release; the second release below re-tiers it with measured false-alarm rates.
+
 We searched every FGKM dwarf in TIC 8.2 with T ≤ 13.5, Teff ≤ 6,500 K and R ≤ 1.5 R☉ that our
 earlier searches had not covered: 4,166,638 stars, 4,086,108 of them with TESS-SPOC, QLP or SPOC
 light curves (22.4 million light curves, Sectors 1–104), indexed from the STScI open-data bucket
@@ -301,7 +307,8 @@ on the star) and tier B (single) are counted as candidates; tier C (grazing, or 
 but not counted. Of the 66 earlier candidates, 24 are tier A, 36 tier B and 6 tier C
 ([`results_public/tiers_earlier_candidates.csv`](results_public/tiers_earlier_candidates.csv)).
 
-**Reliability and completeness, measured on a 1% pilot** (40,797 random stars). Inverted copies of
+**Reliability and completeness, measured on a 1% pilot** (40,797 random stars; superseded by
+the 399,408-star measurement in the second release below). Inverted copies of
 20,430 light curves, in which any dip is a false alarm, give 24 signals that pass LEO-Vetter and the
 cuts (SNR ≥ 7.5), and none survives the pixel checks; the real light curves give 14 (12 at SNR ≥ 9, 2 at 7.5–9).
 Of 300 transits injected at a nominal (white-noise) SNR of 10, 57% are recovered at the injected
@@ -309,6 +316,81 @@ period and 21% at SNR ≥ 9: red noise in full-frame light curves lowers the mea
 candidates, not validated planets; we expect false-positive rates of tens of percent in tier B,
 lower in tier A, and the remaining blind spot is companions closer than ~1–2″, which only
 high-resolution imaging can rule out.
+
+### Full-sky search, second release (9 October 2026)
+
+**Is the centroid test discarding planets?** The pixel checks rejected 93% of the signals that pass
+LEO-Vetter. We ran the same vetting and pixel checks on 1,000 TOIs on stars like ours (601 confirmed or
+known planets and 399 planet candidates, T = 10–13.5, using the TOI ephemerides). The centroid test
+wrongly rejects only 2–3% of them (5.6% at MES 7–20), and 95% of the confirmed and known planets lie within 9.3″ of the target. Of 203
+full-sky signals that match a TOI on a neighbouring star, the test flags 98–100% of those whose source
+is more than 15″ away, and the measured offsets track the separations (medians of 19″, 32″, 51″ and
+73″ for sources at 15–21″, 21–42″, 42–63″ and beyond). The 7,918 signals rejected for an offset are
+therefore mostly blends ([`validation/centroid_calibration_tois.csv`](validation/centroid_calibration_tois.csv),
+[`validation/centroid_calibration_neighbour_tois.csv`](validation/centroid_calibration_neighbour_tois.csv)).
+
+**Signals with a neighbour inside 15″ (tier N).** The other pixel check, a TIC star within 15″ bright
+enough to produce the dip, also rejected 31% of the known planets, because crowded fields are common.
+We ran TRICERATOPS (Giacalone et al. 2021) on the 1,318 signals rejected only by this check or with no
+usable difference image (`fpp_batch.py`): FFI cutouts from the TESS cubes on S3 (`s3cut.py`), Gaia DR3
+field stars from VizieR, ten runs per signal, and nearby-star scenarios for neighbours within 30″, since
+the centroid excludes sources farther out. TRICERATOPS does not use the centroid, so its probabilities
+are combined with a centroid likelihood ratio: how likely the measured offset is if the transit is on
+the target (the offsets of the 1,000 TOIs at similar MES) or on a capable neighbour (the same scatter
+around the neighbour's position). On the calibration samples this ratio favours the neighbour for 83–100%
+of the neighbour-caused signals whose source is 5–21″ away (75% within 5″), and the target for 88–96%
+of the TOI planets when tested against a neighbour 8–14″ away (76% at 5″). Tier N requires a combined FPP
+below 0.5 and NFPP below 0.1, MES ≥ 10, and the same binary, grazing and literature checks as tiers
+A and B: 169 candidates. 111 of them have NFPP < 0.01, and 13 have FPP < 0.015 and NFPP < 0.001, the
+TRICERATOPS validation thresholds, though validation also needs high-resolution imaging. The
+`FPP_c`, `NFPP_c` and `BF` columns of the catalog give the combined values and the centroid ratio.
+
+**False alarms, measured.** We searched the inverted light curves of 399,408 random full-sky stars,
+in which every dip the pipeline finds is noise or a systematic, with the full pipeline down to SNR
+7.5 ([`validation/false_alarms_inverted_399408_stars.csv`](validation/false_alarms_inverted_399408_stars.csv)).
+Signals passing LEO-Vetter and the cuts, by pixel-check outcome, with the inverted counts scaled to the
+4,039,203 stars searched:
+
+| | Clean | Neighbour within 15″ only | Centroid offset |
+|---|---|---|---|
+| SNR ≥ 9, real | 726 | 1,294 | 7,918 |
+| SNR ≥ 9, expected false alarms | 91 (9 found) | 243 (24) | 2,134 (211) |
+| SNR 7.5–9, real | 382 | 448 | 2,652 |
+| SNR 7.5–9, expected false alarms | 273 (27) | 263 (26) | 2,265 (224) |
+
+False alarms concentrate at low multiple-event statistic (MES): about half of the clean SNR ≥ 9 signals
+with MES < 10 are expected to be false alarms, 16% of those with MES 10–12, and fewer than 6% above
+(90% upper limit). We therefore moved the 78 first-release candidates with MES < 10 to tier C (75 from
+tier B and 3 from tier A; 3 more tier A candidates became tier B because the other signal on their
+star moved), and tier N requires MES ≥ 10. TRICERATOPS cannot recognise noise: on the 24 inverted
+false alarms with a close neighbour it passed 5, but only 1 of them has MES ≥ 10, so we expect about
+10 false alarms among the 169 tier N candidates
+([`validation/triceratops_inverted_close_neighbour.csv`](validation/triceratops_inverted_close_neighbour.csv)).
+These rates apply to the full-sky search; the earlier samples keep their tiers, because their hosts
+(TOI hosts and M dwarfs) have far more planets per star, so the same false-alarm rate per star is a
+much smaller fraction of their candidates.
+
+**The SNR 7.5–9 band.** Injections show why a lower threshold is tempting: of 700 transits injected at
+a nominal SNR of 10 into random full-sky targets, 22% are recovered at SNR ≥ 9 and 48% at SNR ≥ 7.5
+([`validation/injection_recovery_allsky_snr10_n700.csv`](validation/injection_recovery_allsky_snr10_n700.csv)).
+We re-downloaded the light curves of the 267,000 stars with a signal at SNR 7.5–9 and vetted their
+302,000 signals the same way (`collect.py --from-signals`): 382 pass every check, but about 270 of them
+are expected to be false alarms. The 92 with MES ≥ 9 that also pass the binary and grazing checks are
+listed as tier L (about 30% false alarms expected) and are not counted.
+
+| Tier | Full-sky first release | Second release |
+|---|---|---|
+| A (several candidates on the star) | 19 | 13 |
+| B (single) | 381 | 309 |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 |
+| C (grazing, RUWE > 1.4, or MES < 10; not counted) | 184 | 397 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 92 |
+| likely binary, likely nearby false positive, likely false alarm, reported elsewhere | 142 | 1,446 |
+
+All 2,426 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
+[`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
+SNR 7.5–9, or neighbour within 15″); tiers A, B, C, N and L have folders in
+[`candidates/allsky/`](candidates/allsky/).
 
 ### Predicted transit times
 
@@ -503,6 +585,14 @@ EXO_INVERT=1 ../.venv/bin/python search.py sample.txt --method stack --out ../re
     --out ../data/catalogs/tic_faint_mdwarfs.parquet && ../.venv/bin/python build_faint_targets.py
 ../.venv/bin/python ads_check.py candidates.csv ads.csv                 # NASA ADS + Zenodo; ADS token
 EXO_DATA_SOURCE=s3 ../.venv/bin/python download.py ...                  # read from the AWS mirror
+# full-sky second release (inside AWS): TRICERATOPS for signals with a neighbour inside 15", fits,
+# the SNR 7.5-9 band from the signals tables, and inverted light curves for false alarms
+EXO_DATA_SOURCE=s3 ../.venv/bin/python fpp_batch.py list.csv --stars stars.parquet --out ../results/fpp_recover
+../.venv/bin/python fit_batch.py list.csv --stars stars.parquet
+../.venv/bin/python collect.py --from-signals ../results/signals_allsky.parquet --snr 7.5 --max-snr 9 \
+    --stars shard.parquet --out ../results/cands_low.csv
+EXO_INVERT=1 ../.venv/bin/python run_shard.py sample.parquet manifest.parquet --shard 0 --nshards 1 \
+    --out ../results/search_inv_allsky --keep-snr 7.5
 ```
 
 `EXO_DATA_SOURCE=s3` reads light curves from the STScI open-data bucket and falls back to MAST.
@@ -532,9 +622,10 @@ Gaia Catalogue of Nearby Stars (Gaia Collaboration, Smart et al. 2021). This res
 of the Exoplanet Follow-up Observation Program (ExoFOP; DOI: 10.26134/ExoFOP5) website, which is
 operated by the California Institute of Technology, under contract with the National Aeronautics
 and Space Administration under the Exoplanet Exploration Program, and of the NASA Exoplanet
-Archive. The literature check uses the RAVEN (Lafarga et al. 2026) and T16 (Roth et al. 2026)
+Archive, and of the VizieR catalogue access tool and the CDS XMatch service (CDS, Strasbourg). The
+literature check uses the RAVEN (Lafarga et al. 2026) and T16 (Roth et al. 2026)
 catalogues and arXiv. Software: astropy, numpy, scipy, numba, lightkurve, wotan, batman, emcee,
-LEO-Vetter, transit-diffImage, tess-point and TRICERATOPS.
+LEO-Vetter, transit-diffImage, tess-point, astrocut and TRICERATOPS.
 
 Method inspired by Pavel Rabtsevich's TIC 4206066 study. Built with Claude Code (Anthropic).
 

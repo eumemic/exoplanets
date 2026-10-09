@@ -1,0 +1,1 @@
+{"tic": 399202562, "rank": 1, "period": 4.572289749896745, "depth_ppm": 14156.242493475624, "neighbour_error": "TimeoutError('Timeout limit of 600 exceeded.')", "pixel_error": "TimeoutError('Timeout limit of 600 exceeded.')", "flags": ["no_pixel"]}

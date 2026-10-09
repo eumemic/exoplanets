@@ -1,0 +1,1 @@
+{"tic": 261219280, "rank": 1, "period": 2.9305169582465003, "depth_ppm": 43844.20472520704, "n_capable_2.5arcmin": 43, "nearest_capable_arcsec": 5.416796518157603, "capable_within_15arcsec": [[261219286.0, 5.42, 2.57]], "pixel_error": "IndexError('list index out of range')", "flags": ["no_pixel", "close_nb"]}
