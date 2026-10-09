@@ -5,10 +5,9 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **Full-sky search, first release (8 October 2026): 305 more candidates** (tier A or B below),
-  from a search of 3.03 million FGKM dwarfs brighter than T = 13.5 that combines all of their
-  TESS sectors (1–104); 129 more are listed as lower-confidence tier C. Two of the eight parts of
-  the search (1 million stars) are still being vetted.
+- **Full-sky search (8 October 2026): 400 more candidates** (tier A or B below), from a search of
+  4.04 million FGKM dwarfs brighter than T = 13.5 that combines all of their TESS sectors (1–104);
+  184 more are listed as lower-confidence tier C.
 - **First release (7 October 2026):** 10 transit-candidate signals on 9 stars for which we found
   no prior report, including a possible third transiting planet in the TOI-4342 system, and two
   signals that others had reported earlier in 2026.
@@ -262,31 +261,31 @@ crowded fields mostly for a centroid offset or a capable neighbour), leaving 13.
 | … a TIC star within 15″ could produce the dip | 18 |
 | … none of these, MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 13 (12 candidates; TIC 9994636 rejected) |
 
-### Full-sky search, first release (8 October 2026)
+### Full-sky search (8 October 2026)
 
 We searched every FGKM dwarf in TIC 8.2 with T ≤ 13.5, Teff ≤ 6,500 K and R ≤ 1.5 R☉ that our
 earlier searches had not covered: 4,166,638 stars, 4,086,108 of them with TESS-SPOC, QLP or SPOC
 light curves (22.4 million light curves, Sectors 1–104), indexed from the STScI open-data bucket
 (`build_allsky_targets.py`, `index_s3.py`) and searched with stack-slide on AWS Graviton instances
-in eight parts (`run_shard.py`). This release covers six of the eight parts.
+in eight parts (`run_shard.py`).
 
-![Full-sky candidates](figures/allsky_release1.png)
+![Full-sky candidates](figures/allsky.png)
 
-| Stage | Six parts |
+| Stage | All eight parts |
 |---|---|
-| Stars searched | 3,029,412 |
-| Signals found | 5,594,683 |
-| Pass pre-filters (SNR ≥ 9, ≥ 3 transits, duration and shape cuts) | 457,377 |
-| Match a known planet, TOI, CTOI or TCE | 2,915 |
-| Reported elsewhere (literature check, including ExoMiner++, RAVEN and T16) | 1,834 |
-| Unmatched and passing every LEO-Vetter test | 10,476 |
-| … and MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 7,475 |
-| … and no centroid offset or capable TIC neighbour within 15″ | 535 |
-| … likely binaries: in a binary catalog at the target or a matching eclipsing binary nearby, or fitted radius > 20 R⊕ | 99 |
+| Stars searched | 4,039,203 |
+| Signals found | 7,459,491 |
+| Pass pre-filters (SNR ≥ 9, ≥ 3 transits, duration and shape cuts) | 609,021 |
+| Match a known planet, TOI, CTOI or TCE | 3,829 |
+| Reported elsewhere (literature check, including ExoMiner++, RAVEN and T16) | 2,477 |
+| Unmatched and passing every LEO-Vetter test | 13,986 |
+| … and MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 9,962 |
+| … and no centroid offset or capable TIC neighbour within 15″ | 726 |
+| … likely binaries: in a binary catalog at the target or a matching eclipsing binary nearby, or fitted radius > 20 R⊕ | 140 |
 | … reported in a paper found by NASA ADS (NGTS-19b, a brown dwarf; one DTARPS candidate) | 2 |
-| … tier C: grazing (b ≥ 0.9) or Gaia RUWE > 1.4 | 129 |
+| … tier C: grazing (b ≥ 0.9) or Gaia RUWE > 1.4 | 184 |
 | … tier A: more than one signal on the star | 19 |
-| … tier B | 286 |
+| … tier B | 381 |
 
 The pixel checks reject 93% of the signals that pass LEO-Vetter, mostly for a centroid offset or a
 neighbour that could produce the dip: in full-frame images most signals at these depths come from
