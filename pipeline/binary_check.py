@@ -8,6 +8,7 @@ Usage: python binary_check.py CANDIDATES.csv OUT.csv     (columns TIC and P_d; r
                                                            in the TIC when missing)
 """
 import sys
+import time
 
 import astropy.units as u
 import numpy as np
@@ -15,7 +16,7 @@ import pandas as pd
 from astropy.table import Table
 
 # name: (XMatch table, radius in arcsec, period column or None, frequency column or None)
-CATS = {"gaia": ("vizier:I/355/gaiadr3", 60, None, None),
+CATS = {"gaia": ("vizier:I/355/gaiadr3", 5, None, None),
         "gaia_eb": ("vizier:I/358/veb", 60, None, "Freq"),
         "tess_eb": ("vizier:J/ApJS/258/16/tess-ebs", 60, "Per", None),
         "vsx": ("vizier:B/vsx/vsx", 60, "Period", None),
@@ -51,7 +52,15 @@ def main():
     tab = Table.from_pandas(c[["TIC", "ra", "dec"]].drop_duplicates("TIC").reset_index(drop=True))
     hits = {}
     for name, (cat, rad, pcol, fcol) in CATS.items():
-        r = XMatch.query(cat1=tab, cat2=cat, max_distance=rad * u.arcsec, colRA1="ra", colDec1="dec").to_pandas()
+        for attempt in range(4):
+            try:
+                r = XMatch.query(cat1=tab, cat2=cat, max_distance=rad * u.arcsec, colRA1="ra", colDec1="dec").to_pandas()
+                break
+            except Exception as ex:          # the CDS server sometimes drops long requests
+                print(f"{name}: retry after {ex!r:.80}", flush=True)
+                time.sleep(20 * (attempt + 1))
+        else:
+            raise RuntimeError(f"XMatch failed for {name}")
         if fcol and fcol in r:
             r["P"] = 1 / r[fcol]
         elif pcol and pcol in r:
