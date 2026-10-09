@@ -5,13 +5,14 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **Full-sky search, second release (9 October 2026): 491 candidates** (tiers A, B and N below) from
-  4.04 million FGKM dwarfs brighter than T = 13.5, combining all of their TESS sectors (1–104). New in
-  this release: 169 tier N candidates recovered from crowded fields with TRICERATOPS and a centroid
-  test calibrated on 1,000 known planets; false-alarm rates measured on the inverted light curves of
-  400,000 stars, which moved 78 low-signal candidates of the first full-sky release to tier C; and a
-  search of the SNR 7.5–9 band, which turned out to be mostly noise (92 signals listed as tier L, not
-  counted). With the 60 earlier candidates below, the running total is **551 candidates**.
+- **Full-sky search, second release (9 October 2026): 432 candidates** (tiers A, B and N below) from
+  4.04 million FGKM dwarfs brighter than T = 13.5, combining all of their TESS sectors (1–104). Every
+  one now passes TRICERATOPS (FPP < 0.5, NFPP < 0.1) and has MES ≥ 10. New in this release: 169 tier N
+  candidates recovered from crowded fields with TRICERATOPS and a centroid test calibrated on 1,000
+  known planets; false-alarm rates measured on the inverted light curves of 400,000 stars; TRICERATOPS
+  for every tier A and B candidate; and a search of the SNR 7.5–9 band, which turned out to be mostly
+  noise (92 signals listed as tier L, not counted). The stricter checks moved 137 first-release
+  candidates to tier C. With the 60 earlier candidates below, the running total is **492 candidates**.
 - **First release (7 October 2026):** 10 transit-candidate signals on 9 stars for which we found
   no prior report, including a possible third transiting planet in the TOI-4342 system, and two
   signals that others had reported earlier in 2026.
@@ -360,9 +361,8 @@ Signals passing LEO-Vetter and the cuts, by pixel-check outcome, with the invert
 
 False alarms concentrate at low multiple-event statistic (MES): about half of the clean SNR ≥ 9 signals
 with MES < 10 are expected to be false alarms, 16% of those with MES 10–12, and fewer than 6% above
-(90% upper limit). We therefore moved the 78 first-release candidates with MES < 10 to tier C (75 from
-tier B and 3 from tier A; 3 more tier A candidates became tier B because the other signal on their
-star moved), and tier N requires MES ≥ 10. TRICERATOPS cannot recognise noise: on the 24 inverted
+(90% upper limit). We therefore moved the 78 first-release candidates with MES < 10 to tier C, and tier N
+requires MES ≥ 10. TRICERATOPS cannot recognise noise: on the 24 inverted
 false alarms with a close neighbour it passed 5, but only 1 of them has MES ≥ 10, so we expect about
 10 false alarms among the 169 tier N candidates
 ([`validation/triceratops_inverted_close_neighbour.csv`](validation/triceratops_inverted_close_neighbour.csv)).
@@ -378,12 +378,21 @@ We re-downloaded the light curves of the 267,000 stars with a signal at SNR 7.5�
 are expected to be false alarms. The 92 with MES ≥ 9 that also pass the binary and grazing checks are
 listed as tier L (about 30% false alarms expected) and are not counted.
 
+**TRICERATOPS for tiers A and B.** We ran TRICERATOPS on all 322 tier A and B candidates that
+remained after the false-alarm cut, with the same settings and the centroid ratio over capable
+neighbours within 30″. The median FPP is 0.05 (0.025 for tier A), and 41 candidates have FPP < 0.015
+and NFPP < 0.001. The 59 that fail the tier N thresholds (FPP < 0.5, NFPP < 0.1) look like eclipsing
+binaries (median radius 8.9 R⊕ against 3.6 R⊕ for the rest, median impact parameter 0.78) and move to
+tier C, so every counted full-sky candidate meets the same bar. In all, 137 first-release candidates
+moved to tier C (78 for MES < 10 and 59 for TRICERATOPS), and 4 tier A candidates became tier B
+because the other signal on their star moved.
+
 | Tier | Full-sky first release | Second release |
 |---|---|---|
-| A (several candidates on the star) | 19 | 13 |
-| B (single) | 381 | 309 |
+| A (several candidates on the star) | 19 | 11 |
+| B (single) | 381 | 252 |
 | N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 |
-| C (grazing, RUWE > 1.4, or MES < 10; not counted) | 184 | 397 |
+| C (grazing, RUWE > 1.4, MES < 10, or TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1; not counted) | 184 | 456 |
 | L (SNR 7.5–9, MES ≥ 9; not counted) | – | 92 |
 | likely binary, likely nearby false positive, likely false alarm, reported elsewhere | 142 | 1,446 |
 
