@@ -130,6 +130,10 @@ def one(args):
             res["offset_mean"] = float(np.nansum(off * q) / np.nansum(q))
     except Exception as ex:
         res["pixel_error"] = repr(ex)
+    finally:
+        # FFI cutouts are ~100 MB per sector at 200-s cadence; thousands of them filled a 300 GB disk
+        for f in (PIX / f"tic{tic}").glob("*.fits"):
+            f.unlink(missing_ok=True)
     flags = []
     if res.get("offset_qual") is None:
         flags.append("no_pixel")
