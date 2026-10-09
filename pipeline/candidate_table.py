@@ -3,7 +3,8 @@ centroids and neighbours, TRICERATOPS, host star, TOIs on the host and literatur
 
 Usage: python candidate_table.py LIST.csv OUT.csv
 LIST.csv columns: tic, rank, vet_dir, followup_dir, stars (catalogue parquet), notes, and
-optionally fit_dir (where fit_tic*_P*.json are; default results/).
+optionally fit_dir (where fit_tic*_P*.json are; default results/) and fpp_dir (where
+tic*_P*_fpp.json are; default results/fpp).
 """
 import glob
 import json
@@ -26,8 +27,8 @@ def fit_for(tic, P, fit_dir=None):
     return None
 
 
-def fpp_for(tic, P):
-    for f in glob.glob(str(RESULTS / "fpp" / f"tic{tic}_P*_fpp.json")):
+def fpp_for(tic, P, fpp_dir=None):
+    for f in glob.glob(str(Path(fpp_dir or RESULTS / "fpp") / f"tic{tic}_P*_fpp.json")):
         p = float(f.split("_P")[1].split("_")[0])   # period rounded to 0.01 d in the file name
         if abs(p - P) < 0.006:
             return json.load(open(f))
@@ -48,7 +49,7 @@ def main():
         fu = json.load(open(f"{r.followup_dir}/tic{r.tic}_{r.rank}.json"))
         star = star_table(r.stars).loc[r.tic]
         P = v["period"]
-        fit, fpp = fit_for(r.tic, P, getattr(r, "fit_dir", None)), fpp_for(r.tic, P)
+        fit, fpp = fit_for(r.tic, P, getattr(r, "fit_dir", None)), fpp_for(r.tic, P, getattr(r, "fpp_dir", None))
         k = check(r.tic, P, float(star["ra"]), float(star["dec"]))
         host = toi[toi["TIC ID"] == r.tic]
         planets = [x.split(":")[1] for x in k["same_star"] if x.startswith("planet:")]

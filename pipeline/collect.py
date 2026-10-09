@@ -1,7 +1,10 @@
 """Collect search JSONs into one table and select signals worth vetting.
 
-Usage: python collect.py [--search results/search] [--snr 9]
-Writes results/signals.parquet (all) and results/cands.csv (selected).
+Usage: python collect.py [--search results/search] [--snr 9] [--max-snr X]
+                         [--from-signals SIGNALS.parquet ...]
+Writes results/signals.parquet (all) and results/cands.csv (selected). With --from-signals the
+signals are read from earlier signals tables instead of the search JSONs (e.g. to vet a lower SNR
+band after the light curves were deleted), and no signals table is written.
 """
 import argparse
 import glob
@@ -19,6 +22,8 @@ def main():
     ap.add_argument("--search", nargs="+",
                     default=[str(RESULTS / "search"), str(RESULTS / "search_semi")])
     ap.add_argument("--snr", type=float, default=9.0)
+    ap.add_argument("--max-snr", type=float, default=np.inf, help="select only signals with SNR below this")
+    ap.add_argument("--from-signals", nargs="+", help="signals tables to select from instead of --search")
     ap.add_argument("--out", default=str(RESULTS / "cands.csv"))
     ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
     ap.add_argument("--signals", default=str(RESULTS / "signals.parquet"))
@@ -27,26 +32,30 @@ def main():
     ap.add_argument("--dwarfs", action="store_true",
                     help="keep only stars with Teff < 6500 K, R < 1.5 Rsun and logg > 4 (or no logg)")
     a = ap.parse_args()
-    rows, errors = [], 0
-    files = [f for d in a.search for f in glob.glob(f"{d}/*.json")]
-    for f in files:
-        r = json.load(open(f))
-        if "error" in r:
-            errors += 1
-            continue
-        n_new = sum(1 for s in r["sectors"] if s >= 97)
-        for s in r["signals"]:
-            d = {k: v for k, v in s.items() if k != "events"}
-            d.update(tic=r["tic"], method="semi" if "search_semi" in f else "coherent",
-                     rho=r["rho"], n_sectors=len(r["sectors"]), n_new_sectors=n_new,
-                     span=r["span"], noise_ppm=r["noise_ppm"], events=json.dumps(s["events"]),
-                     masked_tois=json.dumps(r.get("masked_tois", [])))
-            rows.append(d)
-    df = pd.DataFrame(rows)
-    df.to_parquet(a.signals)
-    print(f"{df.tic.nunique()} stars, {len(df)} signals, {errors} errors")
+    if a.from_signals:
+        df = pd.concat([pd.read_parquet(f) for f in a.from_signals], ignore_index=True)
+        print(f"{df.tic.nunique()} stars, {len(df)} signals from {len(a.from_signals)} signals tables")
+    else:
+        rows, errors = [], 0
+        files = [f for d in a.search for f in glob.glob(f"{d}/*.json")]
+        for f in files:
+            r = json.load(open(f))
+            if "error" in r:
+                errors += 1
+                continue
+            n_new = sum(1 for s in r["sectors"] if s >= 97)
+            for s in r["signals"]:
+                d = {k: v for k, v in s.items() if k != "events"}
+                d.update(tic=r["tic"], method="semi" if "search_semi" in f else "coherent",
+                         rho=r["rho"], n_sectors=len(r["sectors"]), n_new_sectors=n_new,
+                         span=r["span"], noise_ppm=r["noise_ppm"], events=json.dumps(s["events"]),
+                         masked_tois=json.dumps(r.get("masked_tois", [])))
+                rows.append(d)
+        df = pd.DataFrame(rows)
+        df.to_parquet(a.signals)
+        print(f"{df.tic.nunique()} stars, {len(df)} signals, {errors} errors")
     dur_ratio = df["duration_h"] / df["exp_duration_h"]
-    sel = ((df["bls_snr"] >= a.snr) & (df["n_good_events"] >= 3) & (df["max_ses_frac"] <= 0.6)
+    sel = ((df["bls_snr"] >= a.snr) & (df["bls_snr"] < a.max_snr) & (df["n_good_events"] >= 3) & (df["max_ses_frac"] <= 0.6)
            & ~df["repeat"].astype(bool) & ~df["rot_alias"].astype(bool)
            & (dur_ratio > 0.25) & (dur_ratio < 2.5) & (df["frac_neg_events"] <= 0.3))
     c = df[sel].sort_values("bls_snr", ascending=False).copy()
@@ -80,7 +89,7 @@ def main():
     c["known_status"], c["known_detail"] = status, detail
     c.to_csv(a.out, index=False)
     print(c["known_status"].value_counts().to_dict())
-    print(f"{len(c)} signals selected (SNR >= {a.snr}) from {c.tic.nunique()} stars -> {a.out}")
+    print(f"{len(c)} signals selected ({a.snr} <= SNR < {a.max_snr}) from {c.tic.nunique()} stars -> {a.out}")
     print(pd.cut(df["bls_snr"], [0, 7, 8, 9, 10, 12, 15, 20, 50, 1e9]).value_counts().sort_index())
 
 

@@ -25,52 +25,24 @@ import pandas as pd
 
 from common import CAT, DATA, RESULTS
 from neighbors import capable_neighbours
+from s3cut import cut
 
 warnings.filterwarnings("ignore")
 PIX = DATA / "followup_pixels"
 OFFSET_MAX = 15.0
-CUBES = "s3://stpubdata/tess/public/mast/tess-s{:04d}-{}-{}-cube.fits"
 
 
 def _s3_tess_cut(self, fitsNum=0):
     """Replacement for transit-diffImage's get_tess_cut: cuts the pixels from the FFI cubes on the
-    STScI bucket with astrocut (what TESScut runs) instead of downloading them from TESScut, which
-    serves ~0.2 MB/s. Inside AWS a 200-s-cadence sector takes ~5 s instead of ~8 minutes."""
-    import glob
-    import astrocut
-    from astropy.coordinates import SkyCoord
-    from tess_stars2px import tess_stars2px_function_entry
-
+    STScI bucket (s3cut.py) instead of downloading them from TESScut, which serves ~0.2 MB/s.
+    Inside AWS a 200-s-cadence sector takes ~5 s instead of ~8 minutes."""
     d = self.ticData
-    out = os.path.join(self.outputDir, self.ticName)
-    os.makedirs(out, exist_ok=True)
-    r = tess_stars2px_function_entry(int(d["id"]), float(d["raDegrees"]), float(d["decDegrees"]))
-    for sec, cam, ccd in zip(r[3], r[4], r[5]):
-        if d["sector"] is not None and int(sec) != int(d["sector"]):
-            continue
-        if not glob.glob(os.path.join(out, f"tess-s{int(sec):04d}-*.fits")):
-            try:
-                astrocut.cube_cut(CUBES.format(int(sec), int(cam), int(ccd)),
-                                  SkyCoord(float(d["raDegrees"]), float(d["decDegrees"]), unit="deg"),
-                                  self.nPixOnSide, output_path=out, verbose=False)
-            except FileNotFoundError:      # no cube on the bucket for this sector
-                pass
-    return glob.glob(os.path.join(out, "*.fits"))
-
-
-def _add_column_wcs(self, table_header, wcs_dict):
-    """astrocut 1.4.0's CubeCutout._add_column_wcs never matches a TDIM keyword (its test also
-    requires kwd[:-1] == "TTYPE"), so its cutouts lack the column WCS keywords that TESScut files
-    carry and transit-diffImage reads (1CRPX4, 1CRV4P, ...). Same insertion, condition fixed."""
-    for kwd in [k for k in table_header if k.startswith("TDIM")]:
-        for wcs_key, (val, com) in wcs_dict.items():
-            table_header.insert(kwd, (wcs_key.format(int(kwd[4:]) - 1), val, com))
+    return cut(d["id"], d["raDegrees"], d["decDegrees"], self.nPixOnSide,
+               os.path.join(self.outputDir, self.ticName), None if d["sector"] is None else {int(d["sector"])})
 
 
 if os.environ.get("EXO_DATA_SOURCE") == "s3":
-    from astrocut import cube_cutout as _cc
     from transitDiffImage import tessDiffImage as _tdi
-    _cc.CubeCutout._add_column_wcs = _add_column_wcs
     _tdi.tessDiffImage.get_tess_cut = _s3_tess_cut
 
 
