@@ -2,7 +2,7 @@
 files, read anonymously and in parallel; run inside AWS us-east-1): FGKM dwarfs brighter than
 T = 13.5 that the earlier searches did not cover.
 
-Usage: python build_allsky_targets.py [--tmax 13.5] [--teff-max 6500] [--out allsky]
+Usage: python build_allsky_targets.py [--tmin 0] [--tmax 13.5] [--teff-max 6500] [--out allsky]
 Writes data/catalogs/<out>.parquet and <out>.txt.
 """
 import argparse
@@ -23,16 +23,17 @@ EARLIER = ("targets.parquet", "toi_hosts.parquet", "faint_targets.parquet")
 
 
 def read_part(args):
-    path, tmax, teff_max, rmax = args
+    path, tmin, tmax, teff_max, rmax = args
     fs = pafs.S3FileSystem(anonymous=True, region="us-east-1")
     t = pq.read_table(path, columns=COLS, filesystem=fs,
-                      filters=[("Tmag", "<=", tmax), ("Teff", "<=", teff_max), ("rad", "<=", rmax),
+                      filters=[("Tmag", ">", tmin), ("Tmag", "<=", tmax), ("Teff", "<=", teff_max), ("rad", "<=", rmax),
                                ("lumclass", "==", "DWARF"), ("objType", "==", "STAR")])
     return t.to_pandas()
 
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--tmin", type=float, default=0.0, help="keep only stars fainter than this")
     ap.add_argument("--tmax", type=float, default=13.5)
     ap.add_argument("--teff-max", type=float, default=6500)
     ap.add_argument("--rmax", type=float, default=1.5)
@@ -43,9 +44,9 @@ def main():
                    if f.path.endswith(".parquet"))
     t0 = time.time()
     with ProcessPoolExecutor(2 * (os.cpu_count() or 8)) as ex:
-        parts = list(ex.map(read_part, [(f, a.tmax, a.teff_max, a.rmax) for f in files]))
+        parts = list(ex.map(read_part, [(f, a.tmin, a.tmax, a.teff_max, a.rmax) for f in files]))
     t = pd.concat(parts, ignore_index=True)
-    print(f"{len(t):,} dwarfs with T <= {a.tmax} read from {len(files)} files in {time.time() - t0:.0f} s",
+    print(f"{len(t):,} dwarfs with {a.tmin} < T <= {a.tmax} read from {len(files)} files in {time.time() - t0:.0f} s",
           flush=True)
     t = t[~t["disposition"].isin(["SPLIT", "DUPLICATE", "ARTIFACT"])]
     t["ID"] = t["ID"].astype("int64")
