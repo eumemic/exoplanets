@@ -103,9 +103,11 @@ def one(args):
     except Exception as ex:
         res["pixel_error"] = repr(ex)
     finally:
-        # FFI cutouts are ~100 MB per sector at 200-s cadence; thousands of them filled a 300 GB disk
-        for f in (PIX / f"tic{tic}").glob("*.fits"):
-            f.unlink(missing_ok=True)
+        # FFI cutouts are ~100 MB per sector at 200-s cadence and transit-diffImage's difference-image
+        # pickles ~35 MB; thousands of them filled a 300 GB disk
+        for pat in ("*.fits", f"imageData_{tic}.{rank}_*.pickle"):
+            for f in (PIX / f"tic{tic}").glob(pat):
+                f.unlink(missing_ok=True)
     flags = []
     if res.get("offset_qual") is None:
         flags.append("no_pixel")
