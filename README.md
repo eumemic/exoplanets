@@ -5,14 +5,14 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **Full-sky search, second release (9 October 2026): 432 candidates** (tiers A, B and N below) from
-  4.04 million FGKM dwarfs brighter than T = 13.5, combining all of their TESS sectors (1–104). Every
-  one now passes TRICERATOPS (FPP < 0.5, NFPP < 0.1) and has MES ≥ 10. New in this release: 169 tier N
-  candidates recovered from crowded fields with TRICERATOPS and a centroid test calibrated on 1,000
-  known planets; false-alarm rates measured on the inverted light curves of 400,000 stars; TRICERATOPS
-  for every tier A and B candidate; and a search of the SNR 7.5–9 band, which turned out to be mostly
-  noise (92 signals listed as tier L, not counted). The stricter checks moved 137 first-release
-  candidates to tier C. With the 60 earlier candidates below, the running total is **492 candidates**.
+- **Full-sky search, second release (9 October 2026): 483 candidates** (tiers A, B, N and L1 below)
+  from 4.04 million FGKM dwarfs brighter than T = 13.5, combining all of their TESS sectors (1–104).
+  Every one passes TRICERATOPS (FPP < 0.5, NFPP < 0.1) and a false-alarm test calibrated on the
+  inverted light curves of 800,000 stars. New in this release: 169 tier N candidates recovered from
+  crowded fields with TRICERATOPS and a centroid test calibrated on 1,000 known planets; 51 tier L1
+  candidates, mostly small planets, picked out of the noisy SNR 7.5–9 band by a false-alarm classifier;
+  and TRICERATOPS for every tier A and B candidate. The stricter checks moved 137 first-release
+  candidates to tier C. With the 60 earlier candidates below, the running total is **543 candidates**.
 - **First release (7 October 2026):** 10 transit-candidate signals on 9 stars for which we found
   no prior report, including a possible third transiting planet in the TOI-4342 system, and two
   signals that others had reported earlier in 2026.
@@ -309,7 +309,7 @@ but not counted. Of the 66 earlier candidates, 24 are tier A, 36 tier B and 6 ti
 ([`results_public/tiers_earlier_candidates.csv`](results_public/tiers_earlier_candidates.csv)).
 
 **Reliability and completeness, measured on a 1% pilot** (40,797 random stars; superseded by
-the 399,408-star measurement in the second release below). Inverted copies of
+the 798,769-star measurement in the second release below). Inverted copies of
 20,430 light curves, in which any dip is a false alarm, give 24 signals that pass LEO-Vetter and the
 cuts (SNR ≥ 7.5), and none survives the pixel checks; the real light curves give 14 (12 at SNR ≥ 9, 2 at 7.5–9).
 Of 300 transits injected at a nominal (white-noise) SNR of 10, 57% are recovered at the injected
@@ -346,24 +346,24 @@ A and B: 169 candidates. 111 of them have NFPP < 0.01, and 13 have FPP < 0.015 a
 TRICERATOPS validation thresholds, though validation also needs high-resolution imaging. The
 `FPP_c`, `NFPP_c` and `BF` columns of the catalog give the combined values and the centroid ratio.
 
-**False alarms, measured.** We searched the inverted light curves of 399,408 random full-sky stars,
-in which every dip the pipeline finds is noise or a systematic, with the full pipeline down to SNR
-7.5 ([`validation/false_alarms_inverted_399408_stars.csv`](validation/false_alarms_inverted_399408_stars.csv)).
+**False alarms, measured.** We searched the inverted light curves of 798,769 random full-sky stars, in
+two independent samples of about 400,000, in which every dip the pipeline finds is noise or a
+systematic, with the full pipeline down to SNR 7.5
+([`validation/false_alarms_inverted_798769_stars.csv`](validation/false_alarms_inverted_798769_stars.csv)).
 Signals passing LEO-Vetter and the cuts, by pixel-check outcome, with the inverted counts scaled to the
 4,039,203 stars searched:
 
 | | Clean | Neighbour within 15″ only | Centroid offset |
 |---|---|---|---|
 | SNR ≥ 9, real | 726 | 1,294 | 7,918 |
-| SNR ≥ 9, expected false alarms | 91 (9 found) | 243 (24) | 2,134 (211) |
+| SNR ≥ 9, expected false alarms | 96 (19 found) | 202 (40) | 2,164 (428) |
 | SNR 7.5–9, real | 382 | 448 | 2,652 |
-| SNR 7.5–9, expected false alarms | 273 (27) | 263 (26) | 2,265 (224) |
+| SNR 7.5–9, expected false alarms | 314 (62) | 273 (54) | 2,169 (429) |
 
-False alarms concentrate at low multiple-event statistic (MES): about half of the clean SNR ≥ 9 signals
-with MES < 10 are expected to be false alarms, 16% of those with MES 10–12, and fewer than 6% above
-(90% upper limit). We therefore moved the 78 first-release candidates with MES < 10 to tier C, and tier N
+False alarms concentrate at low multiple-event statistic (MES): 46% of the clean SNR ≥ 9 signals with
+MES < 10 are expected to be false alarms, 16% of those with MES 10–12, and 2% above. We therefore moved the 78 first-release candidates with MES < 10 to tier C, and tier N
 requires MES ≥ 10. TRICERATOPS cannot recognise noise: on the 24 inverted
-false alarms with a close neighbour it passed 5, but only 1 of them has MES ≥ 10, so we expect about
+false alarms with a close neighbour in the first sample it passed 5, but only 1 of them has MES ≥ 10, so we expect about
 10 false alarms among the 169 tier N candidates
 ([`validation/triceratops_inverted_close_neighbour.csv`](validation/triceratops_inverted_close_neighbour.csv)).
 These rates apply to the full-sky search; the earlier samples keep their tiers, because their hosts
@@ -374,9 +374,21 @@ much smaller fraction of their candidates.
 a nominal SNR of 10 into random full-sky targets, 22% are recovered at SNR ≥ 9 and 48% at SNR ≥ 7.5
 ([`validation/injection_recovery_allsky_snr10_n700.csv`](validation/injection_recovery_allsky_snr10_n700.csv)).
 We re-downloaded the light curves of the 267,000 stars with a signal at SNR 7.5–9 and vetted their
-302,000 signals the same way (`collect.py --from-signals`): 382 pass every check, but about 270 of them
-are expected to be false alarms. The 92 with MES ≥ 9 that also pass the binary and grazing checks are
-listed as tier L (about 30% false alarms expected) and are not counted.
+302,000 signals the same way (`collect.py --from-signals`): 382 pass every check, but about 314 of them
+are expected to be false alarms.
+
+**A false-alarm classifier (tier L1).** A gradient-boosted classifier trained to tell the real search's
+signals from the inverted ones, on search, LEO-Vetter and stellar features (`fa_classifier.py`,
+[`validation/false_alarm_classifier.md`](validation/false_alarm_classifier.md)), selects 69 of the 382
+SNR 7.5–9 signals. Trained on the first inverted sample only, it lets through about 6 of the false
+alarms expected among them, judged on the second sample, which it never saw: about 92% are
+astrophysical, close to tier B. The 51 that also pass the binary, grazing and literature checks and
+TRICERATOPS (FPP < 0.5, NFPP < 0.1) form tier L1: median radius 2.6 R⊕ (45 smaller than 4 R⊕), median
+period 11 d. The remaining 56 with MES ≥ 9 are listed as tier L and not counted. The classifier's score
+for every signal is in the catalog column `fa_score`; 36 tier A, B and N candidates score below 0.8,
+where most false alarms lie, and are flagged (`fa_flag`) but not moved. Separately, 23 counted
+candidates lie in the core of the Neptunian desert (P < 3.2 d, 4–10 R⊕; Castro-González et al. 2024),
+where real planets are rare, and are flagged (`desert_flag`).
 
 **TRICERATOPS for tiers A and B.** We ran TRICERATOPS on all 322 tier A and B candidates that
 remained after the false-alarm cut, with the same settings and the centroid ratio over capable
@@ -392,13 +404,14 @@ because the other signal on their star moved.
 | A (several candidates on the star) | 19 | 11 |
 | B (single) | 381 | 252 |
 | N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 |
 | C (grazing, RUWE > 1.4, MES < 10, or TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1; not counted) | 184 | 456 |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 92 |
-| likely binary, likely nearby false positive, likely false alarm, reported elsewhere | 142 | 1,446 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 |
+| likely binary, likely nearby false positive, likely false alarm, reported elsewhere | 142 | 1,431 |
 
 All 2,426 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
-SNR 7.5–9, or neighbour within 15″); tiers A, B, C, N and L have folders in
+SNR 7.5–9, or neighbour within 15″); tiers A, B, C, N, L1 and L have folders in
 [`candidates/allsky/`](candidates/allsky/).
 
 ### Predicted transit times
@@ -602,6 +615,8 @@ EXO_DATA_SOURCE=s3 ../.venv/bin/python fpp_batch.py list.csv --stars stars.parqu
     --stars shard.parquet --out ../results/cands_low.csv
 EXO_INVERT=1 ../.venv/bin/python run_shard.py sample.parquet manifest.parquet --shard 0 --nshards 1 \
     --out ../results/search_inv_allsky --keep-snr 7.5
+../.venv/bin/python fa_classifier.py ../validation/false_alarm_classifier_table.csv.gz \
+    --stars-real 4039203 --stars-inv 399408 399361     # false-alarm classifier (tier L1)
 ```
 
 `EXO_DATA_SOURCE=s3` reads light curves from the STScI open-data bucket and falls back to MAST.
