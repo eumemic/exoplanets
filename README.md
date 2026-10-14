@@ -797,6 +797,9 @@ validation/          calibration, reliability and completeness tables, with note
 video/               source of the explainer video
 ```
 
+The columns, units, time conventions and tier labels of the tables in `results_public/` and `candidates/` are
+defined in [`results_public/README.md`](results_public/README.md).
+
 Six folders in `candidates/` belong to signals that are not counted and have no row in the tier tables: TIC
 286763141 (TOI-6284) 5.24 d, 257484419 4.35 d and 300381700 3.15 d, reported by others first; and TIC 231725883's
 three signals, the 9.10 d one in the RAVEN first-stage list and the 4.66 d and 18.97 d ones with a capable
