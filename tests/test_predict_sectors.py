@@ -10,23 +10,23 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'pipeline'))
 import predict
 
-# tess-point numbers its special pointings from 1751 upwards; regular sectors stay far below.
-FIRST_SPECIAL_POINTING = 1751
-
-
 class PlannedSectors(unittest.TestCase):
     def test_special_pointing_is_rejected(self):
         # tess-point appends 1751, the 3I/ATLAS pointing, to the sectors of every star
-        self.assertEqual(predict.planned_sectors([119, 125, 1751], 109, 134), [119, 125])
-        self.assertEqual(predict.planned_sectors([1751], 109, 134), [])
-        self.assertEqual(predict.planned_sectors([1752, 2000], 109, 134), [])
+        self.assertEqual(predict.planned_sectors([119, 125, 1751], 109), [119, 125])
+        self.assertEqual(predict.planned_sectors([1751], 109), [])
+        self.assertEqual(predict.planned_sectors([1752, 2000], 109), [])
 
     def test_regular_sectors_are_kept(self):
-        self.assertEqual(predict.planned_sectors([134, 109, 120, 120], 109, 134), [109, 120, 134])
-        self.assertEqual(predict.planned_sectors([], 109, 134), [])
+        self.assertEqual(predict.planned_sectors([134, 109, 120, 120], 109), [109, 120, 134])
+        self.assertEqual(predict.planned_sectors([], 109), [])
+
+    def test_sectors_after_the_published_orbit_times_are_kept(self):
+        # the orbit schedule in data/ ends at Sector 111; tess-point 0.9.5.post1 plans pointings through 134
+        self.assertEqual(predict.planned_sectors([111, 112, 134], 109), [111, 112, 134])
 
     def test_sectors_before_the_first_are_dropped(self):
-        self.assertEqual(predict.planned_sectors([5, 108, 109], 109, 134), [109])
+        self.assertEqual(predict.planned_sectors([5, 108, 109], 109), [109])
 
 
 class CommittedEphemerides(unittest.TestCase):
@@ -35,7 +35,7 @@ class CommittedEphemerides(unittest.TestCase):
                           keep_default_na=False)
         planned = {int(s) for v in eph['tess_sectors_planned'] for s in v.split(',') if s}
         self.assertTrue(planned)
-        self.assertLess(max(planned), FIRST_SPECIAL_POINTING)
+        self.assertLess(max(planned), predict.FIRST_SPECIAL_POINTING)
 
 
 if __name__ == '__main__':
