@@ -44,6 +44,16 @@ def orbit_windows():
     return pd.DataFrame(dict(sector=w["Sector"].astype(int), lo=lo, hi=hi))
 
 
+def planned_sectors(sectors, first_sector, last_sector):
+    """Real TESS sectors on the schedule among the sectors tess-point returns for a star.
+
+    tess-point also returns special pointings numbered from 1751 (the 3I/ATLAS pointing in 0.9.5.post1), which
+    are not regular sectors and are absent from the orbit schedule. Bounding the sectors above by the last
+    sector of the schedule drops them, and any later special pointing, without a list of their numbers.
+    """
+    return sorted(set(int(x) for x in sectors if first_sector <= x <= last_sector))
+
+
 def coordinates(tics):
     out = []
     for f in sorted(CAT.glob("*.parquet")):
@@ -90,6 +100,7 @@ def main():
     wins = orbit_windows()
     sector_end = wins.groupby("sector")["hi"].max()
     first_sector = int(sector_end[sector_end > now].index.min())
+    last_sector = int(sector_end.index.max())
     cands = []
     for f, folder, tiers in COUNTED:
         c = pd.read_csv(ROOT / "results_public" / f)
@@ -120,7 +131,7 @@ def main():
             return np.sqrt(var_c + ((t - tc) / P * eP) ** 2)
 
         star = stars.loc[r.TIC]
-        on_star = sorted(set(int(x) for x in ts2px(r.TIC, star["ra"], star["dec"])[3] if x >= first_sector))
+        on_star = planned_sectors(ts2px(r.TIC, star["ra"], star["dec"])[3], first_sector, last_sector)
         n_ref = round((tc - t0) / P)
         t_ref = t0 + n_ref * P
         n = np.arange(np.ceil((now - t_ref) / P), np.floor((until - t_ref) / P) + 1)
