@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faint transits in light TESS had already recorded | Eumemic</title>
+<meta name="description" content="Independent multi-sector searches of NASA TESS light curves for small transiting planets: an infographic abstract, a candidate explorer and a transit planner. Planet candidates, not confirmed planets.">
+<meta name="theme-color" content="#04060c">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="canonical" href="https://eumemic.github.io/exoplanets/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TESS transit candidates">
+<meta property="og:title" content="Faint transits in light TESS had already recorded">
+<meta property="og:description" content="Independent multi-sector searches of NASA TESS light curves for small transiting planets. Candidates, not confirmed planets.">
+<meta property="og:url" content="https://eumemic.github.io/exoplanets/">
+<meta property="og:image" content="https://eumemic.github.io/exoplanets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Faint transits in light TESS had already recorded">
+<meta name="twitter:description" content="Independent multi-sector searches of NASA TESS light curves for small transiting planets. Candidates, not confirmed planets.">
+<meta name="twitter:image" content="https://eumemic.github.io/exoplanets/og.png">
+<meta name="twitter:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<script>document.documentElement.className += ' js';</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="bar">
+  <a class="brand" href="index.html" aria-label="TESS transit candidates, home">
+    <svg width="30" height="20" viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="7.5" r="5.6" fill="none" stroke="#f0b25a" stroke-width="1.2"/><circle cx="17.4" cy="9" r="1.5" fill="#f4ede1"/><path d="M1 16.5 H10.5 L12.2 18.6 H17.8 L19.5 16.5 H29" fill="none" stroke="#8ec5e6" stroke-width="1.2"/></svg>
+    <span class="t">TESS transit candidates</span><small>Eumemic</small>
+  </a>
+  <nav aria-label="Main"><ul>
+    <li><a href="index.html" aria-current="page">Abstract</a></li>
+    <li><a href="candidates.html">Candidates</a></li>
+    <li><a href="transits.html">Transits</a></li>
+    <li><a href="methods.html">Methods</a></li>
+    <li class="gh"><a href="https://github.com/eumemic/exoplanets">GitHub</a></li>
+  </ul></nav>
+</div></header>
+
+<div class="layout">
+<aside class="index" data-title="Infographic abstract" aria-label="Section index"></aside>
+<main id="main" tabindex="-1">
+
+<!-- 00 ABSTRACT -->
+<section class="panel hero" id="abstract" data-idx="00" data-short="Abstract">
+  <div class="plabel"><b><span class="k">00</span> // Infographic abstract</b><span class="tags"><span class="tag t-cand">Candidates &middot; not confirmed</span></span></div>
+  <p class="eyebrow">Independent TESS transit searches</p>
+  <h1>Faint transits in light <em>TESS had already recorded</em></h1>
+  <div class="byline"><span class="who">Eumemic</span><span aria-hidden="true">&middot;</span><a href="https://github.com/eumemic/exoplanets">github.com/eumemic/exoplanets</a><span aria-hidden="true">&middot;</span><span>Code MIT &middot; results CC BY 4.0</span></div>
+  <p class="abstract">Independent searches of NASA TESS light curves for small transiting planets. Each star's sectors are combined, so a dip too faint to notice in one month of data can stand out across years of it. A full-sky search of 4.04 million FGKM dwarfs, and earlier searches of nearby K and M dwarfs and of the hosts of TESS Objects of Interest, give <strong data-live="counted">&hellip;</strong> candidate signals that pass automated and pixel-level vetting. Most are weak in any single sector and sit on stars observed only in full-frame images, which is why earlier searches did not report them. They are candidates, not confirmed planets: ground-based photometry, high-resolution imaging or radial velocities are needed to confirm or reject each one.</p>
+  <div class="fig"><canvas id="cv-stack" role="img" aria-label="Illustration: noisy light-curve points folded on a transit period. With one sector the dip is lost in the noise; as more sectors are combined, the binned curve shows a clear dip."></canvas></div>
+  <p class="cap">Simulated white noise with the depth (1,142 ppm) and duration (2.5 h) of the TOI-4342 candidate, scaled so one sector gives SNR&nbsp;3. Twelve sectors give about SNR&nbsp;10. SPOC's single-sector threshold is 7.1. Real light curves also contain red noise.</p>
+  <div class="cta">
+    <a class="btn primary" href="candidates.html">Explore the candidates <span class="arr" aria-hidden="true">&rarr;</span></a>
+    <a class="btn" href="transits.html">Plan a transit observation <span class="arr" aria-hidden="true">&rarr;</span></a>
+    <a class="btn" href="https://github.com/eumemic/exoplanets">Repository <span class="arr" aria-hidden="true">&rarr;</span></a>
+  </div>
+  <div class="stats" id="stats" aria-live="polite">
+    <div class="stat hl"><div class="v" data-live="counted">&hellip;</div><div class="l">counted candidates: <span data-live="counted-split">&hellip;</span></div><div class="src"><span class="tag t-live">CSV</span></div></div>
+    <div class="stat"><div class="v" data-live="stars">&hellip;</div><div class="l">host stars (distinct TIC IDs)</div><div class="src"><span class="tag t-live">CSV</span></div></div>
+    <div class="stat"><div class="v">4.04<small>M</small></div><div class="l">stars searched in the full-sky search (4,039,203)</div><div class="src"><span class="tag t-quoted">README &middot; 9 Oct 2026</span></div></div>
+    <div class="stat"><div class="v"><span data-live="medR">&hellip;</span><small>R&oplus;</small></div><div class="l">median fitted radius; <span data-live="small">&hellip;</span> are smaller than 4&nbsp;R&oplus;</div><div class="src"><span class="tag t-live">CSV</span></div></div>
+  </div>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 01 TRANSIT -->
+<section class="panel reveal" id="transit" data-idx="01" data-short="How a transit works">
+  <div class="plabel"><b><span class="k">01</span> // How a transit works</b><span class="tags"><span class="tag t-live">ephemerides.csv</span></span></div>
+  <h2>A planet's shadow is a dip in starlight</h2>
+  <p>When a planet crosses the face of its star it blocks a fraction of the light close to the ratio of the two discs' areas, so the depth of the dip is about (R<sub>p</sub>/R<sub>*</sub>)&sup2;. The star is brighter at its centre than at its edge (limb darkening), which rounds the bottom of the dip. A real candidate, drawn to scale:</p>
+  <div class="fig"><canvas id="cv-transit" role="img" aria-label="Animation: a small dark planet crosses a limb-darkened orange star, and below it the light curve traces a shallow transit dip in sync."></canvas><div class="corner" id="transit-corner">TIC 354944123 &middot; TOI-4342 candidate</div><div class="corner r opt">planet and star to scale</div></div>
+  <div class="readout" id="transit-readout"></div>
+  <p class="cap">Period, radius, duration and depth from <a href="https://github.com/eumemic/exoplanets/blob/main/candidates/ephemerides.csv"><code>ephemerides.csv</code></a>; impact parameter from <a href="https://github.com/eumemic/exoplanets/blob/main/results_public/tiers_earlier_candidates.csv"><code>tiers_earlier_candidates.csv</code></a>. The planet and star are drawn to scale; limb darkening is illustrative (quadratic, u&#8321;&nbsp;=&nbsp;0.5, u&#8322;&nbsp;=&nbsp;0.2).</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 02 FUNNEL -->
+<section class="panel reveal" id="search" data-idx="02" data-short="The search">
+  <div class="plabel"><b><span class="k">02</span> // The search, as a funnel</b><span class="tags"><span class="tag t-quoted">README</span><span class="tag t-live">CSV</span></span></div>
+  <h2>From four million stars to a few hundred signals</h2>
+  <p>The full-sky search looked at every FGKM dwarf with T&nbsp;&le;&nbsp;13.5 that the earlier searches had not covered, combining all of its TESS sectors (1&ndash;104). Almost every signal it finds is noise, a known planet or an eclipsing binary. Each stage below removes most of what is left.</p>
+  <ol class="funnel" id="funnel"></ol>
+  <p class="cap" id="funnel-cap">Bar lengths use a log scale. Quoted rows are from the README's full-sky funnel table (8 October 2026), where the signal stages refer to the SNR&nbsp;&ge;&nbsp;9 search. The catalogue row counts the rows of <a href="https://github.com/eumemic/exoplanets/blob/main/results_public/candidates_allsky.csv"><code>candidates_allsky.csv</code></a> and also includes the SNR&nbsp;7.5&ndash;9 band and signals with a neighbour inside 15&Prime;, which were vetted the same way. Counted rows are computed from the two candidate tables.</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 03 SKY -->
+<section class="panel reveal" id="sky" data-idx="03" data-short="Where they are">
+  <div class="plabel"><b><span class="k">03</span> // Where they are on the sky</b><span class="tags"><span class="tag t-live">ephemerides.csv</span></span></div>
+  <h2>Spread across the whole sky</h2>
+  <p>Every counted candidate at its host star's position, in a Hammer equal-area projection of the celestial sphere (right ascension increasing to the left). Hover or tap a star for its numbers; select it to open it in the explorer.</p>
+  <div class="fig"><canvas id="cv-sky" role="img" aria-label="All-sky map in Hammer projection with the counted candidates plotted by right ascension and declination, coloured and shaped by tier, with the ecliptic and the Galactic plane drawn as lines."></canvas><div class="corner">Equatorial &middot; Hammer projection</div><div class="corner r" id="sky-count"></div></div>
+  <div class="legend-row" id="sky-legend"></div>
+  <p class="cap" id="sky-cap">Positions from <a href="https://github.com/eumemic/exoplanets/blob/main/candidates/ephemerides.csv"><code>ephemerides.csv</code></a>. The background of every page is drawn from the same positions.</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 04 PERIOD-RADIUS -->
+<section class="panel reveal" id="what" data-idx="04" data-short="What they are">
+  <div class="plabel"><b><span class="k">04</span> // What they are</b><span class="tags"><span class="tag t-live">CSV</span></span></div>
+  <h2>Size against orbit</h2>
+  <p>Orbital period against fitted radius for every counted candidate. Two regions of this plane are known to be sparse in planets: the hot Neptunian desert, where few Neptune-sized planets survive close to their stars, and the radius valley between rocky super-Earths and gas-rich sub-Neptunes. Both are drawn as approximate regions.</p>
+  <div class="legend-row" id="pr-toggles" role="group" aria-label="Show or hide tiers"></div>
+  <div class="fig"><canvas id="cv-pr" role="img" aria-label="Scatter plot of orbital period against planet radius, both logarithmic, for the counted candidates, with the Neptunian desert core and the radius valley shaded."></canvas><div class="corner r" id="pr-count"></div></div>
+  <p class="cap" id="pr-cap">Desert core: P&nbsp;&lt;&nbsp;3.2&nbsp;d and 4&ndash;10&nbsp;R&oplus; (Castro-Gonz&aacute;lez et al. 2024), the definition of the catalogue's <code>desert_flag</code>. Radius valley: the band log&#8321;&#8320;R&nbsp;=&nbsp;&minus;0.09&nbsp;log&#8321;&#8320;P&nbsp;+&nbsp;0.37 &plusmn;&nbsp;0.045 (Van Eylen et al. 2018), measured for Sun-like stars. It is shown for orientation and is not used by the pipeline. Radii use TIC&nbsp;8.2 stellar radii.</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 05 FINDABILITY -->
+<section class="panel reveal" id="hidden" data-idx="05" data-short="Hidden in plain sight">
+  <div class="plabel"><b><span class="k">05</span> // Hidden in plain sight</b><span class="tags"><span class="tag t-live">findability.csv</span></span></div>
+  <h2>The data are not new</h2>
+  <p>For each full-sky candidate in tiers A, B and N, the transits observed by the end of a given sector were combined to ask when it could first have been found. Many were already at SNR&nbsp;9 years ago. They were missed because they are weak in any one sector, and because most are on stars observed only in full-frame images, which SPOC's multi-sector searches do not cover.</p>
+  <div class="two">
+    <div>
+      <div class="fig"><canvas id="cv-find" role="img" aria-label="Line chart: share of candidates reaching SNR 9 using only the data through each TESS sector."></canvas><div class="corner">Candidates at SNR &gt; 9, by data through sector</div></div>
+    </div>
+    <div class="facts" id="find-facts"></div>
+  </div>
+  <p class="cap" id="find-cap">From <a href="https://github.com/eumemic/exoplanets/blob/main/validation/findability.md"><code>validation/findability.md</code></a> and <a href="https://github.com/eumemic/exoplanets/blob/main/validation/findability.csv"><code>findability.csv</code></a> (12 October 2026). Each SNR is the inverse-variance mean depth of the transits observed by then, over its error; this ignores how fewer sectors would change the detrending and the period search. The light curves used here lacked many QLP products from Sectors 94&ndash;97 and 101&ndash;104, so the contribution of the newest sectors is understated.</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 06 VETTING -->
+<section class="panel reveal" id="vetting" data-idx="06" data-short="The vetting gauntlet">
+  <div class="plabel"><b><span class="k">06</span> // The vetting gauntlet</b><span class="tags"><span class="tag t-quoted">README &amp; validation notes</span></span></div>
+  <h2>Every signal runs the same checks</h2>
+  <p>Most transit-like signals in full-frame images are not planets around the target: they are noise, systematics, or eclipsing binaries whose light is blended with the target's. These are the checks a counted candidate has passed, in order.</p>
+  <ol class="gauntlet">
+    <li aria-hidden="true" class="runner"></li>
+    <li><div class="hd"><h3>LEO-Vetter</h3><span class="tag t-date">all searches</span></div>
+      <div class="key">13,986 of 609,021 pre-filtered full-sky signals pass every test</div>
+      <p>The 13 false-alarm and 4 false-positive tests of LEO-Vetter (Kunimoto et al. 2025), run on unmatched signals after transit-masked re-detrending. <a class="go" href="https://github.com/eumemic/exoplanets#method">Method, step 7</a></p></li>
+    <li><div class="hd"><h3>Per-sector depth consistency</h3><span class="tag t-date">all searches</span></div>
+      <div class="key">9,962 remain with MES &ge; 7.1 and &chi;&sup2;/dof &le; 5</div>
+      <p>The transit depth must agree from sector to sector, as it would for a planet on the target. <a class="go" href="https://github.com/eumemic/exoplanets#full-sky-search-8-october-2026">Full-sky funnel</a></p></li>
+    <li><div class="hd"><h3>Centroids in every sector</h3><span class="tag t-date">12 Oct 2026</span></div>
+      <div class="key">rejects 0 of 565 known planets and 73% of 175 neighbour signals at p &lt; 0.001</div>
+      <p>The difference-image centroid is measured in every sector with transits and tested for a consistent offset away from the target. 18 counted candidates rejected their target and left the counted tiers. <a class="go" href="https://github.com/eumemic/exoplanets/blob/main/validation/centroid_sectors.md">centroid_sectors.md</a></p></li>
+    <li><div class="hd"><h3>Nearby-star checks</h3><span class="tag t-date">all searches</span></div>
+      <div class="key">726 SNR &ge; 9 signals have no centroid offset and no capable neighbour within 15&Prime;</div>
+      <p>TIC stars within 2.5&prime; that could produce the depth as an eclipsing binary. Signals whose only problem is such a star inside 15&Prime; go on to TRICERATOPS and a centroid likelihood ratio, and can enter tier&nbsp;N (MES&nbsp;&ge;&nbsp;10). <a class="go" href="https://github.com/eumemic/exoplanets#full-sky-search-second-release-9-october-2026">Second release</a></p></li>
+    <li><div class="hd"><h3>Binary catalogues</h3><span class="tag t-date">from 8 Oct 2026</span></div>
+      <div class="key"><span data-live="eb">&hellip;</span> full-sky signals are listed as likely binaries</div>
+      <p>Gaia DR3 (RUWE, eclipsing binaries, non-single-star orbits), the TESS eclipsing-binary catalogue (Pr&scaron;a et al. 2022), APOGEE binaries (Kounkel et al. 2021) and VSX. Grazing transits (b&nbsp;&ge;&nbsp;0.9) and RUWE&nbsp;&gt;&nbsp;1.4 go to tier&nbsp;C, which is not counted. <a class="go" href="https://github.com/eumemic/exoplanets#full-sky-search-8-october-2026">Reliability tiers</a></p></li>
+    <li><div class="hd"><h3>TRICERATOPS with Gaia limits</h3><span class="tag t-date">11 Oct 2026</span></div>
+      <div class="key">median FPP 0.042 &rarr; 0.013 with Gaia limits; <span data-live="valid">&hellip;</span> counted candidates now meet FPP &lt; 0.015 and NFPP &lt; 0.001</div>
+      <p>Every counted candidate must have FPP&nbsp;&lt;&nbsp;0.5 and NFPP&nbsp;&lt;&nbsp;0.1 after the centroid Bayes factor. MOLUSC removes bound companions that Gaia would have resolved, and Gaia epoch RVs rule out an eclipsing binary on bright targets. Statistical validation would also need high-resolution imaging. <a class="go" href="https://github.com/eumemic/exoplanets/blob/main/validation/gaia_companion_limits.md">gaia_companion_limits.md</a></p></li>
+    <li><div class="hd"><h3>False-alarm classifier</h3><span class="tag t-date">revised 13 Oct 2026</span></div>
+      <div class="key">selects tier L1 from the SNR 7.5&ndash;9 band: <span data-live="L1">&hellip;</span> counted</div>
+      <p>A gradient-boosted classifier trained to tell the real search's signals from those found in inverted light curves, where every dip is noise. Since 13 October its validation groups signals by star: 8 tier L1 candidates fell below the 0.80 cut and 11 joined. <a class="go" href="https://github.com/eumemic/exoplanets/blob/main/validation/false_alarm_classifier.md">false_alarm_classifier.md</a></p></li>
+    <li><div class="hd"><h3>TIC artifacts removed</h3><span class="tag t-date">13 Oct 2026</span></div>
+      <div class="key">30 ARTIFACT and 68 DUPLICATE entries among 3,454 capable neighbours</div>
+      <p>TIC entries that are not stars (Paegert et al. 2021) no longer count as possible sources of a dip. 7 tier N candidates became tier B, and two earlier-search signals joined, including a 27.0&nbsp;d signal around WASP-166. <a class="go" href="https://github.com/eumemic/exoplanets/blob/main/validation/tic_artifacts.md">tic_artifacts.md</a></p></li>
+  </ol>
+  <p class="cap">Quoted numbers are from the README and the linked notes, dated as tagged. Live numbers are computed from the candidate tables.</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 07 TOI-4342 -->
+<section class="panel reveal" id="toi4342" data-idx="07" data-short="Spotlight: TOI-4342">
+  <div class="plabel"><b><span class="k">07</span> // Spotlight</b><span class="tags"><span class="tag t-cand">Candidate</span><span class="tag t-quoted">README &middot; 7 Oct 2026</span></span></div>
+  <h2>TOI-4342: a possible third transiting planet</h2>
+  <div class="fig"><canvas id="cv-orbit" role="img" aria-label="Animation of the TOI-4342 system seen at a slight tilt: two confirmed planets at 5.54 and 10.69 days on solid orbits and the candidate at 18.91 days on a dashed orbit. Each transit appears as a dip in the light-curve strip below."></canvas><div class="corner r opt">orbit sizes to scale &middot; phases illustrative</div></div>
+  <ul class="spot-list">
+    <li>TOI-4342 b and c are confirmed sub-Neptunes at 5.54 and 10.69&nbsp;d (<a href="https://arxiv.org/abs/2301.01370">Tey et al. 2023</a>; masses from <a href="https://arxiv.org/abs/2601.22115">ESPRESSO, 2026</a>, which also reports a probably non-transiting 47.5&nbsp;d RV candidate).</li>
+    <li>The candidate transits every <span data-live="toiP">18.9082</span>&nbsp;d with the same radius as b and c (2.2&nbsp;R&oplus;), in 8 sectors: 11&sigma; in Sectors 13&ndash;93 and 7&sigma; in 101&ndash;103.</li>
+    <li>The difference-image centroid is within 7&ndash;16&Prime; of the star in each 2-minute sector, and no star within 30&Prime; is bright enough to produce the dip.</li>
+    <li>Its predicted radial-velocity semi-amplitude is about 2&nbsp;m/s. The TOI-host search, which masks b and c first, finds it again as the strongest remaining signal.</li>
+  </ul>
+  <a class="thumb" href="figures/toi4342.png"><img src="figures/toi4342.png" alt="The repository's TOI-4342 figure: TESS light curves folded on the periods of b, c and the 18.9-day candidate." loading="lazy" width="1680" height="480"></a>
+  <p class="cap">Figure from the repository (<a href="https://github.com/eumemic/exoplanets/blob/main/figures/toi4342.png"><code>figures/toi4342.png</code></a>).</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 08 NEXT TRANSITS -->
+<section class="panel reveal" id="next" data-idx="08" data-short="Next transits">
+  <div class="plabel"><b><span class="k">08</span> // Next transits</b><span class="tags"><span class="tag t-live">predictions.csv</span></span></div>
+  <h2>Predictions written before the data exist</h2>
+  <p>Every counted candidate has predicted mid-transit times, committed before the observations happen: for a planet, each transit should appear at the predicted time with the fitted depth. The next 48 hours, and the next ten transits still to come:</p>
+  <div class="fig"><canvas id="cv-next" role="img" aria-label="Timeline of the next 48 hours with a mark for each predicted transit of a counted candidate; taller marks are deeper transits."></canvas><div class="corner opt">Next 48 h &middot; UTC</div><div class="corner r"><span id="next-count"></span><span id="next-now"></span></div></div>
+  <ol class="transits" id="next-list" aria-live="off"><li><span class="cd">&hellip;</span><span class="who">Loading predictions</span><span></span></li></ol>
+  <div class="cta"><a class="btn primary" href="transits.html">Open the transit planner <span class="arr" aria-hidden="true">&rarr;</span></a></div>
+  <p class="cap">Times are UTC at Earth's centre from <a href="https://github.com/eumemic/exoplanets/blob/main/candidates/predictions.csv"><code>predictions.csv</code></a>, assuming a constant period; &plusmn; is the 1&sigma; uncertainty. Taller marks on the timeline are deeper transits. Local times use this device's time zone. Whether a transit is observable depends on your site and the star's position.</p>
+</section>
+<div class="link" aria-hidden="true"><i></i></div>
+
+<!-- 09 OPEN QUESTIONS -->
+<section class="panel reveal" id="open" data-idx="09" data-short="Open questions">
+  <div class="plabel"><b><span class="k">09</span> // Open questions and how to help</b><span class="tags"><span class="tag t-quoted">README &middot; 13 Oct 2026</span></span></div>
+  <h2>What is not yet known</h2>
+  <div class="qs">
+    <div class="q"><span class="tag t-open">Needs observers</span><h3>Confirm or reject each candidate</h3><p>TESS alone cannot rule out every false-positive scenario. Ground-based photometry at the predicted times, high-resolution imaging and radial velocities are needed. The README expects false-positive rates of tens of percent in tier B, lower in tier A.</p></div>
+    <div class="q"><span class="tag t-open">Blind spot</span><h3>Companions closer than 1&ndash;2&Prime;</h3><p>The remaining blind spot of the pixel checks is a companion star closer than about 1&ndash;2&Prime;, which only high-resolution imaging can rule out.</p></div>
+    <div class="q"><span class="tag t-plan">Re-search planned</span><h3>About 900,000 missing QLP light curves</h3><p>The reader dropped QLP light curves whose uncertainty column is empty (PR #6, merged): 24&ndash;82% of those in Sectors 94&ndash;97 and 101&ndash;104 in the earlier searches. A re-search of the affected full-sky stars is planned.</p></div>
+    <div class="q"><span class="tag t-open">Waiting on MAST</span><h3>A QLP timing error</h3><p>MAST reports a QLP timing error from the second half of Sector 99 to Sector 104, and the corrected files are not yet delivered. Fits that use those sectors may shift by minutes.</p></div>
+    <div class="q"><span class="tag t-open">Expected</span><h3>Some false alarms remain</h3><p>From the inverted-light-curve measurements, about 10 false alarms are expected among the tier N candidates, and about 92% of the SNR&nbsp;7.5&ndash;9 signals the classifier selects are expected to be astrophysical (released estimate).</p></div>
+    <div class="q"><span class="tag t-plan">How to help</span><h3>Observe, check, contribute</h3><p>Pick a transit in the <a href="transits.html">planner</a>, look through a candidate's vetting plot in the <a href="candidates.html">explorer</a>, or open an issue or pull request on <a href="https://github.com/eumemic/exoplanets">GitHub</a>. Two of the latest corrections came from an outside contributor.</p></div>
+  </div>
+  <h3 style="margin-top:28px">Ledger of updates</h3>
+  <div class="fig" style="margin-bottom:6px"><canvas id="cv-ledger" role="img" aria-label="Line of the counted-candidate total after each update from 9 to 13 October 2026."></canvas><div class="corner">Counted total after each update</div></div>
+  <ol class="ledger" id="ledger">
+    <li data-n="533"><time datetime="2026-10-13">13 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets/blob/main/validation/false_alarm_classifier.md#re-selection-of-tier-l1-13-october-2026">Tier L1 re-selected</a> with star-grouped validation; a QLP data gap found.</span><span class="n">533</span></li>
+    <li data-n="530"><time datetime="2026-10-13">13 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets/blob/main/validation/tic_artifacts.md">TIC artifacts removed</a> from the neighbour checks.</span><span class="n">530</span></li>
+    <li data-n="528"><time datetime="2026-10-12">12 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets/blob/main/validation/centroid_sectors.md">Centroids in every sector</a>; 18 candidates leave.</span><span class="n">528</span></li>
+    <li><time datetime="2026-10-12">12 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets/blob/main/validation/findability.md">Why earlier searches missed these signals.</a></span><span class="n"></span></li>
+    <li data-n="546"><time datetime="2026-10-11">11 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets/blob/main/validation/gaia_companion_limits.md">Gaia limits on companions</a> in TRICERATOPS.</span><span class="n">546</span></li>
+    <li data-n="543"><time datetime="2026-10-09">9 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets#full-sky-search-second-release-9-october-2026">Full-sky search, second release</a>: tiers N and L1, measured false-alarm rates.</span><span class="n">543</span></li>
+    <li><time datetime="2026-10-08">8 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets#full-sky-search-8-october-2026">Full-sky search, first release</a>: 4.04 million FGKM dwarfs.</span><span class="n"></span></li>
+    <li><time datetime="2026-10-08">8 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets#added-8-october-2026-fainter-m-dwarfs">Update 4</a>: 12 from the faintest M dwarfs searched so far.</span><span class="n">+12</span></li>
+    <li><time datetime="2026-10-08">8 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets#added-8-october-2026-faint-m-dwarfs">Update 3</a>: 18 from 22,448 fainter M dwarfs.</span><span class="n">+18</span></li>
+    <li><time datetime="2026-10-08">8 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets#added-8-october-2026-unpromoted-spoc-detections-and-longer-periods">Update 2</a>: 6 from unpromoted SPOC detections and periods of 20&ndash;100&nbsp;d.</span><span class="n">+6</span></li>
+    <li><time datetime="2026-10-08">8 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets#added-8-october-2026">Update</a>: 20 from the K/M dwarf and TOI-host searches.</span><span class="n">+20</span></li>
+    <li><time datetime="2026-10-07">7 Oct 2026</time><span><a href="https://github.com/eumemic/exoplanets#first-release-7-october-2026">First release</a>: 10 signals on 9 stars, including TOI-4342.</span><span class="n">10</span></li>
+  </ol>
+  <p class="cap">Condensed from the dated entries in the <a href="https://github.com/eumemic/exoplanets#readme">README</a>. Totals from 9 October count the full-sky and earlier searches together; the latest total, <span data-live="counted">&hellip;</span>, is computed from the tables.</p>
+</section>
+
+</main>
+</div>
+
+<footer class="site"><div class="bar">
+  <div>
+    <p>Research, data and code by <strong>Eumemic</strong>: <a href="https://github.com/eumemic/exoplanets">github.com/eumemic/exoplanets</a>. Code is MIT; results, tables and figures are CC BY 4.0 (<a href="https://github.com/eumemic/exoplanets/blob/main/LICENSE">LICENSE</a>). This site reads the repository's tables at load time; the repository is authoritative.</p>
+    <p>Data from the TESS mission (MAST, STScI), Gaia DR3, ExoFOP and the NASA Exoplanet Archive. Method inspired by Pavel Rabtsevich's TIC&nbsp;4206066 study. Full credits are in the <a href="https://github.com/eumemic/exoplanets#credits">README</a>.</p>
+  </div>
+  <div>
+    <p>The stars behind every page are the registered candidates' host stars, plotted at their sky positions.</p>
+    <p id="build-info"></p>
+  </div>
+</div></footer>
+<a class="sig" href="https://digital.askaconsult.com" rel="noopener">site by <span>Aska Digital</span></a>
+<script src="common.js"></script>
+<script src="shell.js"></script>
+<script src="home.js"></script>
+</body>
+</html>

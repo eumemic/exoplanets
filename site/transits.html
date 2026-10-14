@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transit planner | TESS transit candidates</title>
+<meta name="description" content="Predicted mid-transit times of the TESS transit candidates from eumemic/exoplanets, for observers planning follow-up photometry.">
+<meta name="theme-color" content="#04060c">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="canonical" href="https://eumemic.github.io/exoplanets/transits.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TESS transit candidates">
+<meta property="og:title" content="Transit planner | TESS transit candidates">
+<meta property="og:description" content="Predicted mid-transit times of the TESS transit candidates from eumemic/exoplanets, for observers planning follow-up photometry.">
+<meta property="og:url" content="https://eumemic.github.io/exoplanets/transits.html">
+<meta property="og:image" content="https://eumemic.github.io/exoplanets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Transit planner | TESS transit candidates">
+<meta name="twitter:description" content="Predicted mid-transit times of the TESS transit candidates from eumemic/exoplanets, for observers planning follow-up photometry.">
+<meta name="twitter:image" content="https://eumemic.github.io/exoplanets/og.png">
+<meta name="twitter:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<script>document.documentElement.className += ' js';</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="bar">
+  <a class="brand" href="index.html" aria-label="TESS transit candidates, home">
+    <svg width="30" height="20" viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="7.5" r="5.6" fill="none" stroke="#f0b25a" stroke-width="1.2"/><circle cx="17.4" cy="9" r="1.5" fill="#f4ede1"/><path d="M1 16.5 H10.5 L12.2 18.6 H17.8 L19.5 16.5 H29" fill="none" stroke="#8ec5e6" stroke-width="1.2"/></svg>
+    <span class="t">TESS transit candidates</span><small>Eumemic</small>
+  </a>
+  <nav aria-label="Main"><ul>
+    <li><a href="index.html">Abstract</a></li>
+    <li><a href="candidates.html">Candidates</a></li>
+    <li><a href="transits.html" aria-current="page">Transits</a></li>
+    <li><a href="methods.html">Methods</a></li>
+    <li class="gh"><a href="https://github.com/eumemic/exoplanets">GitHub</a></li>
+  </ul></nav>
+</div></header>
+
+<div class="layout">
+<aside class="index" data-title="Transit planner" aria-label="Section index"></aside>
+<main id="main" class="page" tabindex="-1">
+<section id="planner" data-idx="01" data-short="Planner">
+<div class="plabel"><b><span class="k">01</span> // Transit planner</b><span class="tags"><span class="tag t-cand">Candidates</span><span class="tag t-live">predictions.csv</span></span></div>
+<h1>Transit planner</h1>
+<p class="lead">Predicted mid-transit times of the candidates in a chosen window, for observers planning follow-up photometry. The predictions were committed before the observations: for a planet, each transit should appear at the predicted time with the fitted depth.</p>
+<div id="loading" aria-live="polite">Loading predictions&hellip;</div>
+<form class="controls" id="filters" role="search" aria-label="Filter predicted transits" onsubmit="return false">
+  <div><label for="start">Window starts (UTC date; today means now)</label><input type="date" id="start"></div>
+  <div><label for="days">Window length</label>
+    <select id="days"><option value="7">7 days</option><option value="14">14 days</option><option value="30" selected>30 days</option><option value="60">60 days</option><option value="90">90 days</option></select></div>
+  <div><label for="q">Search by TIC</label><input type="search" id="q" autocomplete="off" placeholder="e.g. 354944123"></div>
+  <fieldset><legend>Options</legend>
+    <label><input type="checkbox" id="counted" checked> Only tiers counted as candidates (A, B, N, L1)</label>
+    <label><input type="checkbox" id="tight"> Only transits with 1&sigma; no longer than the duration</label></fieldset>
+</form>
+<div class="toolbar">
+  <span id="count" role="status" aria-live="polite"></span>
+  <span class="grow"></span>
+  <button type="button" class="btn small" id="dl-view">Download this view (CSV)</button>
+  <a class="btn small" href="https://raw.githubusercontent.com/eumemic/exoplanets/main/candidates/predictions.csv">predictions.csv</a>
+</div>
+<p class="note" id="coverage" role="status"></p>
+<div class="table-wrap" id="table-wrap" tabindex="0" role="region" aria-label="Predicted transits table, scrollable">
+  <table>
+    <caption class="sr">Predicted transits. Select a column heading to sort.</caption>
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<div class="toolbar">
+  <button type="button" class="btn small" id="prev">Previous</button>
+  <span id="page-label"></span>
+  <button type="button" class="btn small" id="next">Next</button>
+</div>
+<p class="note">A 1&sigma; value in amber is longer than the transit duration, so the window for the start of the transit is wider than the transit itself. The TESS sector is filled in only when the transit falls inside a published TESS orbit window and the star is on a detector (README).</p>
+</section>
+
+<section id="assumptions" data-idx="02" data-short="Assumptions">
+<h2>Assumptions</h2>
+<div class="callout" role="note"><p>The times come from the repository's <a href="https://github.com/eumemic/exoplanets/blob/main/candidates/predictions.csv"><code>predictions.csv</code></a>, which assumes a constant period (a linear ephemeris). The 1&sigma; uncertainty is propagated from the period and epoch errors by the authors' <code>predict.py</code>; transit-timing variations would move transits away from these times. Times are UTC at Earth's centre, as described in the <a href="https://github.com/eumemic/exoplanets#predicted-transit-times">README</a>. These are candidates, so a transit may not occur or may be too shallow to detect.</p></div>
+<p>The prediction files were written when each candidate was registered (from 10 October 2026) and cover transits through June 2027; they are not recomputed here. Rows in tiers that are no longer counted keep their entries and can be shown with the options above. Radius, depth, Tmag and coordinates come from <a href="https://github.com/eumemic/exoplanets/blob/main/candidates/ephemerides.csv"><code>ephemerides.csv</code></a>.</p>
+<p>Separately, MAST reports a QLP timing error from the second half of Sector 99 to Sector 104 whose corrected files are not yet delivered; the README notes that fits using those sectors may shift by minutes.</p>
+</section>
+
+</main>
+</div>
+
+<footer class="site"><div class="bar">
+  <div>
+    <p>Research, data and code by <strong>Eumemic</strong>: <a href="https://github.com/eumemic/exoplanets">github.com/eumemic/exoplanets</a>. Code is MIT; results, tables and figures are CC BY 4.0 (<a href="https://github.com/eumemic/exoplanets/blob/main/LICENSE">LICENSE</a>). This site reads the repository's tables at load time; the repository is authoritative.</p>
+    <p>Data from the TESS mission (MAST, STScI), Gaia DR3, ExoFOP and the NASA Exoplanet Archive. Method inspired by Pavel Rabtsevich's TIC&nbsp;4206066 study. Full credits are in the <a href="https://github.com/eumemic/exoplanets#credits">README</a>.</p>
+  </div>
+  <div>
+    <p>The stars behind every page are the registered candidates' host stars, plotted at their sky positions.</p>
+    <p id="build-info"></p>
+  </div>
+</div></footer>
+
+<a class="sig" href="https://digital.askaconsult.com" rel="noopener">site by <span>Aska Digital</span></a>
+<script src="common.js"></script>
+<script src="shell.js"></script>
+<script src="transits.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Site icon, from the header mark: a star (amber ring), a planet crossing its limb, the dip it makes, on a night tile. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#101a33"/><stop offset="1" stop-color="#04060c"/></linearGradient>
+    <radialGradient id="glow" cx="15.5" cy="12.5" r="11.5" gradientUnits="userSpaceOnUse"><stop offset="0.55" stop-color="#f0b25a" stop-opacity="0.25"/><stop offset="1" stop-color="#f0b25a" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" fill="none" stroke="#a4b6de" stroke-opacity="0.28"/>
+  <circle cx="15.5" cy="12.5" r="11.5" fill="url(#glow)"/>
+  <circle cx="15.5" cy="12.5" r="6.8" fill="#04060c" stroke="#f0b25a" stroke-width="2.6"/>
+  <circle cx="20.3" cy="17.3" r="3.6" fill="#04060c"/>
+  <circle cx="20.3" cy="17.3" r="2.5" fill="#f4ede1"/>
+  <path d="M4 25 H11.2 L13.4 28 H18.6 L20.8 25 H28" fill="none" stroke="#8ec5e6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

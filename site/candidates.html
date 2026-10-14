@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidate explorer | TESS transit candidates</title>
+<meta name="description" content="Sortable, filterable table of every TESS transit candidate signal from the eumemic/exoplanets searches, with vetting plots. Planet candidates, not confirmed planets.">
+<meta name="theme-color" content="#04060c">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="canonical" href="https://eumemic.github.io/exoplanets/candidates.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TESS transit candidates">
+<meta property="og:title" content="Candidate explorer | TESS transit candidates">
+<meta property="og:description" content="Sortable, filterable table of every TESS transit candidate signal from the eumemic/exoplanets searches, with vetting plots. Planet candidates, not confirmed planets.">
+<meta property="og:url" content="https://eumemic.github.io/exoplanets/candidates.html">
+<meta property="og:image" content="https://eumemic.github.io/exoplanets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Candidate explorer | TESS transit candidates">
+<meta name="twitter:description" content="Sortable, filterable table of every TESS transit candidate signal from the eumemic/exoplanets searches, with vetting plots. Planet candidates, not confirmed planets.">
+<meta name="twitter:image" content="https://eumemic.github.io/exoplanets/og.png">
+<meta name="twitter:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<script>document.documentElement.className += ' js';</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="bar">
+  <a class="brand" href="index.html" aria-label="TESS transit candidates, home">
+    <svg width="30" height="20" viewBox="0 0 30 20" aria-hidden="true"><circle cx="15" cy="7.5" r="5.6" fill="none" stroke="#f0b25a" stroke-width="1.2"/><circle cx="17.4" cy="9" r="1.5" fill="#f4ede1"/><path d="M1 16.5 H10.5 L12.2 18.6 H17.8 L19.5 16.5 H29" fill="none" stroke="#8ec5e6" stroke-width="1.2"/></svg>
+    <span class="t">TESS transit candidates</span><small>Eumemic</small>
+  </a>
+  <nav aria-label="Main"><ul>
+    <li><a href="index.html">Abstract</a></li>
+    <li><a href="candidates.html" aria-current="page">Candidates</a></li>
+    <li><a href="transits.html">Transits</a></li>
+    <li><a href="methods.html">Methods</a></li>
+    <li class="gh"><a href="https://github.com/eumemic/exoplanets">GitHub</a></li>
+  </ul></nav>
+</div></header>
+
+<div class="layout">
+<aside class="index" data-title="Candidates" aria-label="Section index"></aside>
+<main id="main" class="page" tabindex="-1">
+
+
+<section id="explorer" data-idx="01" data-short="Explorer">
+<div class="plabel"><b><span class="k">01</span> // Candidate explorer</b><span class="tags"><span class="tag t-cand">Candidates &middot; not confirmed</span><span class="tag t-live">CSV</span></span></div>
+<h1>Candidate explorer</h1>
+<p class="lead">Every row of the repository's full-sky candidate table and of the table of earlier-search candidates. By default only the tiers the README counts as candidates are shown.</p>
+<p class="note">Open a row (the arrow, or Enter on it) to see that candidate's vetting plot from its folder in the repository. These are planet candidates, not confirmed planets. FPP is the TRICERATOPS false-positive probability from TESS data alone; the table shows the Gaia-limited, centroid-combined value (<code>FPP_gc</code>) where available, then <code>FPP_c</code>, then <code>FPP</code>. The statistical-validation threshold is FPP &lt; 0.015 and also needs high-resolution imaging. The earlier-search table has no T14, depth or Tmag of its own; where the same signal is in the ephemeris table those values are filled in, and T<sub>eff</sub>, distance and MES are left blank.</p>
+
+<div id="loading" aria-live="polite">Loading data&hellip;</div>
+<form class="controls" id="filters" role="search" aria-label="Filter candidates" onsubmit="return false">
+  <div>
+    <label for="q">Search by TIC</label>
+    <input type="search" id="q" placeholder="e.g. 354944123" autocomplete="off">
+  </div>
+  <div>
+    <label for="set">Search set</label>
+    <select id="set"><option value="all">Both</option><option value="full-sky">Full-sky search</option><option value="earlier">Earlier searches</option></select>
+  </div>
+  <fieldset><legend>Counted tiers</legend><div id="tiers-counted" class="inline"></div></fieldset>
+  <fieldset><legend>Not counted as candidates</legend><div id="tiers-other"></div></fieldset>
+  <fieldset><legend>Period (days)</legend><div class="range"><label>min <input type="number" id="pmin" min="0" step="any" inputmode="decimal"></label><label>max <input type="number" id="pmax" min="0" step="any" inputmode="decimal"></label></div></fieldset>
+  <fieldset><legend>Radius (Earth radii)</legend><div class="range"><label>min <input type="number" id="rmin" min="0" step="any" inputmode="decimal"></label><label>max <input type="number" id="rmax" min="0" step="any" inputmode="decimal"></label></div></fieldset>
+  <div><button type="button" class="btn small" id="reset">Reset filters</button></div>
+</form>
+
+<div class="toolbar">
+  <span id="count" role="status" aria-live="polite"></span>
+  <span class="grow"></span>
+  <button type="button" class="btn small" id="dl-view">Download filtered view (CSV)</button>
+  <a class="btn small" href="https://raw.githubusercontent.com/eumemic/exoplanets/main/results_public/candidates_allsky.csv">Full-sky CSV</a>
+  <a class="btn small" href="https://raw.githubusercontent.com/eumemic/exoplanets/main/results_public/tiers_earlier_candidates.csv">Earlier-search CSV</a>
+</div>
+<div class="table-wrap" id="table-wrap" tabindex="0" role="region" aria-label="Candidates table, scrollable">
+  <table>
+    <caption class="sr">Planet candidates. Select a column heading to sort.</caption>
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<div class="toolbar">
+  <button type="button" class="btn small" id="prev">Previous</button>
+  <span id="page-label"></span>
+  <button type="button" class="btn small" id="next">Next</button>
+</div>
+<p class="note">Select a TIC to open its ExoFOP page. The arrow opens the candidate's vetting plot and key values; &ldquo;folder&rdquo; opens its folder on GitHub (vetting plot, transit fit, centroid offsets, nearby stars and TRICERATOPS output). T14 is the transit duration. Flags are the catalog's <code>centroid_flag</code>, <code>c_reason</code>, <code>fa_flag</code>, <code>desert_flag</code> and variable or binary <code>rv_flag</code> values.</p>
+
+</section>
+<section id="legend-heading" data-idx="02" data-short="Tier legend">
+<h2>Tier legend</h2>
+<p class="note">As described in the <a href="https://github.com/eumemic/exoplanets#full-sky-search-8-october-2026">README</a>. &ldquo;Rows&rdquo; counts rows in the two tables, not unique stars.</p>
+<div id="legend"></div>
+</section>
+
+</main>
+</div>
+
+<footer class="site"><div class="bar">
+  <div>
+    <p>Research, data and code by <strong>Eumemic</strong>: <a href="https://github.com/eumemic/exoplanets">github.com/eumemic/exoplanets</a>. Code is MIT; results, tables and figures are CC BY 4.0 (<a href="https://github.com/eumemic/exoplanets/blob/main/LICENSE">LICENSE</a>). This site reads the repository's tables at load time; the repository is authoritative.</p>
+    <p>Data from the TESS mission (MAST, STScI), Gaia DR3, ExoFOP and the NASA Exoplanet Archive. Method inspired by Pavel Rabtsevich's TIC&nbsp;4206066 study. Full credits are in the <a href="https://github.com/eumemic/exoplanets#credits">README</a>.</p>
+  </div>
+  <div>
+    <p>The stars behind every page are the registered candidates' host stars, plotted at their sky positions.</p>
+    <p id="build-info"></p>
+  </div>
+</div></footer>
+
+<a class="sig" href="https://digital.askaconsult.com" rel="noopener">site by <span>Aska Digital</span></a>
+<script src="common.js"></script>
+<script src="shell.js"></script>
+<script src="candidates.js"></script>
+</body>
+</html>

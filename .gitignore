@@ -16,3 +16,6 @@ results/
 *_gaia_background.csv
 drafts/
 results_cloud/
+
+# local site build (site/build.sh)
+_site/
