@@ -164,3 +164,9 @@ Tier L1 was re-selected with the new hold-out scores (approved 13 October):
 - 38 signals of the re-search join tier L1 by the same rules.
 
 Tier L1 now has 112 candidates.
+
+On 14 October TIC 206609457 (13.33 d, score 0.84) joined too, making 113. It had stayed in tier L because its only
+TRICERATOPS run, the default one, gave NFPP 0.103 from three capable stars 44–63″ away. The Gaia-constrained run and
+the per-sector centroid test, with nearby-star scenarios within 30″ as for the others, give FPP 0.041 and NFPP 0. Its
+centroids sit 15–38″ west of the star in all four sectors (p = 0.004 for the star as the source), so the row carries
+`centroid_flag`.

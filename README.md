@@ -15,6 +15,14 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **TIC 206609457 joins tier L1 (14 October 2026): 665 candidates.** This 13.33-day signal (6.2 R⊕, SNR 7.5–9)
+  passes the false-alarm classifier (hold-out score 0.84) but stayed in tier L because it had only the default
+  TRICERATOPS run, whose NFPP (0.103) was just above the 0.1 limit; that run included three capable stars 44–63″ away.
+  The Gaia-constrained TRICERATOPS run and the per-sector centroid test used for tier L1 give FPP 0.041 and NFPP 0
+  (nearby-star scenarios within 30″, as for the other L1 candidates), so it joins tier L1. Its centroid lies 15–38″
+  west of the star in all four sectors, where the TIC lists no star bright enough to cause the dip. The test gives
+  p = 0.004 for the star as the source and p < 0.001 for each capable neighbour, so the row carries `centroid_flag`, as
+  do three other L1 candidates. 607 full-sky candidates and 58 from the earlier searches.
 - **Website (13 October 2026).** [eumemic.github.io/exoplanets](https://eumemic.github.io/exoplanets/) has an abstract
   of the search, a candidate explorer, a transit planner and the methods (first built in PR #8). Every number on it is
   computed from the tables in this repository when the site is built on each push to `main`: the candidate tables,
@@ -525,15 +533,15 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) |
-|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) |
+|---|---|---|---|---|---|---|---|---|---|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 |
 
 All 2,990 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
@@ -553,12 +561,12 @@ the predictions have it too, so all four join on it.
 ### Predicted transit times
 
 [`candidates/ephemerides.csv`](candidates/ephemerides.csv) gives the ephemeris of each registered
-candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 711:
-the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October and 145 from the QLP re-search and the
-L1 re-selection on 14 October (UTC dates, column `registered`); 664 are counted now. The
+candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 712:
+the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October, and 146 on 14 October: 145 from the QLP
+re-search and the L1 re-selection, and TIC 206609457 (UTC dates, column `registered`). 665 are counted now. The
 files are append-only. Candidates that leave the counted tiers keep their rows, with their current tier.
 [`candidates/predictions.csv`](candidates/predictions.csv)
-lists all 45,762 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
+lists all 45,781 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
 the UTC time at Earth's centre, and the TESS sector when the transit falls inside a published TESS
 orbit window and the star is on a detector. The median 1σ uncertainty of the next transit is 12 min.
 Of the 543 registered on 10 October, 62 have 656 transits in the published windows of Sectors 109–111 (through 3 December
