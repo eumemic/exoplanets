@@ -148,17 +148,17 @@ C, N, L1 and L have a folder in [`candidates/allsky/`](../candidates/allsky/).
 |---|---|---|---|
 | `TIC` | TIC ID of the host star | integer | never empty |
 | `P_d` | Orbital period: the median of the transit-fit posterior, or the search period when there is no fit | days | never empty |
-| `P_err` | 1σ period uncertainty: half the 16th to 84th percentile range of the fit posterior | days | no transit fit (1,323 rows) |
+| `P_err` | 1σ period uncertainty: half the 16th to 84th percentile range of the fit posterior | days | no transit fit (1,322 rows) |
 | `T0_BJD` | Reference transit time of the fit, or of the search when there is no fit. Usually the first transit in the data; it is not the reference epoch of the ephemerides (see [quirks](#known-quirks)) | BJD_TDB, days | never empty |
 | `Rp_Re` | Planet radius from the fitted Rp/R*, using the TIC stellar radius. Without a fit: √(`depth_ppm` × 10⁻⁶) × `Rstar`, converted to R⊕ | R⊕ | never empty |
-| `b` | Impact parameter, median of the fit posterior | dimensionless | no transit fit (1,323 rows) |
+| `b` | Impact parameter, median of the fit posterior | dimensionless | no transit fit (1,322 rows) |
 | `T14_h` | Transit duration, first to fourth contact, median of the fit posterior. Without a fit: the box duration of the search | hours | never empty |
 | `depth_ppm` | Transit depth measured in the vetting step: a box over the transit-masked, re-detrended light curve. It is not the depth of the fitted model | ppm | never empty |
 | `MES` | LEO-Vetter multiple-event statistic | dimensionless | never empty |
 | `n_transits` | Number of transits in the data (LEO-Vetter `N_transit`) | count | never empty |
 
-Rows without a transit fit: 1,102 `likely nearby FP`, 114 `likely EB`, 105 `C`, 1 `reported` and 1 `B`. The tier B row is
-TIC 343942488; every other counted candidate has a fit.
+Rows without a transit fit: 1,102 `likely nearby FP`, 114 `likely EB`, 105 `C` and 1 `reported`; every counted candidate
+has a fit.
 
 ### Host star
 
@@ -510,8 +510,8 @@ a candidates table, so its `prefilter` is computed with the pre-filters and its 
   is the depth of the fitted model, so the two differ slightly for the same signal (493 and 484 ppm for TIC 137499615
   at 0.9919 d). `duration_h` in `ephemerides.csv` and `predictions.csv` is the fitted T14, as is `T14_h` in the
   candidate tables when there is a fit.
-- **The period of TIC 343942488 (0.65 d)** is the search period in `candidates_allsky.csv` (0.652735 d), and the row has
-  no `P_err` or `b`. The fitted period differs from it by 0.13%, and its ephemeris uses the fit (0.6536116 d).
+- **TIC 343942488 (0.65 d)** has transits in one sector only (Sector 83), so its period is uncertain by ±0.0004 d
+  and its predicted transit times by hours.
 - **`binary_at_target` can match a known planet.** A planet's own transits can appear in VSX (type EP) or in the TESS
   eclipsing-binary catalog. This happens for WASP-166 b (`tess_eb P=5.4435;vsx:EP P=5.4435` in
   `tiers_earlier_candidates.csv`) and for TIC 678621, a K2 candidate (`vsx:EP:`), now tier `reported`.
