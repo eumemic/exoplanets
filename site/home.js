@@ -129,13 +129,17 @@
     var CYC = 7.5;
     var o = S.canvas(cv, function (c, W, H, t) {
       var k = Math.sqrt(T.depth / 1e6), b = T.b;
-      var L = Math.sqrt((1 + k) * (1 + k) - b * b), v = 2 * L / T.T14;    // stellar radii per hour
-      var XR = 1.32, TH = XR / v;                                          // half-range in R* and hours
-      var tt = S.reduced ? CYC * 0.47 : t % CYC, p = Math.min(1, tt / (CYC - 1));
-      var hour = -TH + p * 2 * TH, xp = hour * v;
+      var L = Math.sqrt((1 + k) * (1 + k) - b * b), v = 2 * L / T.T14;    // stellar radii per hour; first contact at x = -L
       var narrow = W < 560;
       var sceneH = Math.round(H * (narrow ? 0.5 : 0.56));
       var Rs = Math.min(sceneH * 0.4, W * 0.22), cx = W / 2, cy = sceneH / 2 + 8;
+      // The light curve is drawn under the planet's path, on the same horizontal scale: its pen is always straight
+      // below the planet, so the dip starts and ends where the planet's disc meets the star's edge.
+      var XR = Math.min(2.6, (W / 2 - (narrow ? 40 : 56)) / Rs), TH = XR / v;   // half-range in R* and in hours
+      var tt = S.reduced ? CYC * 0.47 : t % CYC, p = Math.min(1, tt / (CYC - 1));
+      var hour = -TH + p * 2 * TH, xp = hour * v;
+      function sx(h) { return cx + h * v * Rs; }
+      var x0 = cx - XR * Rs, x1 = cx + XR * Rs;
       c.clearRect(0, 0, W, H);
       // corona
       var g = c.createRadialGradient(cx, cy, Rs * 0.9, cx, cy, Rs * 1.9);
@@ -151,7 +155,15 @@
       // path of the planet
       var py = cy + b * Rs;
       c.strokeStyle = 'rgba(244,237,225,0.18)'; c.setLineDash([3, 5]); c.lineWidth = 1;
-      c.beginPath(); c.moveTo(cx - XR * Rs, py); c.lineTo(cx + XR * Rs, py); c.stroke(); c.setLineDash([]);
+      c.beginPath(); c.moveTo(x0, py); c.lineTo(x1, py); c.stroke(); c.setLineDash([]);
+      // light curve geometry
+      var m = { t: sceneH + 22, b: 34 }, ph = H - m.t - m.b;
+      var dmax = T.depth * 1.28;
+      function sy(f) { return m.t + (f + 0.18 * dmax) / (1.18 * dmax) * ph; } // f in ppm below baseline (positive = dimmer)
+      // first and fourth contact: where the planet's disc meets the star's edge, down to the light curve
+      c.strokeStyle = 'rgba(142,197,230,0.28)'; c.setLineDash([2, 4]); c.lineWidth = 1;
+      [-1, 1].forEach(function (sg) { var xc = cx + sg * L * Rs; c.beginPath(); c.moveTo(xc + 0.5, py); c.lineTo(xc + 0.5, sy(T.depth) + 6); c.stroke(); });
+      c.setLineDash([]);
       // planet, to scale
       var px = cx + xp * Rs, pr = Math.max(1.6, k * Rs);
       c.fillStyle = '#05070d'; c.beginPath(); c.arc(px, py, pr, 0, TAU); c.fill();
@@ -161,19 +173,14 @@
       var lx = px + 10, ly = py + 26;
       c.strokeStyle = 'rgba(244,237,225,0.35)'; c.beginPath(); c.moveTo(px + 3, py + 4); c.lineTo(lx - 2, ly - 9); c.stroke();
       c.fillText(T.Rp.toFixed(2) + ' R⊕ planet', lx, ly);
-      // light curve
-      var m = { l: narrow ? 46 : 64, r: 16, t: sceneH + 22, b: 34 };
-      var pw = W - m.l - m.r, ph = H - m.t - m.b;
-      var dmax = T.depth * 1.28;
-      function sx(h) { return m.l + (h + TH) / (2 * TH) * pw; }
-      function sy(f) { return m.t + (f + 0.18 * dmax) / (1.18 * dmax) * ph; } // f in ppm below baseline (positive = dimmer)
+      // light curve axes
       c.strokeStyle = C.grid; c.lineWidth = 1;
-      c.beginPath(); c.moveTo(m.l, sy(0) + 0.5); c.lineTo(W - m.r, sy(0) + 0.5); c.stroke();
+      c.beginPath(); c.moveTo(x0, sy(0) + 0.5); c.lineTo(x1, sy(0) + 0.5); c.stroke();
       c.setLineDash([3, 4]); c.strokeStyle = 'rgba(240,178,90,0.45)';
-      c.beginPath(); c.moveTo(m.l, sy(T.depth) + 0.5); c.lineTo(W - m.r, sy(T.depth) + 0.5); c.stroke(); c.setLineDash([]);
+      c.beginPath(); c.moveTo(x0, sy(T.depth) + 0.5); c.lineTo(x1, sy(T.depth) + 0.5); c.stroke(); c.setLineDash([]);
       c.font = font(10); c.fillStyle = C.dim; c.textAlign = 'right';
-      c.fillText('0', m.l - 8, sy(0) + 3);
-      c.fillText('−' + Math.round(T.depth), m.l - 8, sy(T.depth) + 3);
+      c.fillText('0', x0 - 8, sy(0) + 3);
+      c.fillText('−' + Math.round(T.depth), x0 - 8, sy(T.depth) + 3);
       c.textAlign = 'center';
       for (var h = -Math.floor(TH); h <= Math.floor(TH); h++) {
         c.fillStyle = C.dim; c.fillText((h > 0 ? '+' : '') + h + ' h', sx(h), H - 14);
@@ -181,7 +188,7 @@
       }
       c.save(); c.translate(12, m.t + ph / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('FLUX (PPM)', 0, 0); c.restore();
       // curve: future faint, past bright
-      var N = 220;
+      var N = 260;
       c.lineWidth = 1; c.strokeStyle = 'rgba(240,178,90,0.25)';
       c.beginPath();
       for (i = 0; i <= N; i++) { var hh = -TH + 2 * TH * i / N, yy = sy(1e6 * dip(hh * v, k, b)); if (i) c.lineTo(sx(hh), yy); else c.moveTo(sx(hh), yy); }
@@ -196,9 +203,9 @@
       // depth label
       c.font = font(narrow ? 10 : 11); c.fillStyle = C.amberHi; c.textAlign = 'left';
       var lab = 'depth ≈ (Rp/R*)² = ' + k.toFixed(4) + '² ≈ ' + Math.round(k * k * 1e6) + ' ppm';
-      c.fillText(lab, m.l + 4, sy(T.depth) + 16);
+      c.fillText(lab, x0 + 4, sy(T.depth) + 16);
       c.fillStyle = C.dim; c.textAlign = 'right';
-      c.fillText('b = ' + b.toFixed(2) + '  \u00B7  T14 = ' + T.T14.toFixed(2) + ' h', W - m.r, sy(0) - 8);
+      c.fillText('b = ' + b.toFixed(2) + '  \u00B7  T14 = ' + T.T14.toFixed(2) + ' h', x1, sy(0) - 8);
     }, { aspect: function (w) { return w < 560 ? 1.05 : 0.6; }, staticT: 0, t0: CYC * 0.4 });
     return o;
   })();
