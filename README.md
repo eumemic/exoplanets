@@ -416,7 +416,9 @@ but not counted. Of the 66 earlier candidates, 24 are tier A, 36 tier B and 6 ti
 On 11 October the earlier candidates were also held to the full-sky TRICERATOPS bar (with Gaia limits and the
 centroid Bayes factor); TIC 351339274 and 394657305 fail it on NFPP and move to tier C, leaving 24 in tier A
 and 34 in tier B. On 13 October two signals set aside only for a TIC artifact joined (WASP-166 27.0 d in tier A,
-TIC 286944151 2.28 d in tier B), making 25 and 35 ([details](validation/tic_artifacts.md)).
+TIC 286944151 2.28 d in tier B), making 25 and 35 ([details](validation/tic_artifacts.md)). Later that day the
+proper-motion fix to the binary check (PR #13) gave TIC 165827520 (tier A) and 32636748 (tier B) Gaia RUWE values of
+3.72 and 1.73, which moved them to tier C and left 24 and 34 ([details](validation/gaia_proper_motion.md)).
 
 **Reliability and completeness, measured on a 1% pilot** (40,797 random stars; superseded by
 the 798,769-star measurement in the second release below). Inverted copies of
