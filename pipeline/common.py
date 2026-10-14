@@ -1,4 +1,5 @@
 """Shared paths, product selection and light-curve loading."""
+import os as _os
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,19 @@ SPOC_BAD_BITS = 17087 | 8192
 # TGLC-based releases marks cadences whose scatter is within ~10% of clean
 # ones (checked on TIC 4206066, S98), so it is not treated as bad.
 QLP_BAD_BITS = (1 | 4 | 8 | 16 | 32 | 128 | 1024 | 2048 | 4096 | (1 << 30))
+
+# First cadence of each TESS orbit in QLP Sectors 94-104 (BTJD), from the ORBITID column of three QLP light
+# curves per sector (they agree to within 0.006 d). In these sectors QLP's systematics-corrected flux often dips
+# (or rises) for several hours at the start and at the end of an orbit's data; quality flags can move the start
+# by most of a day. Detrending leaves part of these ramps, which repeat every orbit and mimic transits at ~13 d
+# (or single deep events). load_star drops the first QLP_ORBIT_MASK_DAYS and the last QLP_ORBIT_MASK_END_DAYS of
+# each orbit's cadences in these sectors (EXO_QLP_ORBIT_MASK, EXO_QLP_ORBIT_MASK_END; 0 keeps them).
+QLP_ORBIT_STARTS = (3856.261, 3868.942, 3882.327, 3894.876, 3907.771, 3920.694, 3933.656, 3947.077, 3960.753,
+                    3974.966, 3988.494, 4003.005, 4017.091, 4031.797, 4046.107, 4063.011, 4073.991, 4087.487,
+                    4100.675, 4113.747, 4127.018, 4139.728, 4152.027, 4165.434, 4178.582, 4191.985)
+QLP_ORBIT_MASK_SECTORS = range(94, 105)
+QLP_ORBIT_MASK_DAYS = float(_os.environ.get("EXO_QLP_ORBIT_MASK", "1.0"))
+QLP_ORBIT_MASK_END_DAYS = float(_os.environ.get("EXO_QLP_ORBIT_MASK_END", "0.5"))
 
 
 def tic_path(tic: int) -> Path:
@@ -160,27 +174,47 @@ def read_lc_fits(path, provenance):
     return out
 
 
-def load_star(tic: int):
-    """Load the per-star npz written by download.py -> list of sector dicts."""
+def mask_qlp_orbit_edges(s, days=None, end_days=None):
+    """Sector dict without the first `days` and the last `end_days` of each orbit's cadences, for a QLP
+    Sector 94-104 light curve."""
+    days = QLP_ORBIT_MASK_DAYS if days is None else days
+    end_days = QLP_ORBIT_MASK_END_DAYS if end_days is None else end_days
+    if s["provenance"] != "QLP" or s["sector"] not in QLP_ORBIT_MASK_SECTORS or (days <= 0 and end_days <= 0):
+        return s
+    t = s["time"]
+    start = np.asarray(QLP_ORBIT_STARTS)
+    k = np.searchsorted(start, t + 0.02, side="right") - 1      # orbit of each cadence (0.02 d margin; -1: none)
+    first, last = np.full(len(start), np.inf), np.full(len(start), -np.inf)
+    np.minimum.at(first, k[k >= 0], t[k >= 0])                   # first and last cadence of each orbit
+    np.maximum.at(last, k[k >= 0], t[k >= 0])
+    kk = np.maximum(k, 0)
+    drop = (k >= 0) & ((t < first[kk] + days) | (t > last[kk] - end_days))
+    if not drop.any():
+        return s
+    return {key: v[~drop] if isinstance(v, np.ndarray) and v.shape == t.shape else v for key, v in s.items()}
+
+
+def load_star(tic: int, orbit_mask_days=None, orbit_mask_end_days=None):
+    """Load the per-star npz written by download.py -> list of sector dicts (QLP orbit edges masked)."""
     p = tic_path(tic)
     z = np.load(p, allow_pickle=False)
     sectors = [int(s) for s in z["sectors"]]
     out = []
     for s in sectors:
         k = f"s{s}_"
-        out.append(dict(sector=s,
-                        provenance=str(z[k + "prov"]),
-                        time=z[k + "time"], flux=z[k + "flux"].astype(float),
-                        flux_err=z[k + "flux_err"].astype(float),
-                        flux_err_source=str(z[k + "flux_err_source"]) if k + "flux_err_source" in z else "unknown",
-                        cx=z[k + "cx"], cy=z[k + "cy"], bkg=z[k + "bkg"],
-                        exptime=float(z[k + "exptime"])))
+        d = dict(sector=s,
+                 provenance=str(z[k + "prov"]),
+                 time=z[k + "time"], flux=z[k + "flux"].astype(float),
+                 flux_err=z[k + "flux_err"].astype(float),
+                 flux_err_source=str(z[k + "flux_err_source"]) if k + "flux_err_source" in z else "unknown",
+                 cx=z[k + "cx"], cy=z[k + "cy"], bkg=z[k + "bkg"],
+                 exptime=float(z[k + "exptime"]))
+        out.append(mask_qlp_orbit_edges(d, orbit_mask_days, orbit_mask_end_days))
     return out
 
 
 # Cadence (minutes) of the means the biweight trend is fitted to; 0 fits every cadence.
 # EXO_TREND_BIN overrides it for tests.
-import os as _os
 TREND_BIN_MIN = float(_os.environ.get("EXO_TREND_BIN", "10"))
 
 

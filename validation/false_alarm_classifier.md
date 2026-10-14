@@ -134,3 +134,33 @@ and 101–104 (PR #6). An independent analysis submitted as PR #7, not yet revie
 TIC 90956394 keep consistent dips, and that TIC 90956394's restored Sector 94 data allow a 13.3 d period (twice the
 catalog's), which would point to an eclipsing binary.
 
+
+## Retraining after the QLP re-search (13 October 2026)
+
+The QLP re-search ([`qlp_orbit_edges.md`](qlp_orbit_edges.md)) changed the light curves of 1,770,906 full-sky stars and
+of 351,954 stars of the inverted-light-curve sample. We rebuilt the table with the same features and cuts: the real
+rows of re-searched stars (5,970) were replaced by their re-search rows (6,033), and the inverted rows of re-searched
+calibration stars (439) by theirs (432), each star keeping its inverted sample. Signals already in our tables are kept
+as real rows. The table and the star-grouped scores in
+[`false_alarm_classifier_table.csv.gz`](false_alarm_classifier_table.csv.gz) and
+[`false_alarm_classifier_scores_star.csv.gz`](false_alarm_classifier_scores_star.csv.gz) are now the retrained ones
+(13,516 real and 1,026 inverted rows; the previous versions are in the repository history). The star counts used for
+the weights are unchanged.
+
+With `--split star`, the 0.80 cut selects 117 of the 395 clean SNR 7.5–9 signals with 9.2 expected false alarms
+(purity 0.92, as before). `fa_score` in the catalog is the new out-of-fold score for every signal with a row in the
+new table (2,085 of the 2,426 earlier full-sky rows and all new ones); the other 341 keep the previous score.
+
+Tier L1 was re-selected with the new hold-out scores (approved 13 October):
+- Six L1 members fall below 0.80 and leave: TIC 184607166 and 332502575 to tier L (MES ≥ 9); TIC 422443793,
+  124382169, 236383404 and 26016707 to likely false alarm. TIC 156909067 leaves for tier C: with the proper-motion fix
+  in the binary check (PR #13) its Gaia DR3 RUWE is 3.62. The eight L1 members whose signal has no comparable row in
+  the new table (the re-search found it at SNR ≥ 9, or not at all) keep tier L1 and their previous score.
+- 46 existing SNR 7.5–9 signals not in L1 reach 0.80. Two are likely eclipsing binaries and 14 are grazing (b ≥ 0.9)
+  or have RUWE > 1.4; they keep their tiers. The other 30 got TRICERATOPS runs (default and with Gaia limits) and
+  per-sector centroids where they had none: 28 pass and join tier L1, and TIC 238446565 (NFPP 0.31) and 279320939
+  (FPP 0.88) keep their tiers. Three of the 28 (TIC 458482761, 407505256 and 270355278) had left L1 at the
+  star-grouped re-selection earlier the same day.
+- 38 signals of the re-search join tier L1 by the same rules.
+
+Tier L1 now has 112 candidates.

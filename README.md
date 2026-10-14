@@ -5,6 +5,18 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **QLP re-search (13 October 2026): 671 candidates.** With the reader fix from PR #6, 1,770,906 full-sky stars (44%)
+  gained QLP light curves, so we searched them again. A pilot found that QLP's corrected flux in Sectors 94–104 dips or
+  rises for several hours at the start and end of each orbit, which mimics transits at ~13 days; we now drop the first
+  day and the last half day of each orbit's QLP data in those sectors. QLP Sectors 74–79, re-delivered by MAST as
+  version 2, were also missing from our light-curve index (issue #9, PR #12) and are now included. The re-search found
+  302 new clean signals and 262 new signals whose only pixel flag is a capable neighbour within 15″. After the same
+  checks as before, 120 are counted (6 A, 51 B, 25 N, 38 L1); none is reported in ADS or Zenodo. The false-alarm
+  classifier was retrained with the re-searched signals and tier L1 re-selected (6 leave, 28 join). The binary check
+  now moves TIC positions to the Gaia epoch (PR #13), which gives 3 counted candidates a RUWE above 1.4 (to tier C).
+  TIC 141937667 (13.36 d), which drew 59% of its signal from orbit edges and disappears with the mask, is now a likely
+  false alarm. 613 full-sky candidates and 58 from the earlier searches
+  ([details](validation/qlp_orbit_edges.md), [classifier](validation/false_alarm_classifier.md#retraining-after-the-qlp-re-search-13-october-2026)).
 - **Tier L1 re-selected, and a data gap found (13 October 2026): 533 candidates.** An outside contributor showed
   that the false-alarm classifier's validation let signals from the same star appear in training and evaluation
   (PR #4, merged). With validation grouped by star, 8 tier L1 candidates fall below the 0.80 score cut and leave; 11
@@ -13,7 +25,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   ([details](validation/false_alarm_classifier.md#re-selection-of-tier-l1-13-october-2026)). The same contributor
   found that our reader dropped QLP light curves whose uncertainty column is empty (PR #6, merged). In the earlier
   searches that removed 24–82% of the QLP light curves in Sectors 94–97 and 101–104, and we estimate about 900,000
-  such light curves were missing from the full-sky search; a re-search of the affected stars is planned. Separately, MAST reports a QLP timing error from the second
+  such light curves were missing from the full-sky search (re-searched later the same day, above). Separately, MAST reports a QLP timing error from the second
   half of Sector 99 to Sector 104 whose corrected files are not yet delivered; fits that use those sectors may shift by
   minutes.
 - **TIC artifacts removed (13 October 2026): 530 candidates.** Our neighbour checks and TRICERATOPS had counted TIC
@@ -474,30 +486,30 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) |
-|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 |
-| likely binary, likely nearby false positive, likely false alarm, reported elsewhere | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) |
+|---|---|---|---|---|---|---|---|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 |
+| likely binary, likely nearby false positive, likely false alarm, reported elsewhere | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 |
 
-All 2,426 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
+All 2,990 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
-SNR 7.5–9, or neighbour within 15″); tiers A, B, C, N, L1 and L have folders in
+SNR 7.5–9, or neighbour within 15″; column `search`: the full-sky search or the QLP re-search); tiers A, B, C, N, L1 and L have folders in
 [`candidates/allsky/`](candidates/allsky/).
 
 ### Predicted transit times
 
 [`candidates/ephemerides.csv`](candidates/ephemerides.csv) gives the ephemeris of each registered
-candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 566:
-the 543 counted on 10 October, 10 that joined on 11 October and 13 on 13 October (column `registered`); 533 are
-counted now. The
+candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 711:
+the 543 counted on 10 October, 10 that joined on 11 October, 13 on 13 October and 145 from the QLP re-search and the
+L1 re-selection (registered 14 October UTC; column `registered`); 671 are counted now. The
 files are append-only. Candidates that leave the counted tiers keep their rows, with their current tier.
 [`candidates/predictions.csv`](candidates/predictions.csv)
-lists all 36,423 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
+lists all 45,762 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
 the UTC time at Earth's centre, and the TESS sector when the transit falls inside a published TESS
 orbit window and the star is on a detector. The median 1σ uncertainty of the next transit is 12 min.
 Of the 543 registered on 10 October, 62 have 656 transits in the published windows of Sectors 109–111 (through 3 December
@@ -729,6 +741,13 @@ EXO_DATA_SOURCE=s3 ../.venv/bin/python fpp_batch.py list.csv --stars stars.parqu
 # centroids in every sector (12 October): difference-image fits per sector (inside AWS), then the test
 EXO_DATA_SOURCE=s3 ../.venv/bin/python centroid_sectors.py ../validation/centroid_sectors_list.csv --out ../results/cs
 ../.venv/bin/python centroid_test.py --dir ../results/cs       # without --dir, reruns from validation/ alone
+# QLP re-search (13 October): rebuild the index with QLP v02 products (index_s3.py), select the stars with QLP light
+# curves in Sectors 94-104 or newly in 74-79, and run the full-sky steps on them; load_star masks QLP orbit edges in
+# Sectors 94-104 (EXO_QLP_ORBIT_MASK, EXO_QLP_ORBIT_MASK_END). Same for the inverted sample with EXO_INVERT=1.
+EXO_DATA_SOURCE=s3 ../.venv/bin/python run_shard.py targets.parquet manifest.parquet --shard 0 --nshards 1 \
+    --out ../results/search_q --keep-snr 7.5
+../.venv/bin/python collect.py --search ../results/search_q --stars targets.parquet --snr 7.5 --out ../results/cands_q.csv \
+    --signals ../results/signals_q.parquet      # then vet.py, shortlist.py, followup.py, finalize_shard.py as above
 ```
 
 `EXO_DATA_SOURCE=s3` reads light curves from the STScI open-data bucket and falls back to MAST.
