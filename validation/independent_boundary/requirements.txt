@@ -1,0 +1,8 @@
+numpy==2.5.3
+pandas==2.3.3
+scipy==1.18.1
+scikit-learn==1.9.1
+astropy==8.0.1
+astroquery==0.4.11
+requests==2.34.2
+matplotlib==3.11.2

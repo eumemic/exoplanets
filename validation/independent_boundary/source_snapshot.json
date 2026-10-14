@@ -1,0 +1,30 @@
+{
+  "snapshot_commit": "ec8311b19a61092ad5eae3d34e947b14485d363e",
+  "classifier_commit": "ade1e93a07b06074dce41bb2ebcbb1e5d1890bb7",
+  "sample_checked_unchanged_at": "d6594beb695cde8ebf308a4f5cf4490aa5930a5d",
+  "snapshot_file_sha256": {
+    "validation/false_alarm_classifier_table.csv.gz": "b5a2215499a0c2726086ce7e7de7669983180cf59e074c863733c7376610a314",
+    "validation/false_alarm_classifier_scores.csv.gz": "25e5a5b8d1a349c3838df371b1918a3816c0860ba7839e02a69d8fc3080e8bdb",
+    "results_public/candidates_allsky.csv": "7d6af9179ee6f04dd1ef0a7ad0ae30c33ee91ea98fbd34ffd1d3aac42d98f724"
+  },
+  "python": "3.12.15",
+  "versions": {
+    "numpy": "2.5.3",
+    "pandas": "2.3.3",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "astropy": "8.0.1",
+    "astroquery": "0.4.11",
+    "requests": "2.34.2",
+    "matplotlib": "3.11.2"
+  },
+  "sample_signals": 29,
+  "products": 210,
+  "raw_product_bytes": 133859520,
+  "analysis_windows_in_durations": [
+    2.5,
+    4.0
+  ],
+  "phase_control_grid": 49,
+  "period_or_epoch_search": false
+}

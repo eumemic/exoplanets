@@ -704,6 +704,12 @@ rejected by hand.
   offset.
 - **Compiled LEO-Vetter loop.** On 6 test signals the compiled version gives the same pass/fail
   results and metrics equal to ~10⁻⁹ (`EXO_SLOW_LEO=1` runs the original).
+- **Independent local-baseline audit.** Remeasuring the 29 signals whose classifier selection
+  changes under star-grouped validation gives event-level checks on 210 public light curves.
+  Seven of the eight counted candidates retain dips under both baseline widths; TIC 90956394
+  has unresolved period and detrending sensitivity in a previously omitted QLP sector.
+  This uses existing data and fixed ephemerides, and does not change tiers or establish planets
+  ([measurements, limitations and reproduction](validation/independent_boundary/README.md)).
 
 ### Performance
 
