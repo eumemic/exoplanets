@@ -131,7 +131,7 @@
       var k = Math.sqrt(T.depth / 1e6), b = T.b;
       var L = Math.sqrt((1 + k) * (1 + k) - b * b), v = 2 * L / T.T14;    // stellar radii per hour; first contact at x = -L
       var narrow = W < 560;
-      var sceneH = Math.round(H * (narrow ? 0.5 : 0.56));
+      var sceneH = Math.round(H * (narrow ? 0.58 : 0.64));
       var Rs = Math.min(sceneH * 0.4, W * 0.22), cx = W / 2, cy = sceneH / 2 + 8;
       // The light curve is drawn under the planet's path, on the same horizontal scale: its pen is always straight
       // below the planet, so the dip starts and ends where the planet's disc meets the star's edge.
@@ -158,8 +158,11 @@
       c.beginPath(); c.moveTo(x0, py); c.lineTo(x1, py); c.stroke(); c.setLineDash([]);
       // light curve geometry
       var m = { t: sceneH + 22, b: 34 }, ph = H - m.t - m.b;
-      var dmax = T.depth * 1.28;
-      function sy(f) { return m.t + (f + 0.18 * dmax) / (1.18 * dmax) * ph; } // f in ppm below baseline (positive = dimmer)
+      // brightness axis in per cent of the star's light, over a fixed round span (the smallest of 0.5%, 1%, 2%,
+      // 5%, 10% at least four times the depth), so the dip is drawn as shallow as it is rather than filling the plot
+      var span = [5e-3, 1e-2, 2e-2, 5e-2, 0.1].filter(function (x) { return x >= 4 * T.depth / 1e6; })[0] || 0.1;
+      var dmax = span * 1e6;
+      function sy(f) { return m.t + (f + 0.08 * dmax) / (1.08 * dmax) * ph; } // f in ppm below baseline (positive = dimmer)
       // first and fourth contact: where the planet's disc meets the star's edge, down to the light curve
       c.strokeStyle = 'rgba(142,197,230,0.28)'; c.setLineDash([2, 4]); c.lineWidth = 1;
       [-1, 1].forEach(function (sg) { var xc = cx + sg * L * Rs; c.beginPath(); c.moveTo(xc + 0.5, py); c.lineTo(xc + 0.5, sy(T.depth) + 6); c.stroke(); });
@@ -173,20 +176,24 @@
       var lx = px + 10, ly = py + 26;
       c.strokeStyle = 'rgba(244,237,225,0.35)'; c.beginPath(); c.moveTo(px + 3, py + 4); c.lineTo(lx - 2, ly - 9); c.stroke();
       c.fillText(T.Rp.toFixed(2) + ' R⊕ planet', lx, ly);
-      // light curve axes
-      c.strokeStyle = C.grid; c.lineWidth = 1;
-      c.beginPath(); c.moveTo(x0, sy(0) + 0.5); c.lineTo(x1, sy(0) + 0.5); c.stroke();
+      // light curve axes: gridlines and labels every fifth of the span, in per cent of the star's light
+      c.font = font(10); c.lineWidth = 1;
+      var dec = span < 0.02 ? 1 : 0;
+      for (var gi = 0; gi <= 5; gi++) {
+        var gf = gi * dmax / 5;
+        c.strokeStyle = gi ? 'rgba(164,182,222,0.07)' : C.grid;
+        c.beginPath(); c.moveTo(x0, sy(gf) + 0.5); c.lineTo(x1, sy(gf) + 0.5); c.stroke();
+        c.fillStyle = C.dim; c.textAlign = 'right';
+        c.fillText((100 - gf / 1e4).toFixed(dec) + '%', x0 - 8, sy(gf) + 3);
+      }
       c.setLineDash([3, 4]); c.strokeStyle = 'rgba(240,178,90,0.45)';
       c.beginPath(); c.moveTo(x0, sy(T.depth) + 0.5); c.lineTo(x1, sy(T.depth) + 0.5); c.stroke(); c.setLineDash([]);
-      c.font = font(10); c.fillStyle = C.dim; c.textAlign = 'right';
-      c.fillText('0', x0 - 8, sy(0) + 3);
-      c.fillText('−' + Math.round(T.depth), x0 - 8, sy(T.depth) + 3);
       c.textAlign = 'center';
       for (var h = -Math.floor(TH); h <= Math.floor(TH); h++) {
         c.fillStyle = C.dim; c.fillText((h > 0 ? '+' : '') + h + ' h', sx(h), H - 14);
         c.strokeStyle = C.grid; c.beginPath(); c.moveTo(sx(h) + 0.5, sy(0) + 4); c.lineTo(sx(h) + 0.5, sy(0) + 8); c.stroke();
       }
-      c.save(); c.translate(12, m.t + ph / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('FLUX (PPM)', 0, 0); c.restore();
+      c.save(); c.translate(12, m.t + ph / 2); c.rotate(-Math.PI / 2); c.textAlign = 'center'; c.fillText('BRIGHTNESS', 0, 0); c.restore();
       // curve: future faint, past bright
       var N = 260;
       c.lineWidth = 1; c.strokeStyle = 'rgba(240,178,90,0.25)';
@@ -202,11 +209,11 @@
       c.fillStyle = C.amberHi; c.beginPath(); c.arc(sx(hour), cyv, 3.6, 0, TAU); c.fill();
       // depth label
       c.font = font(narrow ? 10 : 11); c.fillStyle = C.amberHi; c.textAlign = 'left';
-      var lab = 'depth ≈ (Rp/R*)² = ' + k.toFixed(4) + '² ≈ ' + Math.round(k * k * 1e6) + ' ppm';
+      var lab = 'depth ≈ (Rp/R*)² = ' + k.toFixed(4) + '² ≈ ' + Math.round(k * k * 1e6) + ' ppm = ' + (k * k * 100).toFixed(2) + '% of the light';
       c.fillText(lab, x0 + 4, sy(T.depth) + 16);
       c.fillStyle = C.dim; c.textAlign = 'right';
       c.fillText('b = ' + b.toFixed(2) + '  \u00B7  T14 = ' + T.T14.toFixed(2) + ' h', x1, sy(0) - 8);
-    }, { aspect: function (w) { return w < 560 ? 1.05 : 0.6; }, staticT: 0, t0: CYC * 0.4 });
+    }, { aspect: function (w) { return w < 560 ? 0.92 : 0.5; }, staticT: 0, t0: CYC * 0.4 });
     return o;
   })();
   function transitReadout() {
