@@ -5,9 +5,10 @@ whether any sector with transits has a SPOC 2-minute light curve. Cutting the tr
 sectors would change the detrending and the period search.
 
 Usage:
-  python findability.py transits --cands ../results/allsky_*/cands_allsky.csv
+  python findability.py transits --cands ../results/allsky_*/cands_allsky.csv [--cands-research ../results/q*/cands_q*.csv]
       Writes validation/findability_transits.csv.gz, one row per transit, from the search's candidate tables (column
-      events), with the sector from data/tess_schedule/TESS_orbit_times.csv
+      events): each candidate's transits come from the pass that found it (catalog column `search`: the full-sky
+      search's tables, or the QLP re-search's), with the sector from data/tess_schedule/TESS_orbit_times.csv
       (https://tess.mit.edu/public/files/TESS_orbit_times.csv) and the light-curve source of that sector from the
       candidate's vetting.json.
   python findability.py
@@ -46,11 +47,14 @@ def sector_of(t, win):
     return int(win.Sector.values[np.argmin(np.minimum(np.abs(win.t0.values - t), np.abs(win.t1.values - t)))])
 
 
-def build_transits(cands_files):
+def build_transits(cands_files, research_files=()):
     a = pd.read_csv(ROOT / "results_public" / "candidates_allsky.csv")
-    k = a[a.tier.isin(["A", "B", "N"])][["TIC", "P_d", "tier"]]
-    c = pd.concat([pd.read_csv(f, usecols=["tic", "period", "events"]) for f in cands_files], ignore_index=True)
+    k = a[a.tier.isin(["A", "B", "N"])][["TIC", "P_d", "tier", "search"]]
+    read = lambda fs: pd.concat([pd.read_csv(f, usecols=["tic", "period", "events"]) for f in fs], ignore_index=True)
+    c = read(cands_files)
     c = c[c.tic.isin(k.TIC)]
+    cr = read(research_files) if research_files else c.iloc[:0]
+    cr = cr[cr.tic.isin(k.TIC)]
     prov = {}
     for f in glob.glob(str(ROOT / "candidates" / "allsky" / "*" / "vetting.json")):
         j = json.load(open(f))
@@ -58,7 +62,8 @@ def build_transits(cands_files):
     win = sector_windows()
     rows = []
     for r in k.itertuples():
-        m = c[(c.tic == r.TIC) & ((c.period / r.P_d - 1).abs() < 2e-3)]
+        src = cr if r.search == "QLP re-search" else c
+        m = src[(src.tic == r.TIC) & ((src.period / r.P_d - 1).abs() < 2e-3)]
         if not len(m):
             print("no search events for TIC", r.TIC, r.P_d)
             continue
@@ -66,8 +71,8 @@ def build_transits(cands_files):
         pv = next((v for p, v in prov.get(r.TIC, []) if abs(p / r.P_d - 1) < 2e-3), {})
         for epoch, t, depth, err, cov in json.loads(m.events):
             s = sector_of(t, win)
-            rows.append(dict(TIC=r.TIC, P_d=r.P_d, tier=r.tier, epoch=epoch, t_btjd=t, depth_ppm=depth,
-                             err_ppm=err, coverage=cov, sector=s, prov=pv.get(s, "")))
+            rows.append(dict(TIC=r.TIC, P_d=r.P_d, tier=r.tier, search=r.search, epoch=epoch, t_btjd=t,
+                             depth_ppm=depth, err_ppm=err, coverage=cov, sector=s, prov=pv.get(s, "")))
     out = pd.DataFrame(rows)
     out.to_csv(TRANSITS, index=False)
     print(f"{len(out)} transits of {out.groupby(['TIC', 'P_d']).ngroups} candidates -> {TRANSITS.relative_to(ROOT)}")
@@ -82,10 +87,10 @@ def summary():
     tr = pd.read_csv(TRANSITS)
     tr = tr[tr.err_ppm > 0]
     rows = []
-    for (tic, P, tier), g in tr.groupby(["TIC", "P_d", "tier"]):
+    for (tic, P, tier, search), g in tr.groupby(["TIC", "P_d", "tier", "search"]):
         d, e, s = g.depth_ppm.values, g.err_ppm.values, g.sector.values
         two = (g.prov == "SPOC").values
-        rows.append(dict(TIC=tic, P_d=P, tier=tier, n_transits=len(g), n_sectors=len(set(s)), snr=snr(d, e),
+        rows.append(dict(TIC=tic, P_d=P, tier=tier, search=search, n_transits=len(g), n_sectors=len(set(s)), snr=snr(d, e),
                          best_sector_snr=max(snr(d[s == x], e[s == x]) for x in set(s)),
                          **{f"snr_to_s{n}": snr(d[s <= n], e[s <= n]) for n in CUTS},
                          two_min=bool(two.any()), n_2min_transits_to_s96=int((two & (s <= 96)).sum()),
@@ -109,9 +114,10 @@ def summary():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("step", nargs="?", default="summary", choices=["transits", "summary"])
-    ap.add_argument("--cands", nargs="+", help="the search's candidate tables (transits step)")
+    ap.add_argument("--cands", nargs="+", help="the full-sky search's candidate tables (transits step)")
+    ap.add_argument("--cands-research", nargs="*", default=[], help="the QLP re-search's candidate tables")
     a = ap.parse_args()
     if a.step == "transits":
-        build_transits(a.cands)
+        build_transits(a.cands, a.cands_research)
     else:
         summary()

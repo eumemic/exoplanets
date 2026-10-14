@@ -1,10 +1,10 @@
 # Why earlier searches missed these signals
 
-On 12 October 2026 we checked when the counted full-sky candidates could have been found, and why the TESS pipelines
-did not report them. The numbers cover the 438 full-sky candidates in tiers A, B and N (the SNR ≥ 9 search); the
-tier L1 candidates are weaker still. Later the same day, the per-sector centroid test moved 18 of the 438 out of the
-counted tiers ([`centroid_sectors.md`](centroid_sectors.md)); the numbers here include them, and for the remaining 420
-the percentages are within one point of these. Files:
+When could the counted full-sky candidates have been found, and why did the TESS pipelines not report them? The
+numbers cover the 494 full-sky candidates in tiers A, B and N (the SNR ≥ 9 search), 414 from the first pass and 80
+from the QLP re-search; the tier L1 candidates are weaker still. (First written on 12 October 2026 for the 438
+candidates of that day; updated on 13 October after the QLP re-search and the CTOI correction.) Each candidate's
+transits come from the pass that found it. Files:
 - [`findability_transits.csv.gz`](findability_transits.csv.gz): the search's per-transit depths, one row per transit,
   with the sector and that sector's light-curve source (SPOC 2-minute, TESS-SPOC or QLP);
 - [`findability.csv`](findability.csv): per candidate, the SNR by data date and the best single-sector SNR
@@ -19,26 +19,25 @@ over its error). This ignores how fewer sectors would change the detrending and 
 
 | Data through | Observed by | Candidates at SNR ≥ 9 |
 |---|---|---|
-| Sector 26, end of the prime mission | July 2020 | 62 (14%) |
-| Sector 55, end of the first extended mission | September 2022 | 204 (47%) |
-| Sector 69 | September 2023 | 287 (66%) |
-| Sector 83 | September 2024 | 345 (79%) |
-| Sector 96, end of the second extended mission | September 2025 | 407 (93%) |
+| Sector 26, end of the prime mission | July 2020 | 61 (12%) |
+| Sector 55, end of the first extended mission | September 2022 | 210 (43%) |
+| Sector 69 | September 2023 | 300 (61%) |
+| Sector 83 | September 2024 | 358 (72%) |
+| Sector 96, end of the second extended mission | September 2025 | 432 (87%) |
 
-Only 24 needed Sectors 97–104, but this understates what the newest sectors contribute: the light curves used
-here lacked many QLP products from Sectors 94–97 and 101–104 (24–82% in the earlier searches), which our reader
-dropped because their
-uncertainty columns are empty (found on 13 October; PR #6). The other 7 come out at SNR 8.9–9.0 by this measure even with every sector; the search's
-threshold used the SNR of its period search, which is slightly higher.
+52 needed Sectors 97–104: 30 of the 80 from the QLP re-search, whose added QLP light curves are mostly from Sectors
+94–104, and 22 of the 414 from the first pass (93% of which reach SNR 9 with the data through Sector 96). Another 10
+come out just below SNR 9 (8.8 to 9.0) by this measure even with every sector; the search's threshold used the SNR of
+its period search, which is slightly higher.
 
 ## The signals are weak in any one sector
 
-The median candidate has transits in 5 sectors (10–90%: 2–17), and its best sector reaches SNR 7.0. 223 candidates
-(51%) never reach 7.1, SPOC's detection threshold, in any single sector, and 315 (72%) never reach 9. 360 (82%) are on
+The median candidate has transits in 5 sectors (10–90%: 2–17), and its best sector reaches SNR 6.7. 271 candidates
+(55%) never reach 7.1, SPOC's detection threshold, in any single sector, and 363 (73%) never reach 9. 404 (82%) are on
 stars observed only in full-frame images in the sectors with transits, which SPOC's multi-sector searches of 2-minute
 targets do not include.
 
-## The 78 candidates with 2-minute data
+## The 90 candidates with 2-minute data
 
 We downloaded SPOC's 2-minute light curves of their transit sectors up to Sector 96, the range of SPOC's latest
 multi-sector search, and re-measured the transits in the PDCSAP flux with three noise estimates:
@@ -48,10 +47,8 @@ multi-sector search, and re-measured the transits in the PDCSAP flux with three 
 - **SPOC's CDPP:** the noise SPOC reports for each light curve (the CDPP header values, interpolated to the box
   length).
 
-Each SNR is the highest over box lengths of 0.5–9 h, since SPOC's search tries several durations. 10 candidates have
-fewer than two 2-minute transits through Sector 96, too few for a periodic search. One is TIC 266376971 (T = 8.3;
-3.3 R⊕, 19.8 d), whose other two 2-minute transits came in Sectors 99 and 100 (relabelled reported on 13 October:
-it is the single-transit CTOI 266376971.01; see [`ctoi_matches.md`](ctoi_matches.md)). For the other 68:
+Each SNR is the highest over box lengths of 0.5–9 h, since SPOC's search tries several durations. 13 candidates have
+fewer than two 2-minute transits through Sector 96, too few for a periodic search. For the other 77:
 
 | Estimate | Reach 7.1 | Highest |
 |---|---|---|
@@ -66,8 +63,9 @@ it is the single-transit CTOI 266376971.01; see [`ctoi_matches.md`](ctoi_matches
   should not be compared one-to-one with SPOC's MES.
 - The CDPP header values are root-mean-square averages over the whole light curve, so they overstate the noise for
   transits in quiet stretches.
-- None of the 8 SPOC TCEs on these 78 stars has its epoch inside one of our transits, so SPOC did not report these
-  signals at another period either.
+- Of the 10 SPOC TCEs on these 90 stars, one has its epoch inside one of our transits: a Sectors 1–36 TCE at 35.21 d
+  on TIC 200744242 (our 12.27 d candidate), whose period is 2.87 times ours, so its other events fall elsewhere
+  ([`ctoi_matches.md`](ctoi_matches.md)). Otherwise SPOC did not report these signals at another period either.
 
 For the 2–7 candidates that reach 7.1, SPOC's search may have rejected the signal in its further statistical tests or
 given less weight to transits near data gaps; we cannot tell which without running it. The strongest is TIC 402339417

@@ -18,12 +18,12 @@
 <meta property="og:image" content="https://eumemic.github.io/exoplanets/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<meta property="og:image:alt" content="A whole-sky map of every counted TESS transit candidate, coloured by reliability tier, beside the title Transit candidates from multi-sector TESS searches, the tag Candidates, not confirmed, and the number of stars searched and of counted candidates.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Methods and validation | TESS transit candidates">
 <meta name="twitter:description" content="Plain-language summary of the TESS transit search and vetting pipeline of eumemic/exoplanets, with links to each validation note.">
 <meta name="twitter:image" content="https://eumemic.github.io/exoplanets/og.png">
-<meta name="twitter:image:alt" content="A whole-sky map of every counted TESS transit candidate, glowing in the colours of their reliability tiers, beside the title Faint transits in light TESS had already recorded, the tag Candidates, not confirmed, and the search funnel from 4.04 million stars to the number of counted candidates.">
+<meta name="twitter:image:alt" content="A whole-sky map of every counted TESS transit candidate, coloured by reliability tier, beside the title Transit candidates from multi-sector TESS searches, the tag Candidates, not confirmed, and the number of stars searched and of counted candidates.">
 <script>document.documentElement.className += ' js';</script>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -63,15 +63,15 @@
 <h2>Pipeline in brief</h2>
 <ol>
   <li><strong>Targets.</strong> Nearby K and M dwarfs, the hosts of TESS Objects of Interest, fainter M dwarfs, and a full-sky set of FGKM dwarfs with T&nbsp;&le;&nbsp;13.5, all selected from the TESS Input Catalog (TIC 8.2).</li>
-  <li><strong>Light curves.</strong> One product per star and sector, preferring SPOC 2-minute, then TESS-SPOC full-frame-image, then QLP light curves.</li>
-  <li><strong>Search.</strong> Per-sector detrending, then box least squares and a stack-slide search that combines seasons coherently. For TOI hosts, every known TOI is masked first so that only additional signals remain.</li>
-  <li><strong>Known-signal matching and literature check.</strong> Signals are compared with ExoFOP TOIs and CTOIs, the NASA Exoplanet Archive, SPOC threshold-crossing events, other candidate lists, and papers on arXiv and NASA ADS. A match counts as already reported.</li>
+  <li><strong>Light curves.</strong> One product per star and sector, preferring SPOC 2-minute, then TESS-SPOC full-frame-image, then QLP light curves. In QLP Sectors 94&ndash;104 the first day and the last half day of each orbit are dropped, because the flux there ramps in a way that mimics transits (<a href="https://github.com/eumemic/exoplanets/blob/main/validation/qlp_orbit_edges.md">qlp_orbit_edges.md</a>).</li>
+  <li><strong>Search.</strong> Per-sector detrending, then box least squares and a stack-slide search that combines seasons coherently. For TOI hosts, every known TOI is masked first so that only additional signals remain. A second pass searched again the full-sky stars with QLP light curves that the first pass had missed; it adds signals and does not replace any.</li>
+  <li><strong>Known-signal matching and literature check.</strong> Signals are compared with ExoFOP TOIs and CTOIs, the NASA Exoplanet Archive, SPOC threshold-crossing events, other candidate lists, and papers on arXiv and NASA ADS, by period (including simple harmonics) and, for entries listed with a single transit or another period, by transit epoch. A match counts as already reported.</li>
   <li><strong>Vetting.</strong> The <a href="https://github.com/mkunimoto/LEO-vetter">LEO-Vetter</a> false-alarm and false-positive tests, per-sector depth consistency, and a comparison of older and newer sectors.</li>
   <li><strong>Pixel and field checks.</strong> Difference-image centroids (<a href="https://github.com/stevepur/transit-diffImage">transit-diffImage</a>) tested against the target and against nearby stars bright enough to produce the dip, in every sector with transits, and a search for such stars in the TIC.</li>
   <li><strong>Characterisation.</strong> Transit fits (batman and emcee, with a stellar-density prior) and <a href="https://github.com/stevengiacalone/triceratops">TRICERATOPS</a> false-positive probabilities, later rerun with Gaia DR3 limits on companions.</li>
   <li><strong>Reliability tiers.</strong> Candidates are placed in tiers by the checks above; A, B, N and L1 are counted. See the <a href="candidates.html#legend-heading">tier legend</a> and the README section on <a href="https://github.com/eumemic/exoplanets#full-sky-search-8-october-2026">reliability tiers</a>.</li>
 </ol>
-<p>The full list of steps, with the scripts that implement them, is in the README's <a href="https://github.com/eumemic/exoplanets#method">Method</a> section. The <a href="index.html#vetting">vetting gauntlet</a> on the abstract page gives the key number for each check.</p>
+<p>The full list of steps, with the scripts that implement them, is in the README's <a href="https://github.com/eumemic/exoplanets#method">Method</a> section. The <a href="index.html#vetting">list of checks</a> on the abstract page gives the key numbers for each one.</p>
 </section>
 
 <section id="validation" data-idx="03" data-short="Validation">
@@ -88,9 +88,12 @@
 <li><a href="https://github.com/eumemic/exoplanets/blob/main/validation/tic_artifacts.md"><code>validation/tic_artifacts.md</code></a>: TIC entries that are artifacts or duplicates, which are now ignored by the neighbour checks.</li>
 <li><a href="https://github.com/eumemic/exoplanets/blob/main/validation/findability.md"><code>validation/findability.md</code></a>: when the counted candidates could first have been found, and why TESS pipelines did not report them.</li>
 <li><a href="https://github.com/eumemic/exoplanets/blob/main/validation/qlp_missing_errors.md"><code>validation/qlp_missing_errors.md</code></a>: QLP light curves that an earlier version of the reader discarded because of an empty uncertainty column.</li>
+<li><a href="https://github.com/eumemic/exoplanets/blob/main/validation/qlp_orbit_edges.md"><code>validation/qlp_orbit_edges.md</code></a>: the flux ramps at the edges of each orbit in QLP Sectors 94&ndash;104, the mask that removes them, and the second pass of the search.</li>
+<li><a href="https://github.com/eumemic/exoplanets/blob/main/validation/ctoi_matches.md"><code>validation/ctoi_matches.md</code></a>: matching known signals by transit epoch, and the community TOIs it found.</li>
+<li><a href="https://github.com/eumemic/exoplanets/blob/main/validation/gaia_proper_motion.md"><code>validation/gaia_proper_motion.md</code></a>: matching TIC positions to Gaia DR3 at the Gaia epoch in the binary check.</li>
 <li><a href="https://github.com/eumemic/exoplanets/blob/main/results_public/novelty_check.md"><code>results_public/novelty_check.md</code></a>: the check, for the first release, that the signals were not already reported.</li>
 </ul>
-<p>All validation tables and notes are in the <a href="https://github.com/eumemic/exoplanets/tree/main/validation"><code>validation/</code></a> directory. The large per-signal tables (<code>.csv.gz</code> files in <code>results_public/</code> and <code>validation/</code>) are not copied to this site; <a href="https://github.com/eumemic/exoplanets/tree/main/results_public">download them from the repository</a>.</p>
+<p>All validation tables and notes are in the <a href="https://github.com/eumemic/exoplanets/tree/main/validation"><code>validation/</code></a> directory, and the columns of every table are defined in the <a href="https://github.com/eumemic/exoplanets/blob/main/results_public/README.md">data dictionary</a>. The numbers on this site are computed from these tables when it is built (<code>pipeline/site_data.py</code>). The large per-signal tables (<code>.csv.gz</code> files in <code>results_public/</code> and <code>validation/</code>) are not copied to this site; <a href="https://github.com/eumemic/exoplanets/tree/main/results_public">download them from the repository</a>.</p>
 </section>
 
 <section id="reproducing" data-idx="05" data-short="Reproducing and credits">
@@ -112,7 +115,6 @@
   </div>
 </div></footer>
 
-<a class="sig" href="https://digital.askaconsult.com" rel="noopener">site by <span>Aska Digital</span></a>
 <script src="common.js"></script>
 <script src="shell.js"></script>
 </body>

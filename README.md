@@ -5,6 +5,13 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **Website (13 October 2026).** [eumemic.github.io/exoplanets](https://eumemic.github.io/exoplanets/) has an abstract
+  of the search, a candidate explorer, a transit planner and the methods (first built in PR #8). Every number on it is
+  computed from the tables in this repository when the site is built on each push to `main`: the candidate tables,
+  the predictions, the validation tables, the dated notes here, and a new table of stage counts of the search,
+  [`results_public/funnel_allsky.csv`](results_public/funnel_allsky.csv), written by `pipeline/funnel.py` from the
+  search's output tables. The findability tables now cover the current 494 candidates in tiers A, B and N
+  ([details](validation/findability.md)).
 - **Community TOIs under another period (13 October 2026): 664 candidates.** Seven counted tier B candidates are
   the same transits as community TOIs (CTOIs) that give a single transit or another period (163.2, 740.0 or 9.4 days:
   7, 44 or 3/7 times ours). Our known-signal check compared periods only, so it missed them. They and three tier C
@@ -62,8 +69,9 @@ Objects of Interest (TOIs) after masking the known TOIs.
   that Gaia shows to be spectroscopic binaries moved to likely eclipsing binaries: 488 full-sky
   candidates and 58 from the earlier searches
   ([details](validation/gaia_companion_limits.md)).
-- **Full-sky search, second release (9 October 2026): 483 candidates** (tiers A, B, N and L1 below)
-  from 4.04 million FGKM dwarfs brighter than T = 13.5, combining all of their TESS sectors (1–104).
+- **Full-sky search, second release (9 October 2026): 543 candidates**, 483 of them (tiers A, B, N and L1 below)
+  from 4.04 million FGKM dwarfs brighter than T = 13.5, combining all of their TESS sectors (1–104), and 60 from the
+  earlier searches.
   Every one passes TRICERATOPS (FPP < 0.5, NFPP < 0.1) and a false-alarm test calibrated on the
   inverted light curves of 800,000 stars. New in this release: 169 tier N candidates recovered from
   crowded fields with TRICERATOPS and a centroid test calibrated on 1,000 known planets; 51 tier L1
@@ -778,6 +786,21 @@ Inside AWS us-east-1 this is about 20 times faster than downloading from MAST.
 `package_candidates.py`. Light curves and catalogs are downloaded into `data/` and are not part
 of the repository.
 
+### Website
+
+`site/` is a static site published to GitHub Pages by `.github/workflows/pages.yml` on every push to `main`.
+`site/build.sh` copies the pages and the tables they read, and runs `pipeline/site_data.py`, which computes every other
+number shown (search stages, false-alarm rates, the classifier's purity, findability, the update history) from the
+committed tables into `data/summary.json`. The stage counts come from `results_public/funnel_allsky.csv`, which
+`pipeline/funnel.py` writes from a search's output tables after each run, for example
+
+```bash
+cd pipeline
+../.venv/bin/python funnel.py "full-sky search" ../results/allsky_* --bands hi --out ../results_public/funnel_allsky.csv
+```
+
+To preview: `bash site/build.sh && python3 -m http.server -d _site 8000`.
+
 ### Tests
 
 `uv pip install -r requirements.txt pytest && pytest` runs the unit tests and the consistency checks on the
@@ -791,7 +814,8 @@ pipeline/            code
 candidates/          one folder per candidate of the earlier searches, ephemerides.csv and predictions.csv
 candidates/allsky/   one folder per full-sky signal in tiers A, B, C, N, L1 and L
 figures/             figures used here
-results_public/      all signals, vetted signals, candidate and tier tables, novelty check
+results_public/      all signals, vetted signals, candidate and tier tables, search stage counts, novelty check
+site/                the website (built by site/build.sh, published by .github/workflows/pages.yml)
 tests/               unit tests (python -m unittest discover -s tests)
 validation/          calibration, reliability and completeness tables, with notes on each check
 video/               source of the explainer video

@@ -21,6 +21,7 @@
     preds:     { site: 'data/predictions.csv',              repo: 'candidates/predictions.csv' },
     findability: { site: 'data/findability.csv',          repo: 'validation/findability.csv' },
     upcoming:  { site: 'data/upcoming.json' },
+    summary:   { site: 'data/summary.json' },
     folders:   { site: 'data/folders.json' },
     build:     { site: 'data/build.json' }
   };
@@ -28,16 +29,16 @@
   /* Tiers as described in the README ("Reliability tiers" and the tier table).
    * Tiers A, B, N and L1 are counted as candidates; the others are listed but not counted. */
   var TIERS = [
-    { id: 'A',  counted: true,  name: 'Tier A', text: 'Several candidate signals on the star.' },
-    { id: 'B',  counted: true,  name: 'Tier B', text: 'A single candidate signal on the star.' },
-    { id: 'N',  counted: true,  name: 'Tier N', text: 'A TIC star within 15″ could produce the dip; passes TRICERATOPS (FPP < 0.5, NFPP < 0.1) and a centroid test, with MES ≥ 10.' },
-    { id: 'L1', counted: true,  name: 'Tier L1', text: 'SNR 7.5–9 signal selected by the false-alarm classifier; passes TRICERATOPS.' },
-    { id: 'C',  counted: false, name: 'Tier C', text: 'Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors. Listed, not counted.' },
-    { id: 'L',  counted: false, name: 'Tier L', text: 'SNR 7.5–9, MES ≥ 9. Listed, not counted.' },
-    { id: 'likely EB', counted: false, name: 'Likely binary', text: 'Likely binary. Not counted.' },
-    { id: 'likely nearby FP', counted: false, name: 'Likely nearby false positive', text: 'The per-sector centroid test rejects the target and a nearby star fits. Not counted.' },
-    { id: 'likely false alarm', counted: false, name: 'Likely false alarm', text: 'Likely false alarm. Not counted.' },
-    { id: 'reported', counted: false, name: 'Reported elsewhere', text: 'Reported elsewhere. Not counted.' }
+    { id: 'A',  counted: true,  name: 'Tier A', text: 'More than one counted candidate on the star, or a star with TOIs (earlier searches).' },
+    { id: 'B',  counted: true,  name: 'Tier B', text: 'A single candidate on the star, with no TIC star within 15″ that could produce the dip.' },
+    { id: 'N',  counted: true,  name: 'Tier N', text: 'A TIC star within 15″ could produce the dip; TRICERATOPS combined with the centroid gives FPP < 0.5 and NFPP < 0.1, and MES ≥ 10.' },
+    { id: 'L1', counted: true,  name: 'Tier L1', text: 'SNR 7.5–9, selected by the false-alarm classifier (hold-out score ≥ 0.8); passes TRICERATOPS and the per-sector centroid test.' },
+    { id: 'C',  counted: false, name: 'Tier C', text: 'Grazing (b ≥ 0.9), Gaia RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in every sector. Listed, not counted.' },
+    { id: 'L',  counted: false, name: 'Tier L', text: 'SNR 7.5–9 and MES ≥ 9, not selected by the classifier. Listed, not counted.' },
+    { id: 'likely EB', counted: false, name: 'Likely binary', text: 'A binary catalogue lists the target, an eclipsing binary nearby has the same period, Gaia radial velocities vary strongly, or the fitted radius is above 20 R⊕. Not counted.' },
+    { id: 'likely nearby FP', counted: false, name: 'Likely nearby false positive', text: 'A TIC star within 15″ could produce the dip and TRICERATOPS with the centroid does not clear the bar, or the per-sector centroids reject the target and fit a nearby star. Not counted.' },
+    { id: 'likely false alarm', counted: false, name: 'Likely false alarm', text: 'SNR 7.5–9 with MES < 9, not selected by the classifier, or a known systematic (QLP orbit edges). Not counted.' },
+    { id: 'reported', counted: false, name: 'Reported elsewhere', text: 'The same signal is in the literature or is a community TOI (column reported_as). Not counted.' }
   ];
   /* Colour and marker shape per counted tier. Four hues cannot all be told apart under colour-vision
    * deficiency in a scatter, so every chart also encodes the tier by shape. */
@@ -114,7 +115,8 @@
       tic: r.TIC, search: 'full-sky', tier: r.tier,
       P: num(r.P_d), Perr: num(r.P_err), Rp: num(r.Rp_Re), b: num(r.b), T14: num(r.T14_h),
       depth: num(r.depth_ppm), MES: num(r.MES), Tmag: num(r.Tmag), Teff: num(r.Teff), dist: num(r.dist_pc),
-      fpp: f.fpp, nfpp: f.nfpp, fppKind: f.kind, hostTois: r.host_tois || '', flags: flagList(r), folder: null
+      fpp: f.fpp, nfpp: f.nfpp, fppKind: f.kind, hostTois: r.host_tois || '', flags: flagList(r), folder: null,
+      pass: r.search || '', id: r.candidate_id || '', reportedAs: r.reported_as || ''
     };
   }
   function normaliseEarlier(r) {
@@ -123,7 +125,8 @@
       tic: r.TIC, search: 'earlier', tier: r.tier,
       P: num(r.P_d), Perr: NaN, Rp: num(r.Rp_Re), b: num(r.b), T14: NaN,
       depth: NaN, MES: NaN, Tmag: NaN, Teff: NaN, dist: NaN,
-      fpp: f.fpp, nfpp: f.nfpp, fppKind: f.kind, hostTois: '', flags: flagList(r), folder: null
+      fpp: f.fpp, nfpp: f.nfpp, fppKind: f.kind, hostTois: '', flags: flagList(r), folder: null,
+      pass: 'earlier searches', id: r.candidate_id || '', reportedAs: ''
     };
   }
 
@@ -197,8 +200,15 @@
       fiEarlier.add(folders.allsky, 'candidates/allsky/');
       fi.add(folders.earlier, 'candidates/');
     }
-    full.forEach(function (r) { r.folder = findFolder(fi.m, r.tic, r.P); });
-    earlier.forEach(function (r) { r.folder = findFolder(fiEarlier.m, r.tic, r.P); });
+    // candidate_id is the folder name where a candidate has one
+    var names = new Set(((folders && folders.allsky) || []).map(function (n) { return 'candidates/allsky/' + n; })
+      .concat(((folders && folders.earlier) || []).map(function (n) { return 'candidates/' + n; })));
+    full.forEach(function (r) {
+      r.folder = r.id && names.has('candidates/allsky/' + r.id) ? 'candidates/allsky/' + r.id : findFolder(fi.m, r.tic, r.P);
+    });
+    earlier.forEach(function (r) {
+      r.folder = r.id && names.has('candidates/' + r.id) ? 'candidates/' + r.id : findFolder(fiEarlier.m, r.tic, r.P);
+    });
     return full.concat(earlier);
   }
 
@@ -220,6 +230,34 @@
       fetchText(DATA.ephem.site).catch(function () { return ''; }),
       fetchJSON(DATA.folders.site).catch(function () { return null; })
     ]).then(function (v) { return buildCandidates(v[0], v[1], v[2], v[3]); });
+  }
+
+  /* ---------- The generated summary (pipeline/site_data.py) ---------- */
+  var summaryPromise = null;
+  function loadSummary() {
+    if (!summaryPromise) summaryPromise = fetchJSON(DATA.summary.site);
+    return summaryPromise;
+  }
+  /* A value by its path in the summary, with '/' between keys (keys may contain spaces). */
+  function pick(obj, path) {
+    return path.split('/').reduce(function (o, k) { return o == null ? undefined : o[k]; }, obj);
+  }
+  /* Formats for data-f: n (integer with separators), M (millions, two decimals), pct (a fraction as a percentage),
+   * r1/r2/r3 (decimals), ratio:<path> (this value over another, as a percentage). */
+  function format(v, f, s) {
+    if (v === undefined || v === null || (typeof v === 'number' && isNaN(v))) return '\u2013';
+    if (!f || f === 'n') return Math.round(v).toLocaleString('en-US');
+    if (f === 'M') return (v / 1e6).toFixed(2);
+    if (f === 'pct') return Math.round(100 * v) + '%';
+    if (/^r\d$/.test(f)) return Number(v).toFixed(+f[1]);
+    if (f.indexOf('ratio:') === 0) return Math.round(100 * v / pick(s, f.slice(6))) + '%';
+    return String(v);
+  }
+  /* Fill every element with data-k (a summary path) under root. */
+  function bindSummary(s, root) {
+    (root || document).querySelectorAll('[data-k]').forEach(function (el) {
+      el.textContent = format(pick(s, el.getAttribute('data-k')), el.getAttribute('data-f'), s);
+    });
   }
 
   /* ---------- Formatting ---------- */
@@ -278,6 +316,7 @@
     GH: GH, DATA: DATA, TIERS: TIERS, TIER_STYLE: TIER_STYLE, TIER_BY_ID: TIER_BY_ID, isCountedTier: isCountedTier,
     parseCSV: parseCSV, parseCSVObjects: parseCSVObjects, num: num, firstNum: firstNum,
     buildCandidates: buildCandidates, loadCandidates: loadCandidates, fetchText: fetchText, fetchJSON: fetchJSON,
+    loadSummary: loadSummary, pick: pick, format: format, bindSummary: bindSummary,
     groupByTic: groupByTic, nearestByPeriod: nearestByPeriod,
     fmt: fmt, fmtFPP: fmtFPP, esc: esc, median: median, tierDot: tierDot,
     renderTierLegend: renderTierLegend, fillBuildInfo: fillBuildInfo, showError: showError

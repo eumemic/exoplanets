@@ -318,20 +318,6 @@ footer.site .bar { max-width: 1280px; margin: 0 auto; padding: 26px 22px 34px; d
 footer.site p { margin: 0 0 8px; }
 footer.site a { color: var(--ink2); }
 
-/* ---------- Signature ---------- */
-.sig {
-  position: fixed; right: 18px; bottom: 16px; z-index: 40;
-  display: flex; align-items: baseline; gap: 0.3em; padding: 7px 13px 7px 11px;
-  font: italic 13px/1 var(--serif); color: var(--dim); text-decoration: none;
-  background: rgba(5, 8, 16, 0.72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  border: 1px solid var(--line); border-radius: 999px;
-  opacity: 0.82; transition: opacity 0.25s, color 0.25s, border-color 0.25s;
-}
-.sig::before { content: ""; align-self: center; width: 5px; height: 5px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px 1px rgba(240, 178, 90, 0.55); }
-.sig span { color: var(--ink2); transition: color 0.25s; }
-.sig:hover, .sig:focus-visible { opacity: 1; color: var(--ink2); border-color: rgba(240, 178, 90, 0.45); }
-.sig:hover span, .sig:focus-visible span { color: var(--amber-hi); }
-
 /* ---------- Responsive ---------- */
 @media (max-width: 1040px) {
   .layout { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: 0; }
@@ -347,7 +333,6 @@ footer.site a { color: var(--ink2); }
   .index h2 { display: none; }
 }
 @media (max-width: 760px) {
-  .sig { right: 10px; bottom: 10px; padding: 6px 11px 6px 9px; font-size: 12px; }
   body { font-size: 16.5px; }
   header.top .bar { padding: 0 14px; gap: 10px; }
   .brand small { display: none; }
@@ -388,6 +373,5 @@ footer.site a { color: var(--ink2); }
   html { scroll-behavior: auto; }
 }
 @media (forced-colors: active) {
-  .sig::before { display: none; }
   .panel::before, .panel::after, .link { display: none; }
 }

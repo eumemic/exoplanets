@@ -25,6 +25,16 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Assemble site
         run: bash site/build.sh _site
+      # The share image shows the current counts: render site/og.html with the runner's Chrome. If that fails, the
+      # committed og.png (copied by build.sh) is kept.
+      - name: Render share image
+        run: |
+          cp site/og.html _site/og.html
+          (cd _site && python3 -m http.server 8765 >/dev/null 2>&1 &)
+          sleep 2
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars --window-size=1200,630 \
+            --virtual-time-budget=8000 --screenshot=_site/og.png http://localhost:8765/og.html || true
+          rm -f _site/og.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

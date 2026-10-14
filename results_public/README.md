@@ -14,6 +14,7 @@ means, the entry says "not documented; appears to be" and gives the likeliest re
 | `../candidates/ephemerides.csv`, `../candidates/predictions.csv` | 711, 45,762 | [Ephemerides and predictions](#ephemerides-and-predictions) |
 | `all_signals*.csv.gz`, `vetted_signals*.csv.gz` | 7 files each | [Signal tables](#signal-tables) |
 | `followup_*.csv` | 7 files | [Follow-up tables](#follow-up-tables) |
+| `funnel_allsky.csv` | 124 | [Search stage counts](#funnel_allskycsv) |
 
 `novelty_check.md` is prose and is not covered here.
 
@@ -473,6 +474,22 @@ columns of `vetted_signals*.csv.gz`.
 | `n_capable_2.5arcmin` | Number of TIC stars within 2.5′ that could produce the depth if they were eclipsing binaries | count | the neighbour lookup failed (7 rows, all in `followup_faint_t1.csv`; the rows of the other files are filled) |
 | `nearest_capable_arcsec` | Separation of the nearest such star | arcsec | the lookup failed (the same 7 rows), or no such star within 2.5′ |
 | `flags` | `offset` (`offset_qual` above 15″), `no_pixel` (no usable difference image), `close_nb` (such a star within 15″), joined by `,`. The combinations in the files are `offset`, `close_nb`, `offset,close_nb`, `no_pixel` and `no_pixel,close_nb` | text | none raised |
+
+## `funnel_allsky.csv`
+
+Stage counts of the full-sky search, written by `pipeline/funnel.py` from the search's output tables (signals,
+candidates, vetted and follow-up tables), for the website. One row per pass, band and stage.
+
+| Column | Meaning |
+|---|---|
+| `pass` | `full-sky search` (the first pass), `QLP re-search` (the second), or an inverted-light-curve run: `inverted, sample 1`, `inverted, sample 2` (the two random samples of the first pass) and `inverted, QLP re-search` |
+| `band` | `all` (for `stars` and `signals`), `hi` (SNR ≥ 9) or `low` (7.5 ≤ SNR < 9) |
+| `stage` | `stars` searched; `signals` found; `prefilter` (pass the pre-filters, one row per star and period); `vetted`; matched as `known`, `reported`, `neighbour` or `ours`; `leo_pass` (not matched, every LEO-Vetter test passed); `cuts` (also MES ≥ 7.1, per-sector χ²/dof ≤ 5, Rp ≤ 20 R⊕); then the pixel checks of those: `offset`, `no_image`, `close_nb` (only a capable TIC star within 15″) and `clean`; and `clean_mes_lt10`, `clean_mes_10_12`, `clean_mes_ge12`, the clean ones by MES |
+| `count` | the number of signals (stars for `stars`) |
+
+The inverted runs have no signals table in the outputs kept, so their `stars` come from the lists of stars searched and
+they have no `signals` or `prefilter` rows. The first pass's SNR 7.5–9 band was vetted from its signals table without
+a candidates table, so its `prefilter` is computed with the pre-filters and its matches come from the vetted table.
 
 ## Known quirks
 

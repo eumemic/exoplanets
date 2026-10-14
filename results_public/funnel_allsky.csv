@@ -1,0 +1,155 @@
+pass,band,stage,count
+full-sky search,all,stars,4039203
+full-sky search,all,signals,7459491
+full-sky search,hi,prefilter,609021
+full-sky search,hi,vetted,608990
+full-sky search,hi,known,3829
+full-sky search,hi,reported,2477
+full-sky search,hi,neighbour,5931
+full-sky search,hi,ours,0
+full-sky search,hi,leo_pass,13986
+full-sky search,hi,cuts,9962
+full-sky search,hi,offset,7918
+full-sky search,hi,no_image,24
+full-sky search,hi,close_nb,1294
+full-sky search,hi,clean,726
+full-sky search,hi,clean_mes_lt10,121
+full-sky search,hi,clean_mes_10_12,188
+full-sky search,hi,clean_mes_ge12,417
+full-sky search,low,prefilter,301310
+full-sky search,low,vetted,301309
+full-sky search,low,known,66
+full-sky search,low,reported,55
+full-sky search,low,neighbour,410
+full-sky search,low,ours,0
+full-sky search,low,leo_pass,4449
+full-sky search,low,cuts,3491
+full-sky search,low,offset,2652
+full-sky search,low,no_image,9
+full-sky search,low,close_nb,448
+full-sky search,low,clean,382
+full-sky search,low,clean_mes_lt10,344
+full-sky search,low,clean_mes_10_12,33
+full-sky search,low,clean_mes_ge12,5
+QLP re-search,all,stars,1770905
+QLP re-search,all,signals,3633674
+QLP re-search,hi,prefilter,282900
+QLP re-search,hi,vetted,282823
+QLP re-search,hi,known,1383
+QLP re-search,hi,reported,1187
+QLP re-search,hi,neighbour,3273
+QLP re-search,hi,ours,920
+QLP re-search,hi,leo_pass,5742
+QLP re-search,hi,cuts,3613
+QLP re-search,hi,offset,3229
+QLP re-search,hi,no_image,3
+QLP re-search,hi,close_nb,259
+QLP re-search,hi,clean,122
+QLP re-search,hi,clean_mes_lt10,27
+QLP re-search,hi,clean_mes_10_12,37
+QLP re-search,hi,clean_mes_ge12,58
+QLP re-search,low,prefilter,133043
+QLP re-search,low,vetted,133032
+QLP re-search,low,known,17
+QLP re-search,low,reported,15
+QLP re-search,low,neighbour,180
+QLP re-search,low,ours,84
+QLP re-search,low,leo_pass,1898
+QLP re-search,low,cuts,1600
+QLP re-search,low,offset,1163
+QLP re-search,low,no_image,6
+QLP re-search,low,close_nb,251
+QLP re-search,low,clean,180
+QLP re-search,low,clean_mes_lt10,160
+QLP re-search,low,clean_mes_10_12,16
+QLP re-search,low,clean_mes_ge12,4
+"inverted, sample 1",all,stars,399408
+"inverted, sample 1",hi,vetted,61780
+"inverted, sample 1",hi,known,248
+"inverted, sample 1",hi,reported,52
+"inverted, sample 1",hi,neighbour,372
+"inverted, sample 1",hi,ours,6
+"inverted, sample 1",hi,leo_pass,429
+"inverted, sample 1",hi,cuts,245
+"inverted, sample 1",hi,offset,211
+"inverted, sample 1",hi,no_image,1
+"inverted, sample 1",hi,close_nb,24
+"inverted, sample 1",hi,clean,9
+"inverted, sample 1",hi,clean_mes_lt10,6
+"inverted, sample 1",hi,clean_mes_10_12,3
+"inverted, sample 1",hi,clean_mes_ge12,0
+"inverted, sample 1",low,vetted,31376
+"inverted, sample 1",low,known,18
+"inverted, sample 1",low,reported,15
+"inverted, sample 1",low,neighbour,42
+"inverted, sample 1",low,ours,2
+"inverted, sample 1",low,leo_pass,369
+"inverted, sample 1",low,cuts,277
+"inverted, sample 1",low,offset,224
+"inverted, sample 1",low,no_image,0
+"inverted, sample 1",low,close_nb,26
+"inverted, sample 1",low,clean,27
+"inverted, sample 1",low,clean_mes_lt10,24
+"inverted, sample 1",low,clean_mes_10_12,3
+"inverted, sample 1",low,clean_mes_ge12,0
+"inverted, sample 2",all,stars,399361
+"inverted, sample 2",hi,vetted,61417
+"inverted, sample 2",hi,known,256
+"inverted, sample 2",hi,reported,57
+"inverted, sample 2",hi,neighbour,387
+"inverted, sample 2",hi,ours,18
+"inverted, sample 2",hi,leo_pass,398
+"inverted, sample 2",hi,cuts,243
+"inverted, sample 2",hi,offset,217
+"inverted, sample 2",hi,no_image,0
+"inverted, sample 2",hi,close_nb,16
+"inverted, sample 2",hi,clean,10
+"inverted, sample 2",hi,clean_mes_lt10,5
+"inverted, sample 2",hi,clean_mes_10_12,3
+"inverted, sample 2",hi,clean_mes_ge12,2
+"inverted, sample 2",low,vetted,31209
+"inverted, sample 2",low,known,11
+"inverted, sample 2",low,reported,10
+"inverted, sample 2",low,neighbour,53
+"inverted, sample 2",low,ours,11
+"inverted, sample 2",low,leo_pass,362
+"inverted, sample 2",low,cuts,268
+"inverted, sample 2",low,offset,205
+"inverted, sample 2",low,no_image,0
+"inverted, sample 2",low,close_nb,28
+"inverted, sample 2",low,clean,35
+"inverted, sample 2",low,clean_mes_lt10,33
+"inverted, sample 2",low,clean_mes_10_12,2
+"inverted, sample 2",low,clean_mes_ge12,0
+"inverted, QLP re-search",all,stars,351954
+"inverted, QLP re-search",all,signals,707448
+"inverted, QLP re-search",hi,prefilter,56875
+"inverted, QLP re-search",hi,vetted,56875
+"inverted, QLP re-search",hi,known,208
+"inverted, QLP re-search",hi,reported,51
+"inverted, QLP re-search",hi,neighbour,415
+"inverted, QLP re-search",hi,ours,16
+"inverted, QLP re-search",hi,leo_pass,317
+"inverted, QLP re-search",hi,cuts,174
+"inverted, QLP re-search",hi,offset,159
+"inverted, QLP re-search",hi,no_image,0
+"inverted, QLP re-search",hi,close_nb,12
+"inverted, QLP re-search",hi,clean,3
+"inverted, QLP re-search",hi,clean_mes_lt10,0
+"inverted, QLP re-search",hi,clean_mes_10_12,1
+"inverted, QLP re-search",hi,clean_mes_ge12,2
+"inverted, QLP re-search",low,prefilter,27583
+"inverted, QLP re-search",low,vetted,27583
+"inverted, QLP re-search",low,known,9
+"inverted, QLP re-search",low,reported,10
+"inverted, QLP re-search",low,neighbour,44
+"inverted, QLP re-search",low,ours,10
+"inverted, QLP re-search",low,leo_pass,319
+"inverted, QLP re-search",low,cuts,258
+"inverted, QLP re-search",low,offset,197
+"inverted, QLP re-search",low,no_image,1
+"inverted, QLP re-search",low,close_nb,31
+"inverted, QLP re-search",low,clean,29
+"inverted, QLP re-search",low,clean_mes_lt10,29
+"inverted, QLP re-search",low,clean_mes_10_12,0
+"inverted, QLP re-search",low,clean_mes_ge12,0

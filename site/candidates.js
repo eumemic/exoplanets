@@ -11,7 +11,7 @@
     { key: 'tic', label: 'TIC', num: true, get: function (r) { return Number(r.tic); },
       html: function (r) { return '<a href="' + X.GH.exofop(r.tic) + '" title="Open TIC ' + r.tic + ' on ExoFOP">' + r.tic + '</a>'; }, csv: function (r) { return r.tic; } },
     { key: 'tier', label: 'Tier', get: function (r) { return r.tier; }, html: function (r) { return X.tierDot(r.tier) + X.esc(r.tier); }, csv: function (r) { return r.tier; } },
-    { key: 'search', label: 'Search', get: function (r) { return r.search; }, html: function (r) { return r.search; }, csv: function (r) { return r.search; } },
+    { key: 'search', label: 'Search', get: function (r) { return passLabel(r); }, html: function (r) { return X.esc(passLabel(r)); }, csv: function (r) { return passLabel(r); } },
     num('P', 'P (d)', 5), num('Rp', 'R (R⊕)', 2), num('T14', 'T14 (h)', 2), num('depth', 'Depth (ppm)', 0),
     num('MES', 'MES', 1), num('Tmag', 'Tmag', 2), num('Teff', 'Teff (K)', 0), num('dist', 'Dist (pc)', 1),
     { key: 'fpp', label: 'FPP', num: true, get: function (r) { return r.fpp; },
@@ -32,9 +32,11 @@
   var open = new Set();              // keys of expanded rows
   function key(r) { return r.search + ':' + r.tic + ':' + r.P; }
   function domId(r) { return 'd-' + key(r).replace(/[^A-Za-z0-9]/g, '-'); }
+  /* full-sky rows: which pass of the search found the signal (catalog column `search`) */
+  function passLabel(r) { return r.search === 'full-sky' && r.pass === 'QLP re-search' ? 'full-sky (QLP re-search)' : r.search; }
   function detail(r) {
     var dl = [
-      ['Tier', X.esc(r.tier) + ' (' + X.esc(r.search) + ' search)'],
+      ['Tier', X.esc(r.tier) + ' (' + X.esc(passLabel(r)) + ')'],
       ['Period', isNaN(r.P) ? '' : X.fmt(r.P, 6) + (isNaN(r.Perr) ? '' : ' &plusmn; ' + r.Perr) + ' d'],
       ['Radius', X.fmt(r.Rp, 2) + ' R&oplus;'],
       ['Impact parameter', X.fmt(r.b, 2)], ['Duration', isNaN(r.T14) ? '' : X.fmt(r.T14, 2) + ' h'],
@@ -42,7 +44,8 @@
       ['Tmag', X.fmt(r.Tmag, 2)], ['Teff', isNaN(r.Teff) ? '' : X.fmt(r.Teff, 0) + ' K'], ['Distance', isNaN(r.dist) ? '' : X.fmt(r.dist, 1) + ' pc'],
       ['FPP / NFPP', isNaN(r.fpp) ? '' : X.fmtFPP(r.fpp) + ' / ' + X.fmtFPP(r.nfpp) + ' <span class="muted">(' + X.esc(r.fppKind) + ')</span>'],
       ['Sky position', isNaN(r.ra) ? '' : 'RA ' + X.fmt(r.ra, 4) + '&deg;, Dec ' + X.fmt(r.dec, 4) + '&deg;'],
-      ['Host TOIs', X.esc(r.hostTois)], ['Flags', X.esc(r.flags.join('; '))], ['Registered', X.esc(r.registered || '')]
+      ['Host TOIs', X.esc(r.hostTois)], ['Flags', X.esc(r.flags.join('; '))], ['Reported as', X.esc(r.reportedAs)],
+      ['Registered', X.esc(r.registered || '')]
     ].filter(function (x) { return x[1] && x[1] !== ' R&oplus;'; });
     var fig = r.folder
       ? '<figure><a href="' + X.GH.raw(r.folder + '/vetting.png') + '"><img src="' + X.GH.raw(r.folder + '/vetting.png') + '" loading="lazy" alt="Vetting plot of TIC ' + X.esc(r.tic) + ' at ' + X.fmt(r.P, 3) + ' d: light curve, phase-folded transit and diagnostic tests." onerror="this.closest(\'figure\').innerHTML=\'<figcaption>The vetting plot could not be loaded from GitHub.</figcaption>\'"></a>' +

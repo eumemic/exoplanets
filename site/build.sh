@@ -66,6 +66,10 @@ with open(out, "w") as fh:
                "rows": rows}, fh, separators=(",", ":"))
 PY
 
+# Every other number on the pages: computed from the repository's tables (funnel, catalogs, validation tables,
+# predictions, README release notes) by pipeline/site_data.py. Standard library only.
+python3 "$ROOT/pipeline/site_data.py" "$OUT/data/summary.json"
+
 # Index of candidate folders, so the table can link to each folder on GitHub when it exists.
 list_dirs() {
   find "$1" -mindepth 1 -maxdepth 1 -type d -name 'TIC*' -exec basename {} \; | LC_ALL=C sort |

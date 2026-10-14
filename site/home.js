@@ -1,5 +1,5 @@
-/* Landing page: the infographic abstract. Every count is computed from the repository's CSV files
- * at load time; quoted README numbers are in the HTML and tagged as quoted. */
+/* Landing page. Every number is computed at load time: from the candidate tables, or from data/summary.json, which
+ * pipeline/site_data.py writes from the repository's tables when the site is built. */
 (function () {
   'use strict';
   var X = window.Exo, S = window.Sky, TAU = Math.PI * 2;
@@ -29,20 +29,25 @@
   var T = { tic: '354944123', P: 18.9082044, Rp: 2.21, depth: 1142, T14: 2.46, b: 0.747 };
 
   /* ================= 00: stacking sectors (illustration) ================= */
-  (function stack() {
-    var cv = $('cv-stack'); if (!cv) return;
+  var stackCanvas = (function stack() {
+    var cv = $('cv-stack'); if (!cv) return null;
     var NS = 12, SNR1 = 3, HALF = 5, PER = 90;           // sectors, per-sector SNR, hours shown, points per sector
-    var nIn = 2 * T.T14 * PER / (2 * HALF);              // in-transit points per sector
-    var sigma = T.depth * Math.sqrt(nIn) / SNR1;
-    var r = rng(4342), pts = [];
-    for (var s = 0; s < NS; s++) {
-      var row = [];
-      for (var i = 0; i < PER; i++) {
-        var x = -HALF + r() * 2 * HALF;
-        row.push([x, model(x) + sigma * gauss(r)]);
+    var pts = [];
+    function build() {                                   // simulated points for the current depth and duration
+      var nIn = 2 * T.T14 * PER / (2 * HALF);            // in-transit points per sector
+      var sigma = T.depth * Math.sqrt(nIn) / SNR1;
+      var r = rng(4342);
+      pts = [];
+      for (var s = 0; s < NS; s++) {
+        var row = [];
+        for (var i = 0; i < PER; i++) {
+          var x = -HALF + r() * 2 * HALF;
+          row.push([x, model(x) + sigma * gauss(r)]);
+        }
+        pts.push(row);
       }
-      pts.push(row);
     }
+    build();
     function model(x) {
       var h = T.T14 / 2, ing = 0.28;
       var a = Math.abs(x);
@@ -105,6 +110,7 @@
         c.fillRect(m.l + s * (tw + 3), 22, tw, 3);
       }
     }, { aspect: function (w) { return w < 560 ? 0.62 : 0.34; }, staticT: 1e9, t0: NS * 0.75 + 0.2 });
+    return { rebuild: build };
   })();
 
   /* ================= 01: how a transit works ================= */
@@ -303,8 +309,7 @@
     setLive('medR', X.fmt(medR, 1));
     setLive('small', S.n(small) + ' (' + S.pct(small, counted.length) + '%)');
     setLive('valid', S.n(valid));
-    setLive('L1', S.n(counted.filter(function (r) { return r.tier === 'L1'; }).length));
-    setLive('eb', S.n(rows.filter(function (r) { return r.search === 'full-sky' && r.tier === 'likely EB'; }).length));
+    setLive('AB', S.n(full.filter(function (r) { return r.tier === 'A' || r.tier === 'B'; }).length));
 
     // spotlight values from the tables
     var spot = counted.filter(function (r) { return r.tic === T.tic && Math.abs(r.P - 18.908) < 0.01; })[0];
@@ -314,32 +319,45 @@
       if (!isNaN(spot.depth)) T.depth = spot.depth;
       if (!isNaN(spot.T14)) T.T14 = spot.T14;
       setLive('toiP', T.P.toFixed(4));
+      setLive('toiR', T.Rp.toFixed(2));
+      setLive('toiDepth', S.n(Math.round(T.depth)));
+      setLive('toiT14', T.T14.toFixed(1));
+      setLive('toiFPP', X.fmtFPP(spot.fpp));
       transitReadout();
       if (transitCanvas) transitCanvas.redraw();
+      if (stackCanvas) stackCanvas.rebuild();
     }
 
-    funnel(rows, full, earlier);
+    X.loadSummary().then(function (s) {
+      X.bindSummary(s);
+      var q = s.funnel['QLP re-search'];
+      setLive('research-new', S.n(q.hi.leo_pass + q.low.leo_pass));
+      funnel(s, rows, full, earlier);
+      ledger(s, counted.length);
+    }).catch(function (err) { X.showError($('funnel'), err); });
     skyMap(counted);
     periodRadius(counted);
   }).catch(function (err) { X.showError($('stats'), err); });
 
   /* ================= 02: funnel ================= */
-  function funnel(rows, full, earlier) {
+  function funnel(sum, rows, full, earlier) {
     var el = $('funnel'); if (!el) return;
     var catalogue = rows.filter(function (r) { return r.search === 'full-sky'; }).length;
+    var f = sum.funnel['full-sky search'];
     var st = [
-      { v: 4039203, l: 'stars searched', q: true },
-      { v: 7459491, l: 'signals found', q: true },
-      { v: 609021, l: 'pass the pre-filters (SNR ≥ 9, ≥ 3 transits, duration and shape cuts)', q: true },
-      { v: 13986, l: 'unmatched to known signals and pass every LEO-Vetter test', q: true },
-      { v: catalogue, l: 'signals in the full-sky catalogue, with fits, pixel checks and binary checks' },
+      { v: f.all.stars, l: 'stars searched' },
+      { v: f.all.signals, l: 'signals found' },
+      { v: f.hi.prefilter, l: 'pass the pre-filters at SNR ≥ 9 (at least 3 transits, duration and shape cuts)' },
+      { v: f.hi.leo_pass, l: 'not already known, and pass every LEO-Vetter test' },
+      { v: f.hi.cuts, l: 'MES ≥ 7.1, a depth that agrees between sectors, and Rp ≤ 20 R⊕' },
+      { v: f.hi.clean + f.hi.close_nb + f.hi.no_image, l: 'no centroid offset (' + S.n(f.hi.clean) + ' with no TIC star within 15″ that could produce the dip either)' },
+      { v: catalogue, l: 'signals in the full-sky catalogue: both passes and SNR 7.5–9, with fits and pixel, binary and TRICERATOPS checks' },
       { v: full.length, l: 'counted full-sky candidates (tiers A, B, N, L1)', final: true },
       { v: full.length + earlier.length, l: 'counted in all, with ' + earlier.length + ' from the earlier searches (tiers A, B)', final: true, sum: true }
     ];
     var max = Math.log10(Math.max.apply(null, st.map(function (x) { return x.v; })));
     el.innerHTML = st.map(function (s) {
-      return '<li class="' + (s.final ? 'final' : '') + (s.sum ? ' sum' : '') + '"><span class="lab">' + X.esc(s.l) +
-        (s.q ? ' <span class="tag t-quoted">quoted</span>' : ' <span class="tag t-live">CSV</span>') + '</span>' +
+      return '<li class="' + (s.final ? 'final' : '') + (s.sum ? ' sum' : '') + '"><span class="lab">' + X.esc(s.l) + '</span>' +
         '<span class="num" data-v="' + s.v + '">' + S.n(s.v) + '</span><span class="track"><span class="bar" data-w="' + (100 * Math.log10(s.v) / max).toFixed(2) + '"></span></span></li>';
     }).join('');
     S.onView(el, function () {
@@ -628,7 +646,7 @@
         [S.n(atAll - at96), 'needed Sectors 97–104 to reach SNR 9; ' + S.n(at96) + ' (' + S.pct(at96, total) + '%) were there with data through Sector 96.', (atAll - at96) / total]
       ];
       $('find-facts').innerHTML = f.map(function (x) { return '<div class="fact"><div class="v">' + x[0] + '</div><div class="l">' + x[1] + '</div><div class="meter"><i data-w="' + (100 * x[2]).toFixed(1) + '"></i></div></div>'; }).join('');
-      $('find-cap').insertAdjacentHTML('afterbegin', 'Covers the ' + S.n(total) + ' full-sky candidates in tiers A, B and N on 12 October; the counted tiers have changed slightly since. ');
+      $('find-cap').insertAdjacentHTML('afterbegin', 'Covers the ' + S.n(total) + ' full-sky candidates in tiers A, B and N; each one\u2019s transits come from the search pass that found it. ');
       o.redraw();
       S.onView(cv, function () {
         document.querySelectorAll('#find-facts .meter i').forEach(function (m) { m.style.width = m.getAttribute('data-w') + '%'; S.settle(m, 1900); });
@@ -732,20 +750,32 @@
     }, '0px 0px 1200px 0px');
   })();
 
-  /* ================= 09: ledger sparkline ================= */
-  (function ledger() {
-    var cv = $('cv-ledger'); if (!cv) return;
-    var items = Array.prototype.slice.call(document.querySelectorAll('#ledger li[data-n]')).reverse();
-    var pts = items.map(function (li) { return { n: +li.getAttribute('data-n'), d: li.querySelector('time').textContent.replace(' 2026', '') }; });
+  /* ================= 09: updates, from the README's dated release notes ================= */
+  function ledger(sum, current) {
+    var list = $('ledger'), cv = $('cv-ledger'); if (!list) return;
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function day(d) { var p = d.split('-'); return +p[2] + ' ' + MON[+p[1] - 1] + ' ' + p[0]; }
+    list.innerHTML = sum.releases.map(function (r) {
+      var href = r.note ? X.GH.blob(r.note) : X.GH.repo + '#readme';
+      var n = r.count != null ? S.n(r.count) : (r.added != null ? '+' + S.n(r.added) : '');
+      return '<li' + (r.count != null ? ' data-n="' + r.count + '"' : '') + '><time datetime="' + r.date + '">' + day(r.date) + '</time>' +
+        '<span><a href="' + href + '">' + X.esc(r.title) + '</a></span><span class="n">' + n + '</span></li>';
+    }).join('');
+    if (!cv) return;
+    var pts = sum.releases.filter(function (r) { return r.count != null; }).slice().reverse()
+      .map(function (r) { return { n: r.count, d: day(r.date).replace(/ \d{4}$/, '') }; });
+    if (pts.length < 2) return;
+    var vals = pts.map(function (p) { return p.n; });
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), pad = Math.max(5, (hi - lo) * 0.12);
+    lo = Math.floor((lo - pad) / 10) * 10; hi = Math.ceil((hi + pad) / 10) * 10;
     var prog = S.reduced ? 1 : 0;
     var o = S.canvas(cv, function (c, W, H) {
       c.clearRect(0, 0, W, H);
       var m = { l: 40, r: 30, t: 44, b: 26 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
-      var lo = 520, hi = 550;
       function sx(i) { return m.l + i / (pts.length - 1) * pw; }
       function sy(v) { return m.t + ph - (v - lo) / (hi - lo) * ph; }
       c.font = font(10); c.lineWidth = 1;
-      [520, 535, 550].forEach(function (v) { c.strokeStyle = C.grid; c.beginPath(); c.moveTo(m.l, sy(v) + 0.5); c.lineTo(m.l + pw, sy(v) + 0.5); c.stroke(); c.fillStyle = C.dim; c.textAlign = 'right'; c.fillText(String(v), m.l - 6, sy(v) + 3); });
+      [lo, (lo + hi) / 2, hi].forEach(function (v) { c.strokeStyle = C.grid; c.beginPath(); c.moveTo(m.l, sy(v) + 0.5); c.lineTo(m.l + pw, sy(v) + 0.5); c.stroke(); c.fillStyle = C.dim; c.textAlign = 'right'; c.fillText(String(Math.round(v)), m.l - 6, sy(v) + 3); });
       var upto = prog * (pts.length - 1);
       c.strokeStyle = C.amberHi; c.lineWidth = 2; c.beginPath();
       for (var i = 0; i <= Math.floor(upto); i++) { if (i) c.lineTo(sx(i), sy(pts[i].n)); else c.moveTo(sx(i), sy(pts[i].n)); }
@@ -760,5 +790,5 @@
       });
     }, { aspect: function (w) { return w < 560 ? 0.42 : 0.2; }, animate: false });
     S.onView(cv, function () { intro(1400, function (k) { prog = S.ease(k); o.redraw(); }); });
-  })();
+  }
 })();
