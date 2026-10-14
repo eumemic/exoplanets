@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      # uv, as in the README: pip refuses scanf==1.6.0, whose metadata declares
+      # Requires-Python "==2.7,>=3.8" (unsatisfiable), and uv installs it.
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: requirements.txt
+      - name: Install pinned requirements and pytest
+        run: |
+          uv venv --python 3.12 .venv
+          uv pip install --python .venv/bin/python -r requirements.txt pytest
+      - name: Run tests
+        run: .venv/bin/pytest -q

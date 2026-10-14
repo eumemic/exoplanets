@@ -778,6 +778,12 @@ Inside AWS us-east-1 this is about 20 times faster than downloading from MAST.
 `package_candidates.py`. Light curves and catalogs are downloaded into `data/` and are not part
 of the repository.
 
+### Tests
+
+`uv pip install -r requirements.txt pytest && pytest` runs the unit tests and the consistency checks on the
+published tables (vetting files for every counted candidate, tier labels, transit-time predictions). GitHub
+Actions runs the same on every push and pull request to `main` (with uv, since pip rejects the pinned `scanf`).
+
 ## Layout
 
 ```
