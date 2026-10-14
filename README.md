@@ -568,7 +568,7 @@ files are append-only. Candidates that leave the counted tiers keep their rows, 
 [`candidates/predictions.csv`](candidates/predictions.csv)
 lists all 45,781 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
 the UTC time at Earth's centre, and the TESS sector when the transit falls inside a published TESS
-orbit window and the star is on a detector. The median 1σ uncertainty of the next transit is 12 min.
+orbit window and the star is on a detector. The median 1σ uncertainty of the next transit is 11 min.
 Of the 543 registered on 10 October, 62 have 656 transits in the published windows of Sectors 109–111 (through 3 December
 2026), all with 1σ uncertainties shorter than the transit duration, and 308 candidates are on
 detectors in sectors planned through Sector 134 (tess-point 0.9.5.post1). These files were
@@ -579,8 +579,8 @@ The fitted reference epoch is usually the first transit in the data, where the e
 errors are strongly correlated, so `predict.py` propagates the errors from the information-weighted
 centre of the observed transits. For the fitted epoch itself, this reproduces the MCMC uncertainty
 (median ratio 0.99; 5–95%: 0.82–1.29). The predictions assume a constant period, so transit-timing
-variations would move transits away from these times. For TIC 343942488 (0.65 d) the catalog lists
-the search period because the fitted period differs from it by 0.13%; its ephemeris uses the fit.
+variations would move transits away from these times. For TIC 343942488 (0.65 d, one sector of data) the
+fitted period differs from the search period by 0.13%; the catalog row and the ephemeris both use the fit.
 These files replace the first-release predictions of 7 October (commit 9d5f501), which stay in the
 git history.
 
