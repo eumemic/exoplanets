@@ -1,5 +1,15 @@
 # Multi-sector TESS transit searches of nearby K and M dwarfs and of TOI hosts
 
+**Small transiting-planet candidates in NASA TESS light curves, with the code, tables and vetting behind each one.**
+
+<p align="center">
+  <a href="https://eumemic.github.io/exoplanets/">Website</a> &nbsp;&middot;&nbsp;
+  <a href="https://eumemic.github.io/exoplanets/candidates.html">Candidate explorer</a> &nbsp;&middot;&nbsp;
+  <a href="https://eumemic.github.io/exoplanets/transits.html">Transit planner</a> &nbsp;&middot;&nbsp;
+  <a href="https://eumemic.github.io/exoplanets/methods.html">Methods</a> &nbsp;&middot;&nbsp;
+  <a href="results_public/">Data</a>
+</p>
+
 Independent searches of NASA TESS light curves for small transiting planets. The first combines
 the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K and M dwarfs. The
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
@@ -104,6 +114,19 @@ vetting, but TESS alone cannot rule out every false-positive scenario. Ground-ba
 high-resolution imaging, or radial velocities are needed to confirm or reject them.
 
 ![Candidate transits](figures/candidates_grid.png)
+
+## What is in this repository
+
+| | |
+|---|---|
+| **Candidate tables** | Every signal found, the vetted signals, the candidate table of each search, the search's stage counts and the novelty check, with a [data dictionary](results_public/README.md). [`results_public/`](results_public/) |
+| **A folder per candidate** | Vetting plot, transit fit, centroid offsets, nearby stars and TRICERATOPS output for each candidate; the full-sky ones are in [`candidates/allsky/`](candidates/allsky/). [`candidates/`](candidates/) |
+| **Transit predictions** | The ephemeris of each registered candidate and its predicted transit times, committed before the observations. [`candidates/ephemerides.csv`](candidates/ephemerides.csv), [`candidates/predictions.csv`](candidates/predictions.csv) |
+| **Validation** | Control stars, injection–recovery and false-alarm tables, and a note for each check added since the first release. [`validation/`](validation/) |
+| **Pipeline** | The search, vetting and follow-up code; how to run it is under [Reproducing](#reproducing). [`pipeline/`](pipeline/), tests in [`tests/`](tests/) |
+| **Figures** | The figures shown here. [`figures/`](figures/) |
+| **Explainer video** | A short film built in Remotion from the repository's own data, and how to render it. [`video/`](video/) |
+| **Website** | An abstract of the search, a candidate explorer, a transit planner and the methods, with every number computed from these tables. [eumemic.github.io/exoplanets](https://eumemic.github.io/exoplanets/) |
 
 ## Candidates
 
