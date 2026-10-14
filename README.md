@@ -115,8 +115,8 @@ onwards; the statistical-validation threshold is FPP < 0.015.
 | 166321785 | 2.480128 | 2.08 ± 0.09 | 4380 K, 96 pc | – | no prior report found; two T≈15–16 stars at 9″ |
 | 147226218 | 3.87159 | 1.57 ± 0.08 | 4840 K, 77 pc | – | no prior report found; T=16.6 star at 3.4″ |
 | 451641911 | 3.90974 | 1.36 ± 0.05 | 3650 K, 41 pc | – | no prior report found; crowded field |
-| 30470520 | 18.75190 | 1.45 ± 0.04 | 5150 K, 208 pc | – | no prior report found; crowded field, depth varies by sector |
-| 135425484 | 8.03350 | 3.12 ± 0.15 | 4230 K, 79 pc | – | no prior report found; impact parameter 0.91 (near-grazing) |
+| 30470520 | 18.75190 | 1.45 ± 0.04 | 5150 K, 208 pc | – | no prior report found; crowded field, depth varies by sector; now tier C (Gaia RUWE 11.6) |
+| 135425484 | 8.03350 | 3.12 ± 0.15 | 4230 K, 79 pc | – | no prior report found; impact parameter 0.91 (near-grazing); now tier C (grazing) |
 | 286763141 (TOI-6284) | 5.244548 | 0.85 ± 0.04 | 3550 K, 21 pc | 0.03 | independent recovery; reported as "TOI-6284.02" by [Tschudi 2026](https://arxiv.org/abs/2607.23781) |
 | 231725883 | 9.098778 | 2.47 ± 0.07 | 5110 K, 155 pc | – | independent recovery; in the RAVEN first-stage detection list ([Lafarga et al. 2026](https://arxiv.org/abs/2603.22597)), not in their vetted list; the update finds two more signals on this star |
 
@@ -151,15 +151,15 @@ each TIC ID and host TOI ([`novelty_check.md`](results_public/novelty_check.md))
 
 | TIC | Period (d) | Radius (R⊕) | Host (Teff, T mag, distance) | Known on star | FPP | Notes |
 |---|---|---|---|---|---|---|
-| 32636748 | 0.732324 | 1.43 | 4094 K, 10.4, 55 pc | – | unstable | K/M dwarfs; ultra-short period; TRICERATOPS gives 0.00–0.98 over 10 runs for this 0.7 h transit |
-| 117799904 | 3.291093 | 1.39 | 4045 K, 10.9, 61 pc | TOI-2457.01 (PC, 14.20 d) | 0.053 | K/M dwarfs; second signal on TOI-2457 (found by both searches) |
+| 32636748 | 0.732324 | 1.43 | 4094 K, 10.4, 55 pc | – | unstable | K/M dwarfs; ultra-short period; TRICERATOPS gives 0.00–0.98 over 10 runs for this 0.7 h transit; now tier C (Gaia RUWE 1.73) |
+| 117799904 | 3.291093 | 1.39 | 4045 K, 10.9, 61 pc | TOI-2457.01 (PC, 14.20 d) | 0.053 | K/M dwarfs; second signal on TOI-2457 (found by both searches); now tier C (Gaia RUWE 1.55) |
 | 124094573 | 13.721761 | 2.18 | 4590 K, 11.4, 110 pc | – | 0.068 | K/M dwarfs |
 | 242080609 | 16.955247 | 1.89 | 4500 K, 9.7, 54 pc | – | 0.026 | K/M dwarfs; T=9.7, 5 transits |
 | 257484419 | 18.056783 | 2.58 | 4184 K, 11.2, 81 pc | – | 0.016 | K/M dwarfs |
-| 179985715 | 19.092785 | 2.56 | 4047 K, 11.3, 71 pc | TOI-249.01 (PC, 6.62 d) | 0.132 | K/M dwarfs; second signal on TOI-249; grazing (b=0.9); Gaia RUWE 2.0 |
+| 179985715 | 19.092785 | 2.56 | 4047 K, 11.3, 71 pc | TOI-249.01 (PC, 6.62 d) | 0.132 | K/M dwarfs; second signal on TOI-249; grazing (b=0.9); Gaia RUWE 2.0; now tier C |
 | 317134140 | 0.571863 | 1.31 | 5563 K, 10.7, 174 pc | TOI-2514.01 (PC, 6.39 d) | 0.066 | TOI hosts; ultra-short period |
 | 72668830 | 2.000544 | 1.59 | 4985 K, 10.4, 116 pc | TOI-4296.01 (FA, 19.97 d); TOI-4296.02 (PC, 5.10 d); TOI-4296.03 (PC, 12.49 d) | 0.105 | TOI hosts |
-| 165827520 | 2.004481 | 1.15 | 3230 K, 12.3, 34 pc | TOI-3494.01 (PC, 7.75 d) | 0.088 | TOI hosts; a star 0.59″ away (Δ*I* = 2.9) is known from imaging (Matson et al. 2025), so the radius is a lower limit |
+| 165827520 | 2.004481 | 1.15 | 3230 K, 12.3, 34 pc | TOI-3494.01 (PC, 7.75 d) | 0.088 | TOI hosts; a star 0.59″ away (Δ*I* = 2.9) is known from imaging (Matson et al. 2025), so the radius is a lower limit; now tier C (Gaia RUWE 3.7) |
 | 383313006 | 4.251808 | 2.05 | 3719 K, 11.8, 73 pc | TOI-6758.01 (PC, 12.61 d) | 0.165 | TOI hosts |
 | 380671216 | 5.575799 | 2.29 | 5729 K, 10.6, 191 pc | TOI-5495.01 (PC, 9.66 d) | 0.047 | TOI hosts |
 | 423445163 | 6.212551 | 2.75 | 4593 K, 12.5, 187 pc | TOI-6489.01 (PC, 2.92 d) | 0.016 | TOI hosts |
@@ -206,10 +206,10 @@ Two more searches found 8 signals that pass every check: 6 for which we found no
 
 | TIC | Period (d) | Radius (R⊕) | Host (Teff, T mag, distance) | Known on star | Notes |
 |---|---|---|---|---|---|
-| 105506140 | 0.706375 | 1.42 | 5216 K, 8.0, 44 pc | – | TCE re-check; HD 85706; weakest: centroid 13.8" in the best difference image but 17.1" on average, grazing (b = 0.95), and ExoMiner++ scores its SPOC TCEs 0.34 and 0.45 (below its 0.5 threshold) |
+| 105506140 | 0.706375 | 1.42 | 5216 K, 8.0, 44 pc | – | TCE re-check; HD 85706; weakest: centroid 13.8" in the best difference image but 17.1" on average, grazing (b = 0.95), and ExoMiner++ scores its SPOC TCEs 0.34 and 0.45 (below its 0.5 threshold); now tier C (grazing) |
 | 300381700 | 3.145257 | 4.87 | 5999 K, 12.4, 598 pc | TOI-7387.01 (PC, 9.09 d) | TCE re-check; second signal on TOI-7387; reported on 4 October by Tovar Contreras (Zenodo 23134068) |
 | 373017346 | 3.521493 | 1.79 | 5844 K, 10.6, 211 pc | TOI-4450.01 (PC, 10.69 d) | TCE re-check; second signal on TOI-4450 |
-| 351339274 | 4.225136 | 0.75 | 3529 K, 9.2, 13 pc | – | TCE re-check; GJ 774 A; its companion GJ 774 B, 17.6" away and 1.2 mag fainter, could be the host instead (0.75 R⊕ on A, about 0.9 R⊕ on B) |
+| 351339274 | 4.225136 | 0.75 | 3529 K, 9.2, 13 pc | – | TCE re-check; GJ 774 A; its companion GJ 774 B, 17.6" away and 1.2 mag fainter, could be the host instead (0.75 R⊕ on A, about 0.9 R⊕ on B); now tier C (NFPP 0.12 with the Gaia limits) |
 | 257484419 | 4.353306 | 2.45 | 4184 K, 11.2, 81 pc | – | TCE re-check; second signal on the star of our 18.06 d update candidate; reported on 3 October by Ozturk (Zenodo 23118499) |
 | 124573851 | 9.529248 | 2.48 | 5625 K, 10.2, 143 pc | TOI-669.01 (CP, 3.94 d) | TCE re-check; second signal on TOI-669; matches a weak radial-velocity signal at 9.61 ± 0.52 d (Akana Murphy et al. 2023); confirmed: TOI-669 b |
 | 39516274 | 14.216035 | 1.36 | 4674 K, 9.3, 46 pc | TOI-5997.01 (CP, 5.66 d) | TCE re-check; HIP 85850; second signal on TOI-5997, whose planet b the NASA Exoplanet Archive added on 8 October 2026, so this would be TOI-5997 c. Samson Fraser posted the same signal on Zenodo on 9 October ([10.5281/zenodo.23249265](https://doi.org/10.5281/zenodo.23249265)), the day after this update |
@@ -244,7 +244,9 @@ Algol-type eclipsing binary.
 | … no FFI difference image, and SPOC's centroid is more than 15″ off | 3 | 0 | 0 |
 | … none of these, MES ≥ 7.1, per-sector χ²/dof ≤ 5 | 8 | 0 | 1 |
 
-The TCE re-check's last row includes TIC 235005571 and the two signals reported on Zenodo.
+The TCE re-check's last row includes TIC 235005571 and the two signals reported on Zenodo. The published vetted
+tables (`vetted_signals_tce`, `_long`, `_long_toi_hosts`) have 4,348, 312 and 165 rows: 45, 21 and 2 signals that
+pass the pre-filters have no vetting row.
 
 ### Added 8 October 2026: faint M dwarfs
 
@@ -260,7 +262,7 @@ project ([tess-transit-hunter](https://comdex4.github.io/tess-transit-hunter/fin
 
 | TIC | Period (d) | Radius (R⊕) | Host (Teff, T mag, distance) | Notes |
 |---|---|---|---|---|
-| 100624547 | 1.922279 | 8.58 | 3541 K, 12.3, 77 pc | grazing (b ≈ 1), so the radius is poorly constrained (5.7–13.5 R⊕); crowded field (TIC contamination 0.32) |
+| 100624547 | 1.922279 | 8.58 | 3541 K, 12.3, 77 pc | grazing (b ≈ 1), so the radius is poorly constrained (5.7–13.5 R⊕); crowded field (TIC contamination 0.32); now tier C (grazing) |
 | 308023474 | 2.074868 | 1.24 | 3687 K, 12.1, 62 pc | G 203-64 |
 | 38017042 | 2.695824 | 1.44 | 3496 K, 12.4, 54 pc | two signals on this star (2.70 d and 4.14 d) |
 | 355815567 | 3.519453 | 0.89 | 3149 K, 12.3, 18 pc | GJ 3514, an M4.5 dwarf 17.6 pc away |
@@ -316,7 +318,7 @@ crowded fields mostly for a centroid offset or a capable neighbour), leaving 13.
 | 357945537 | 8.887083 | 2.60 | 3451 K, 12.9, 77 pc | LP 335-28 |
 | 233409999 | 9.578851 | 2.30 | 3475 K, 13.1, 90 pc | – |
 | 142472039 | 10.086808 | 2.39 | 3848 K, 12.7, 114 pc | – |
-| 394657305 | 13.941080 | 3.69 | 3606 K, 13.4, 113 pc | a brighter star (T = 11.0) 18.5" away could be the source (TIC contamination ratio 1.23) |
+| 394657305 | 13.941080 | 3.69 | 3606 K, 13.4, 113 pc | a brighter star (T = 11.0) 18.5" away could be the source (TIC contamination ratio 1.23); now tier C (NFPP 0.44 with the Gaia limits) |
 
 | Stage | Faint M dwarfs, 12.5 < T ≤ 13.5 |
 |---|---|
@@ -492,21 +494,30 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches (13 October) |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) |
 |---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 21 |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 296 |
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 |
 | N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 |
 | L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 |
 | C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 |
 | L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 |
-| likely binary, likely nearby false positive, likely false alarm, reported elsewhere | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 |
 
 All 2,990 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
 SNR 7.5–9, or neighbour within 15″; column `search`: the full-sky search or the QLP re-search; column `reported_as`: where a
 signal labelled reported was reported); tiers A, B, C, N, L1 and L have folders in
-[`candidates/allsky/`](candidates/allsky/).
+[`candidates/allsky/`](candidates/allsky/). Since 13 October the `set` column follows the pixel checks without TIC artifacts
+(733 SNR ≥ 9 and 1,311 neighbour rows from the first pass, against 726 and 1,294 + 24 in the table above, since 7
+signals have no capable neighbour without them), plus the QLP re-search's 122, 262 and 180. Two classifier scores: `fa_score`,
+the out-of-fold score, and `fa_score_h`, the hold-out score that tier L1 is selected on (≥ 0.8; added 13 October),
+both from the retrained classifier where the signal has a row in its table and from the previous one otherwise; the
+low-score flag `fa_flag` uses `fa_score`. `host_tois` is empty here because TOI hosts were searched separately, and
+`zenodo_with_period` because no Zenodo record matched. TIC 370244729 (3.62 d, tier B) has no Gaia-constrained
+TRICERATOPS values (no TIC mass), so its tier uses `FPP_c` and `NFPP_c`. The last column, `candidate_id`, is the
+candidate's folder name where it has one (else `TIC{tic}_P{period:.3f}`); the earlier-search table, the ephemerides and
+the predictions have it too, so all four join on it.
 
 ### Predicted transit times
 
@@ -770,12 +781,20 @@ of the repository.
 ## Layout
 
 ```
-pipeline/          code
-candidates/        one folder per candidate, ephemerides.csv and predictions.csv
-figures/           figures used here
-results_public/    all signals, vetted signals, candidate tables, novelty check
-validation/        control-star vetting outputs and the injection-recovery tables
+pipeline/            code
+candidates/          one folder per candidate of the earlier searches, ephemerides.csv and predictions.csv
+candidates/allsky/   one folder per full-sky signal in tiers A, B, C, N, L1 and L
+figures/             figures used here
+results_public/      all signals, vetted signals, candidate and tier tables, novelty check
+tests/               unit tests (python -m unittest discover -s tests)
+validation/          calibration, reliability and completeness tables, with notes on each check
+video/               source of the explainer video
 ```
+
+Six folders in `candidates/` belong to signals that are not counted and have no row in the tier tables: TIC
+286763141 (TOI-6284) 5.24 d, 257484419 4.35 d and 300381700 3.15 d, reported by others first; and TIC 231725883's
+three signals, the 9.10 d one in the RAVEN first-stage list and the 4.66 d and 18.97 d ones with a capable
+neighbour within 15″ (see the first release and the 8 October update).
 
 ## Credits
 

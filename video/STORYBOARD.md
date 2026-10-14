@@ -65,7 +65,7 @@ The sky map is the film's stage. All 4.04 million stars are drawn at their real 
 - **TESS footprints:** sector pointings from `tess-point`, with dates from `data/tess_schedule`.
 - **Rabtsevich's star:** `data/samples_4206066` (QLP and SPOC light curves for Sectors 6, 32 and 98).
 - **Pixel check:** a cutout from `data/followup_pixels` with a neighbour-caused signal, or one fresh TESScut cutout.
-- **Funnel and false alarms:** README tables and `validation/false_alarms_inverted_399408_stars.csv`.
+- **Funnel and false alarms:** README tables and `validation/false_alarms_inverted_798769_stars.csv`.
 - **Radii:** the catalog's `Rp_Re`, plus the solar system's radii.
 
 ## Process

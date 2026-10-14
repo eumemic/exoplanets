@@ -1,6 +1,6 @@
 # Explainer video
 
-A 223-second explainer of the TESS search for X: narration (ElevenLabs), music ("Percolating Cosmos",
+A 223-second explainer of the TESS search, made for posting on X: narration (ElevenLabs), music ("Percolating Cosmos",
 Suno), and a picture built in Remotion from the repository's own data. `SCRIPT.md` has the brief and
 narration, `STORYBOARD.md` the original plan.
 
