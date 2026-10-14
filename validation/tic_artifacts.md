@@ -37,7 +37,8 @@ binaries) keep their tiers whatever TRICERATOPS gives. Per-signal results are in
     < 0.001 and NFPP_gc 0 (no star within 30″ could cause the dip). It is flagged because its centroids sit 10″
     northeast in all four usable sectors (p = 0.007 for the target), while WASP-166 b's transits, measured the same
     way, fall within 1–4″ of the star. The binary check matches WASP-166 b itself (TESS eclipsing-binary catalog and
-    VSX type EP, 5.4435 d), not a binary.
+    VSX type EP, 5.4435 d), not a binary. SPOC's Sectors 1–96 search listed two of its transits as a 729.46 d TCE,
+    27 times this period, which is not a TOI ([`ctoi_matches.md`](ctoi_matches.md)).
   - **TIC 286944151, 2.276 d, 1.21 ± 0.08 R⊕, around an M dwarf 36 pc away:** tier B, FPP_gc 0.010, NFPP_gc 0. Its
     difference-image fits are poor (quality 0.13–0.46), so the centroid test has little power here (p = 0.35), but
     no star within 88″ is bright enough to cause the dip. MES 9.4 is allowed in the earlier M-dwarf samples.

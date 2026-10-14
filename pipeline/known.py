@@ -14,6 +14,9 @@ K = DATA / "known"
 HARMONICS = (1 / 3, 1 / 2, 2 / 3, 1, 3 / 2, 2, 3)
 # Literature periods are numbers scraped from paper text, so only close aliases count.
 HARMONICS_LIT = (1 / 2, 1, 2)
+# epoch_check: a known period p/q times ours (q <= EPOCH_MAX_Q, within EPOCH_RATIO_TOL) is an alias of the same signal
+EPOCH_MAX_Q = 7
+EPOCH_RATIO_TOL = 1e-3
 
 
 def _sexa(ra, dec):
@@ -40,10 +43,15 @@ def tables():
     except FileNotFoundError:
         tce["ra_deg"] = np.nan
         tce["dec_deg"] = np.nan
+    # transit epochs in BTJD, for epoch_check (the planet table has none)
+    toi["t0"] = toi["Epoch (BJD)"] - 2457000
+    ctoi["t0"] = ctoi["Transit Epoch (BJD)"] - 2457000
+    ps["t0"] = ps["pl_tranmid"] - 2457000 if "pl_tranmid" in ps else np.nan
+    tce["t0"] = tce["tce_time0bt"]
     out = {}
     for name, df, label in (("toi", toi, "TOI"), ("ctoi", ctoi, "CTOI"),
                             ("planet", ps, "pl_name"), ("tce", tce, "file")):
-        d = df[["tic", "period", "ra_deg", "dec_deg"]].copy()
+        d = df[["tic", "period", "ra_deg", "dec_deg", "t0"]].copy()
         d["label"] = df[label].astype(str).values
         d = d[np.isfinite(d["tic"])]
         d["tic"] = d["tic"].astype(np.int64)
@@ -95,4 +103,55 @@ def check(tic, period, ra, dec, radius_arcmin=2.5, skip=()):
                     if h is not None:
                         res["neighbour_period_match"].append(
                             f"{name}:TIC{r['tic']}:{r['label']}:{s:.2f}':x{h:.3g}")
+    return res
+
+
+def simple_ratio(r, max_q=EPOCH_MAX_Q, tol=EPOCH_RATIO_TOL):
+    """(p, q) with p/q within tol of r and q <= max_q, or None."""
+    for q in range(1, max_q + 1):
+        p = round(r * q)
+        if p >= 1 and abs(r * q / p - 1) < tol:
+            return p, q
+    return None
+
+
+def epoch_check(tic, period, t0, dur_h, ra, dec, period_err=None, span=None, radius_arcmin=2.5, skip=()):
+    """Known objects (TOIs, CTOIs, TCEs, planets with an epoch) on this TIC or within radius_arcmin whose epoch falls
+    inside one of this signal's transits and whose period is missing (a single transit) or a simple ratio p/q of ours
+    that is not one of HARMONICS (check() reports those): single-transit CTOIs and long-period aliases built from two
+    or three transits. t0 in BTJD. The window is half the duration plus 3 sigma of the period error propagated to the
+    known epoch; without period_err, the period is taken to be known to half a duration over `span` days."""
+    res = {"same_star_epoch_match": [], "neighbour_epoch_match": []}
+    half = 0.5 * dur_h / 24
+    if period_err is None:
+        period_err = half * period / span / 3 if span and span > period else 0.0
+    for name, d in tables().items():
+        if name in skip or "t0" not in d:
+            continue
+        same = (d["tic"] == tic).values
+        near = (np.abs(d["dec_deg"] - dec) < radius_arcmin / 60).values & ~same
+        d, same = d[same | near], same[same | near]
+        if not len(d):
+            continue
+        sep = SkyCoord(d["ra_deg"].values * u.deg, d["dec_deg"].values * u.deg).separation(
+            SkyCoord(ra * u.deg, dec * u.deg)).arcmin
+        for (_, r), s, is_same in zip(d.iterrows(), sep, same):
+            if not np.isfinite(r["t0"]) or not (is_same or s < radius_arcmin):
+                continue
+            n = np.round((r["t0"] - t0) / period)
+            if abs(r["t0"] - t0 - n * period) > half + 3 * period_err * abs(n):
+                continue
+            if np.isfinite(r["period"]) and r["period"] > 0:
+                if period_match(period, r["period"]) is not None:
+                    continue
+                pq = simple_ratio(r["period"] / period)
+                if pq is None:
+                    continue
+                how = f"x{pq[0]}/{pq[1]}" if pq[1] > 1 else f"x{pq[0]}"
+            else:
+                how = "single transit"
+            if is_same:
+                res["same_star_epoch_match"].append(f"{name}:{r['label']}:P={r['period']:.4f}:{how}")
+            else:
+                res["neighbour_epoch_match"].append(f"{name}:TIC{r['tic']}:{r['label']}:{s:.2f}':{how}")
     return res

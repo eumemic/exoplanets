@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from common import CAT, RESULTS
-from known import check as known_check
+from known import check as known_check, epoch_check
 
 
 def main():
@@ -69,10 +69,16 @@ def main():
         c = c[c["tic"].isin(stars.index[ok])]
     status, detail = [], []
     for _, r in c.iterrows():
-        k = known_check(int(r.tic), r.period, float(stars.loc[r.tic, "ra"]), float(stars.loc[r.tic, "dec"]),
-                        skip=("tce",) if a.ignore_tce else ())
+        ra, dec = float(stars.loc[r.tic, "ra"]), float(stars.loc[r.tic, "dec"])
+        k = known_check(int(r.tic), r.period, ra, dec, skip=("tce",) if a.ignore_tce else ())
+        # the same transits under another period: a single-transit CTOI or a long-period alias. A SPOC TCE matched
+        # only this way stays new (an unpromoted TCE is not a report, and the TCE re-check measures TCEs at their own
+        # period); it is listed in known_detail.
+        ke = epoch_check(int(r.tic), r.period, r.t0, r.duration_h, ra, dec, span=r.span,
+                         skip=("tce",) if a.ignore_tce else ())
         matches = k["same_star_period_match"]
         exofop = [m for m in matches if not m.startswith(("literature:", "ours:"))]
+        exofop += [m for m in ke["same_star_epoch_match"] if not m.startswith("tce:")]
         lit = [m for m in matches if m.startswith("literature:")]
         if exofop:
             status.append("known"); detail.append(exofop[0])
@@ -82,10 +88,10 @@ def main():
         elif matches:
             # one of this project's published candidates, found again
             status.append("ours"); detail.append(matches[0])
-        elif k["neighbour_period_match"]:
-            status.append("neighbour"); detail.append(k["neighbour_period_match"][0])
+        elif k["neighbour_period_match"] or ke["neighbour_epoch_match"]:
+            status.append("neighbour"); detail.append((k["neighbour_period_match"] + ke["neighbour_epoch_match"])[0])
         else:
-            status.append("new"); detail.append(";".join(k["same_star"][:3]))
+            status.append("new"); detail.append(";".join(ke["same_star_epoch_match"] + k["same_star"][:3]))
     c["known_status"], c["known_detail"] = status, detail
     c.to_csv(a.out, index=False)
     print(c["known_status"].value_counts().to_dict())

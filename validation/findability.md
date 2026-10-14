@@ -50,7 +50,8 @@ multi-sector search, and re-measured the transits in the PDCSAP flux with three 
 
 Each SNR is the highest over box lengths of 0.5–9 h, since SPOC's search tries several durations. 10 candidates have
 fewer than two 2-minute transits through Sector 96, too few for a periodic search. One is TIC 266376971 (T = 8.3;
-3.3 R⊕, 19.8 d), whose other two 2-minute transits came in Sectors 99 and 100. For the other 68:
+3.3 R⊕, 19.8 d), whose other two 2-minute transits came in Sectors 99 and 100 (relabelled reported on 13 October:
+it is the single-transit CTOI 266376971.01; see [`ctoi_matches.md`](ctoi_matches.md)). For the other 68:
 
 | Estimate | Reach 7.1 | Highest |
 |---|---|---|
