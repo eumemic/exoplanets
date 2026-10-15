@@ -149,7 +149,7 @@ def main():
             rows.append(dict(TIC=r.TIC, tier=r.tier, period_d=round(P, 6), epoch=int(n[k]),
                              tc_BJD_TDB=round(t[k] + 2457000, 4), tc_UTC=utc[k][:16],
                              sigma_min=round(sigma(t[k]) * 1440, 1), duration_h=round(fit["T14_h"][1], 2),
-                             tess_sector=sec[k] or ""))
+                             tess_sector=sec[k] or "", candidate_id=r.candidate_id))
         eph.append(dict(TIC=r.TIC, tier=r.tier, ra=round(star["ra"], 6), dec=round(star["dec"], 6),
                         Tmag=round(star["Tmag"], 2), period_d=round(P, 7), period_err_d=float(f"{eP:.2g}"),
                         T0_BJD_TDB=round(t_ref + 2457000, 5), T0_err_min=round(sigma(t_ref) * 1440, 1),
@@ -157,7 +157,8 @@ def main():
                         Rp_Re=round(fit["Rp"][1], 2), next_tc_BJD_TDB=round(t[0] + 2457000, 4),
                         next_tc_sigma_min=round(sigma(t[0]) * 1440, 1),
                         tess_transits_scheduled=int((sec > 0).sum()),
-                        tess_sectors_planned=",".join(map(str, on_star)), registered=Time.now().utc.iso[:10]))
+                        tess_sectors_planned=",".join(map(str, on_star)), registered=Time.now().utc.iso[:10],
+                        candidate_id=r.candidate_id))
     new_eph, new_rows = pd.DataFrame(eph), pd.DataFrame(rows)
     eph = pd.concat([old_eph, new_eph], ignore_index=True)
     rows = pd.concat([old_rows, new_rows], ignore_index=True)

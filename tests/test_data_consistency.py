@@ -107,3 +107,13 @@ def test_predicted_sigma_follows_error_propagation(predictions_with_ephemerides)
     # that nearly all rows agree within 10% and none is grossly off.
     assert (ratio - 1).abs().lt(0.10).mean() >= 0.95
     assert ratio.between(0.5, 2.0).all()
+
+
+def test_registry_rows_join_on_candidate_id(allsky, earlier):
+    """Every ephemeris and prediction row carries the candidate_id that joins it to the catalog tables."""
+    eph = pd.read_csv(CANDS / "ephemerides.csv")
+    pred = pd.read_csv(CANDS / "predictions.csv", usecols=["candidate_id"])
+    assert eph["candidate_id"].notna().all(), eph.loc[eph["candidate_id"].isna(), "TIC"].tolist()
+    assert pred["candidate_id"].notna().all()
+    ids = set(allsky["candidate_id"]) | set(earlier["candidate_id"])
+    assert set(eph["candidate_id"]) <= ids
