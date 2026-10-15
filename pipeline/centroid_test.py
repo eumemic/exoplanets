@@ -1,4 +1,4 @@
-"""Do a signal's difference-image centroids point consistently away from the target, and toward which star?
+"""Is the mean of a signal's per-sector difference-image centroids consistent with the target, and with which other star?
 Reads the per-sector centroids of centroid_sectors.py (offsets east and north of the target, arcsec) and, for each
 signal, tests whether the mean offset over sectors is consistent with the target and with each TIC star within 2'
 that is bright enough to cause the dip (a total eclipse of that star would dilute to at least the observed depth).

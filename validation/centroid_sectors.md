@@ -1,7 +1,8 @@
 # Centroids in every sector
 
 On 12 October 2026 we measured the difference-image centroid of every counted candidate in every sector with transits,
-and tested whether the offsets point consistently away from the target star, and toward which star. Until then the
+and tested whether the mean offset is consistent with the target star and with each neighbour bright enough to cause
+the dip. Until then the
 pixel checks used the offset in one sector (`followup.py`: the best-quality difference image among a few cheap
 sectors). The TOI-913 case on issue #2 showed the problem: one sector can look on target while the others point to a
 neighbour.

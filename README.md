@@ -102,8 +102,10 @@ Objects of Interest (TOIs) after masking the known TOIs.
   at 2.28 d around an M dwarf 36 pc away. 470 full-sky candidates and 60 from the earlier searches
   ([details](validation/tic_artifacts.md)).
 - **Centroids in every sector (12 October 2026): 528 candidates.** The pixel checks had used the centroid offset of
-  one difference image. We now measure it in every sector with transits and test whether the offsets point
-  consistently away from the target. On 565 known planets the test never rejects the target at p < 0.001; on 175
+  one difference image. We now measure it in every sector with transits, in arcseconds east and north of the target,
+  and test whether the mean offset over the sectors is consistent with the target and with each star within 2′
+  bright enough to cause the dip (an F-test against the scatter between sectors, taken as at least 1″ per axis). On
+  565 known planets the test never rejects the target at p < 0.001; on 175
   signals known to come from neighbouring stars it does so 73% of the time. 18 counted candidates reject their target
   at p < 0.001 and leave the counted tiers (16 to likely nearby false positive, 2 to tier C), and 13 more at p < 0.01
   are flagged: 470 full-sky candidates and 58 from the earlier searches ([details](validation/centroid_sectors.md)).
