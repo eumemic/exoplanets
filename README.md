@@ -15,6 +15,21 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **TRICERATOPS with single-cadence light curves (15 October 2026): 632 candidates.** TRICERATOPS models one exposure
+  time, but each signal's TRICERATOPS input had combined every sector (30-minute, 10-minute, 200-second and 2-minute
+  data), binned to 5 minutes and modelled with a 10-minute exposure. For some deep signals this made the FPP far too
+  small: TIC 160420269 (17 R⊕) had FPP below 1e-7 where its 200-second data alone give about 0.4 (found by Antoine
+  Rabtsevich, [issue #1](https://github.com/eumemic/exoplanets/issues/1)). All 1,299 signals with Gaia-limited
+  TRICERATOPS runs were rerun on the transits of one cadence, the one whose in-transit points carry the most
+  information, modelled with that cadence's exposure (10- and 30-minute data binned in phase to 2 minutes), with ten
+  runs with the default priors and ten with the Gaia limits as before. The median `FPP_gc` of the counted candidates is
+  unchanged at 0.013, but 55 signals change tier. 25 tier N candidates now fail NFPP < 0.1 or FPP < 0.5 and become likely
+  nearby false positives (7 of them had been flagged by the per-sector centroid test, and 12 have centroid ratios that
+  favour a neighbour). 13 tier B candidates, 9 of them larger than 8 R⊕, and one earlier-search tier A candidate move
+  to tier C, and one tier L1 candidate returns to tier L. 14 tier C signals now pass and are counted, among them both
+  signals of TIC 229511659 (tier A). 267 counted candidates (240 full-sky and 27 from the earlier searches) meet the
+  validation thresholds apart from high-resolution imaging, against 288. 575 full-sky candidates and 57 from the
+  earlier searches ([details](validation/triceratops_single_cadence.md)).
 - **TESS Ten Thousand eclipsing binaries (15 October 2026): 658 candidates.** We matched the catalog against
   machine-readable tables of TESS full-frame-image candidates and eclipsing binaries, which the literature search does
   not always find. Three tier B candidates are eclipsing binaries in the TESS Ten Thousand catalog (Kostov et al. 2025):
@@ -479,7 +494,10 @@ of the TOI planets when tested against a neighbour 8–14″ away (76% at 5″).
 below 0.5 and NFPP below 0.1, MES ≥ 10, and the same binary, grazing and literature checks as tiers
 A and B: 169 candidates. 111 of them have NFPP < 0.01, and 13 have FPP < 0.015 and NFPP < 0.001, the
 TRICERATOPS validation thresholds, though validation also needs high-resolution imaging. The
-`FPP_c`, `NFPP_c` and `BF` columns of the catalog give the combined values and the centroid ratio.
+`FPP_c`, `NFPP_c` and `BF` columns of the catalog give the combined values and the centroid ratio. Since 15 October,
+TRICERATOPS gets the transits of one cadence, the one whose in-transit points carry the most information, modelled with
+that cadence's exposure; it models a single exposure time, and folding every sector together had made some FPPs far too
+small ([details](validation/triceratops_single_cadence.md)).
 
 **False alarms, measured.** We searched the inverted light curves of 798,769 random full-sky stars, in
 two independent samples of about 400,000, in which every dip the pipeline finds is noise or a
@@ -558,15 +576,15 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 |
 
 All 2,990 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
@@ -586,12 +604,13 @@ the predictions have it too, so all four join on it.
 ### Predicted transit times
 
 [`candidates/ephemerides.csv`](candidates/ephemerides.csv) gives the ephemeris of each registered
-candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 712:
-the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October, and 146 on 14 October: 145 from the QLP
-re-search and the L1 re-selection, and TIC 206609457 (UTC dates, column `registered`). 658 are counted now. The
+candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 724:
+the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October, 146 on 14 October (145 from the QLP
+re-search and the L1 re-selection, and TIC 206609457), and 12 on 15 October, tier C signals counted after the
+TRICERATOPS rerun with single-cadence light curves (UTC dates, column `registered`). 632 are counted now. The
 files are append-only. Candidates that leave the counted tiers keep their rows, with their current tier.
 [`candidates/predictions.csv`](candidates/predictions.csv)
-lists all 45,781 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
+lists all 47,412 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
 the UTC time at Earth's centre, and the TESS sector when the transit falls inside a published TESS
 orbit window and the star is on a detector. The median 1σ uncertainty of the next transit is 11 min.
 Of the 543 registered on 10 October, 62 have 656 transits in the published windows of Sectors 109–111 (through 3 December

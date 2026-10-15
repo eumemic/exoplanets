@@ -5,18 +5,22 @@ Uses a 3x3-pixel aperture centred on the target in each sector. The FPP is a Mon
 estimate that scatters by tens of percent between runs (TIC 61816225: 0.012-0.065 over 14
 runs), so several runs are averaged and their spread is reported.
 The Gaia field-star query is the slow part of the setup (~4 min); its result is cached next to
-the fold file and reused.
+the fold file and reused. With --state, the whole target setup is cached too (fpp_core.save_state).
+The model exposure comes from the fold (export_fold.py --single-cadence writes it, with one sub-exposure per
+2 minutes; older folds of every sector were modelled with 10 minutes and TRICERATOPS's default of 20
+sub-exposures), unless --nsamples is given.
 With --molusc, the same number of runs is repeated with TRICERATOPS's bound companions drawn from the
 MOLUSC survivors (molusc_batch.py) and without the scenarios in --drop (e.g. EB,EBx2P where Gaia RVs
 exclude a stellar companion eclipsing the target); these are reported as FPP_m and NFPP_m.
+fpp_pool.py runs the same calculation for many signals at once.
 """
 import argparse
-import contextlib
 import json
 import os
 
 import numpy as np
-import triceratops.triceratops as tr
+
+import fpp_core as fc
 
 ap = argparse.ArgumentParser()
 ap.add_argument("tic", type=int)
@@ -34,108 +38,37 @@ ap.add_argument("--molusc", help="MOLUSC survivors (_kept.csv) for a second set 
 ap.add_argument("--drop", default="", help="comma-separated scenarios to drop in the --molusc runs")
 ap.add_argument("--nearby-max-arcsec", type=float,
                 help="evaluate nearby-star scenarios only for neighbours within this separation (centroid-excluded beyond)")
+ap.add_argument("--nsamples", type=int, help="sub-exposures per point (default: one per 2 minutes of the fold's exposure)")
+ap.add_argument("--state", help="pickle of the target setup to reuse (written if missing)")
 a = ap.parse_args()
 if a.cutouts:
-    import glob
-    import types
-
-    import lightkurve
-    from astropy.io import fits
-
-    cut_dir = os.path.abspath(a.cutouts)      # target setup runs inside the fold's directory
-
-    def _local_tesscut(target=None, sector=None):
-        """TRICERATOPS reads each sector's FFI cutout through lightkurve.search_tesscut(...).download_all();
-        serve the pre-cut file instead (TESScut serves ~0.2 MB/s)."""
-        f = sorted(glob.glob(os.path.join(cut_dir, f"tess-s{int(sector):04d}-*.fits")))
-        return types.SimpleNamespace(download_all=lambda cutout_size=None: [types.SimpleNamespace(hdu=fits.open(f[0]))])
-    lightkurve.search_tesscut = _local_tesscut
+    fc.use_local_cutouts()
 if a.gaia_vizier:
-    import re
-    import types
-
-    import astropy.units as u
-    import astroquery.gaia
-    from astropy.coordinates import SkyCoord
-    from astroquery.vizier import Vizier
-
-    class _VizierGaia:
-        """Stands in for astroquery.gaia.Gaia in TRICERATOPS's field-star query: the same Gaia DR3 cone
-        search, served by VizieR (CDS), which answers concurrent queries in seconds (the ESA archive
-        queued them at ~4 per minute)."""
-        ROW_LIMIT = -1
-        COLS = {"Gmag": "phot_g_mean_mag", "BPmag": "phot_bp_mean_mag", "RPmag": "phot_rp_mean_mag",
-                "Plx": "parallax", "RPlx": "parallax_over_error"}
-
-        def launch_job(self, adql, verbose=False):
-            ra, dec, r, glim = (float(x) for x in re.search(
-                r"CIRCLE\('ICRS', ([^,]+), ([^,]+), ([^)]+)\)\) AND phot_g_mean_mag < (\S+)", adql).groups())
-            res = Vizier(columns=list(self.COLS), column_filters={"Gmag": f"<{glim}"}, row_limit=-1).query_region(
-                SkyCoord(ra, dec, unit="deg"), radius=r * u.deg, catalog="I/355/gaiadr3")
-            t = res[0][list(self.COLS)] if len(res) else None
-            if t is not None:
-                for c in self.COLS:
-                    t[c] = np.ma.filled(np.ma.asarray(t[c], dtype=float), np.nan)
-                t.rename_columns(list(self.COLS), list(self.COLS.values()))
-            return types.SimpleNamespace(get_results=lambda: t if t is not None else [])
-
-        launch_job_async = launch_job
-
-    astroquery.gaia.Gaia = _VizierGaia()
+    fc.use_vizier_gaia()
 d = np.load(a.fold)
-sectors = np.array(sorted(set(int(s) for s in d["sectors"])))
+sectors = sorted(set(int(s) for s in d["sectors"]))
 if a.sectors:
-    sectors = np.array([int(s) for s in a.sectors.split(",")])
-cache_dir = os.path.dirname(os.path.abspath(a.fold))
-gaia_csv = os.path.join(cache_dir, f"{a.tic}_gaia_background.csv")
-target = None
-for attempt in range(4):
-    try:
-        # TRICERATOPS writes the Gaia query result to the working directory
-        with contextlib.chdir(cache_dir):
-            target = tr.target(ID=a.tic, sectors=sectors,
-                               trilegal_fname=gaia_csv if os.path.exists(gaia_csv) else None)
-        if len(target.pix_coords) == len(sectors):
-            break
-    except Exception as ex:
-        print("retrying target setup:", ex)
-assert target is not None and len(target.pix_coords) == len(sectors), "TESScut downloads incomplete"
-if isinstance(target.trilegal_fname, str):
-    target.trilegal_fname = os.path.join(cache_dir, target.trilegal_fname)
-# TIC entries flagged ARTIFACT (spurious 2MASS sources) or DUPLICATE are not stars and should be ignored (Paegert et al.
-# 2021); SPLIT entries are real. Drop them, with their pixel positions (TRICERATOPS's remove_star keeps the positions,
-# which misaligns them), before the aperture fluxes are computed.
-phantom = np.array(target.stars["disposition"].isin(["ARTIFACT", "DUPLICATE"]), dtype=bool)   # writable copy
-phantom[0] = False
-if phantom.any():
-    print("dropped TIC artifacts/duplicates:", ", ".join(target.stars["ID"][phantom].astype(str)))
-    target.stars = target.stars[~phantom].reset_index(drop=True)
-    target.pix_coords = [pc[~phantom] for pc in target.pix_coords]
-aps = []
-for i, s in enumerate(sectors):
-    c = np.round(target.pix_coords[i][0]).astype(int)
-    aps.append(np.array([[c[0] + dx, c[1] + dy] for dx in (-1, 0, 1) for dy in (-1, 0, 1)]))
-target.calc_depths(tdepth=a.depth_ppm * 1e-6, all_ap_pixels=aps)
-if a.nearby_max_arcsec:
-    # Sources this far out are ruled out by the difference-image centroid (signals from TOIs 21-63"
-    # from our targets gave offsets > 15" in 98-100% of cases); TRICERATOPS evaluates three scenarios
-    # for every neighbour that could produce the depth, which dominates its run time in crowded fields.
-    far = target.stars["sep (arcsec)"] > a.nearby_max_arcsec
-    print(f"{int((far & (target.stars['tdepth'] > 0)).sum())} capable neighbours beyond {a.nearby_max_arcsec}\" dropped")
-    target.stars.loc[far, "tdepth"] = 0.0
-print(target.stars[["ID", "Tmag", "sep (arcsec)", "fluxratio", "tdepth"]].head(8).to_string())
+    sectors = [int(s) for s in a.sectors.split(",")]
+if a.state and os.path.exists(a.state):
+    target = fc.load_state(a.state)
+else:
+    target = fc.setup_target(a.tic, sectors, os.path.dirname(os.path.abspath(a.fold)), a.depth_ppm, cutouts=a.cutouts,
+                             nearby_max_arcsec=a.nearby_max_arcsec)
+    if a.state:
+        fc.save_state(target, a.state)
+exptime = fc.fold_exptime(d)
+# folds without an exposure are the earlier all-sector folds: keep TRICERATOPS's default of 20 for them
+nsamples = a.nsamples or (fc.auto_nsamples(exptime) if "exptime" in d.files else 20)
+print(f"model exposure {exptime * 1440:.2f} min, {nsamples} sub-exposures per point, {len(d['time'])} points")
 
 
 def runs(molusc_file=None, drop=()):
     fpps, nfpps = [], []
     for r in range(a.runs):
-        # parallel=True evaluates all draws in one vectorised PyTransit call; it needs a scalar
-        # flux_err_0 (an array raises a broadcasting error)
-        target.calc_probs(time=d["time"], flux_0=d["flux"], flux_err_0=float(np.median(d["flux_err"])),
-                          P_orb=float(d["P"]), N=a.draws, parallel=True, verbose=0, exptime=10 / 1440,
-                          contrast_curve_file=a.cc, filt=a.cc_filt, molusc_file=molusc_file, drop_scenario=list(drop))
-        fpps.append(target.FPP); nfpps.append(target.NFPP)
-        print(f"run {r}{' (MOLUSC)' if molusc_file else ''}: FPP={target.FPP:.4f} NFPP={target.NFPP:.2e}", flush=True)
+        f, n = fc.run_once(target, d, N=a.draws, exptime=exptime, nsamples=nsamples, molusc_file=molusc_file, drop=drop,
+                           cc=a.cc, cc_filt=a.cc_filt)
+        fpps.append(f); nfpps.append(n)
+        print(f"run {r}{' (MOLUSC)' if molusc_file else ''}: FPP={f:.4f} NFPP={n:.2e}", flush=True)
     print(target.probs.sort_values("prob", ascending=False).head(6).to_string())
     return fpps, nfpps
 
@@ -143,31 +76,14 @@ def runs(molusc_file=None, drop=()):
 fpps, nfpps = runs()
 res = dict(tic=a.tic, FPP_mean=float(np.mean(fpps)), FPP_sd=float(np.std(fpps, ddof=1)) if len(fpps) > 1 else None,
            FPP_sem=float(np.std(fpps, ddof=1) / np.sqrt(len(fpps))) if len(fpps) > 1 else None,
-           FPP=fpps, NFPP=nfpps, NFPP_mean=float(np.mean(nfpps)), NFPP_max=float(np.max(nfpps)), runs=a.runs, draws=a.draws)
+           FPP=fpps, NFPP=nfpps, NFPP_mean=float(np.mean(nfpps)), NFPP_max=float(np.max(nfpps)), runs=a.runs, draws=a.draws,
+           exptime_min=exptime * 1440, nsamples=nsamples, n_points=int(len(d["time"])))
 out = a.fold.replace(".npz", f"_fpp{a.tag}.json")
 with open(out, "w") as fh:            # written now so the default runs survive a failure in the MOLUSC runs
     json.dump(res, fh)
 if a.molusc:
-    import types
-
     import pandas as pd
-    import triceratops.marginal_likelihoods as ml
-
-    class _Columns:
-        """What TRICERATOPS reads the MOLUSC file into: it indexes columns, filters rows with a boolean mask and
-        writes into the mass-ratio array, which pandas 3 (copy-on-write) returns read-only; these copies are writable."""
-        def __init__(self, cols):
-            self.cols = cols
-
-        def __getitem__(self, key):
-            if isinstance(key, str):
-                return types.SimpleNamespace(values=self.cols[key].copy())
-            return _Columns({k: v[np.asarray(key)] for k, v in self.cols.items()})
-
-    def _read_molusc(f, *args, **kw):
-        df = pd.read_csv(f, *args, **kw)
-        return _Columns({c: df[c].to_numpy(copy=True) for c in df.columns})
-    ml.read_csv = _read_molusc            # its only runtime use is the MOLUSC file
+    fc.use_molusc_reader()
     m = pd.read_csv(a.molusc)
     # TRICERATOPS keeps companions with periastron beyond 10 au and pads the rest of its N draws with q = 0
     n_used = int((m["semi-major axis(AU)"] * (1 - m["eccentricity"]) > 10).sum())
