@@ -1,0 +1,78 @@
+"""Checks on fpp_pool.py results before they are used. TRICERATOPS can return a result that looks like an answer when
+something went wrong, so each final result (with several directories, later ones override earlier ones) is checked for:
+  - ten runs in each mode (default, and Gaia-limited where the job had MOLUSC survivors), or --runs;
+  - a blended-star scenario (DTP, DEB, DEBx2P, BTP, BEB, BEBx2P) above 1e-6 in at least one run. Without a field-star
+    population TRICERATOPS skips them all without an error (runs.jsonl keeps every scenario above 1e-6);
+  - no degenerate run: scenarios without names, as when calc_probs stops early for a target without a mass, radius,
+    Teff or parallax and leaves every scenario equally likely;
+  - at most one point per phase bin in the fold (export_fold.py --single-cadence: 2-minute and 200-second data binned to
+    their cadence, longer cadences to --phase-bin-min), which needs the signal list for the durations.
+Usage: python fpp_check.py DIR [DIR ...] --list LIST.csv [--list ...] [--expect KEYS.txt] [--runs 10] [--phase-bin-min 2]
+Exits with status 1 if any check fails.
+"""
+import argparse
+import collections
+import glob
+import json
+import os
+import sys
+
+import numpy as np
+import pandas as pd
+
+BLENDED = {"DTP", "DEB", "DEBx2P", "BTP", "BEB", "BEBx2P"}
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("dirs", nargs="+")
+    ap.add_argument("--list", action="append", required=True, help="signal list with key and duration_h columns")
+    ap.add_argument("--expect", help="file of keys that must have a result")
+    ap.add_argument("--runs", type=int, default=10)
+    ap.add_argument("--phase-bin-min", type=float, default=2.0)
+    a = ap.parse_args()
+    lst = pd.concat([pd.read_csv(f) for f in a.list]).drop_duplicates("key", keep="last").set_index("key")
+    src = {}
+    for d in a.dirs:
+        for f in glob.glob(os.path.join(d, "*_fpp.json")):
+            src[os.path.basename(f)[:-9]] = d
+    runs = collections.defaultdict(collections.Counter)
+    blended, degenerate = collections.Counter(), set()
+    for d in a.dirs:
+        for line in open(os.path.join(d, "runs.jsonl")):
+            r = json.loads(line)
+            if src.get(r["key"]) != d:
+                continue
+            runs[r["key"]][r["mode"]] += 1
+            names = [s for _, s, _ in r["probs"]]
+            if not names or "" in names:
+                degenerate.add(r["key"])
+            if any(s in BLENDED and v > 0 for _, s, v in r["probs"]):
+                blended[r["key"]] += 1
+    bad_runs, no_blended, unbinned = [], [], []
+    for k, d in sorted(src.items()):
+        j = json.load(open(os.path.join(d, f"{k}_fpp.json")))
+        if runs[k]["d"] != a.runs or ("FPP_m_mean" in j and runs[k]["m"] != a.runs):
+            bad_runs.append((k, dict(runs[k])))
+        if not blended[k] and k not in degenerate:
+            no_blended.append(k)
+        f = np.load(os.path.join(d, "folds", f"{k}.npz"))
+        cad = int(f["cadence_s"])
+        width = cad / 86400 if cad < 540 else a.phase_bin_min / 1440
+        dur = lst.loc[k, "duration_h"] / 24
+        edges = np.arange(-3 * dur, 3 * dur + 1e-9, width)
+        if np.bincount(np.digitize(f["time"], edges)).max() > 1:
+            unbinned.append((k, cad, len(f["time"])))
+    missing = sorted(set(open(a.expect).read().split()) - set(src)) if a.expect else []
+    print(f"results: {len(src)}")
+    print("not", a.runs, "runs per mode:", bad_runs or "none")
+    print("no blended-star scenario in any run:", no_blended or "none")
+    print("degenerate (target not evaluated):", sorted(degenerate) or "none")
+    print("folds with more than one point per phase bin:", unbinned or "none")
+    if a.expect:
+        print("expected keys without a result:", missing or "none")
+    sys.exit(1 if bad_runs or no_blended or degenerate or unbinned or missing else 0)
+
+
+if __name__ == "__main__":
+    main()
