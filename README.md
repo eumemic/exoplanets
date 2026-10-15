@@ -15,6 +15,15 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **TRICERATOPS combined with the centroid ratio from run means (14 October 2026): 661 candidates.** The combined
+  probabilities `FPP_c` and `FPP_gc` used the mean FPP of ten TRICERATOPS runs with the largest NFPP of the ten. When the
+  runs disagree, the largest NFPP can exceed the mean FPP, and 22 rows, 15 of them counted, had negative values. Both
+  now use the means of the same runs (`NFPP_c` keeps the largest NFPP, which is conservative); 786 values of `FPP_c` and
+  351 of `FPP_gc` change by more than 0.0015. Two candidates now fail FPP < 0.5, both narrowly: TIC 238187210 (26.03 d,
+  tier B) moves to tier C and TIC 387221443 (15.20 d, tier N) to likely nearby false positive. Checking every tier
+  against its rules also found two grazing tier N candidates from the QLP re-search, TIC 279052784 (1.17 d, b = 0.93) and
+  TIC 188129917 (3.26 d, b = 1.02), which move to tier C. 603 full-sky candidates and 58 from the earlier searches
+  ([details](validation/fpp_combination.md)).
 - **TIC 206609457 joins tier L1 (14 October 2026): 665 candidates.** This 13.33-day signal (6.2 R⊕, SNR 7.5–9)
   passes the false-alarm classifier (hold-out score 0.84) but stayed in tier L because it had only the default
   TRICERATOPS run, whose NFPP (0.103) was just above the 0.1 limit; that run included three capable stars 44–63″ away.
@@ -450,7 +459,8 @@ field stars from VizieR, ten runs per signal, and nearby-star scenarios for neig
 the centroid excludes sources farther out. TRICERATOPS does not use the centroid, so its probabilities
 are combined with a centroid likelihood ratio: how likely the measured offset is if the transit is on
 the target (the offsets of the 1,000 TOIs at similar MES) or on a capable neighbour (the same scatter
-around the neighbour's position). On the calibration samples this ratio favours the neighbour for 83–100%
+around the neighbour's position); the combined FPP uses the means of the ten runs' FPP and NFPP, and the combined NFPP
+the largest NFPP of the ten ([details](validation/fpp_combination.md)). On the calibration samples this ratio favours the neighbour for 83–100%
 of the neighbour-caused signals whose source is 5–21″ away (75% within 5″), and the target for 88–96%
 of the TOI planets when tested against a neighbour 8–14″ away (76% at 5″). Tier N requires a combined FPP
 below 0.5 and NFPP below 0.1, MES ≥ 10, and the same binary, grazing and literature checks as tiers
@@ -535,15 +545,15 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) |
-|---|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 |
 
 All 2,990 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
@@ -565,7 +575,7 @@ the predictions have it too, so all four join on it.
 [`candidates/ephemerides.csv`](candidates/ephemerides.csv) gives the ephemeris of each registered
 candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 712:
 the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October, and 146 on 14 October: 145 from the QLP
-re-search and the L1 re-selection, and TIC 206609457 (UTC dates, column `registered`). 665 are counted now. The
+re-search and the L1 re-selection, and TIC 206609457 (UTC dates, column `registered`). 661 are counted now. The
 files are append-only. Candidates that leave the counted tiers keep their rows, with their current tier.
 [`candidates/predictions.csv`](candidates/predictions.csv)
 lists all 45,781 predicted transits from the registration date through June 2027, with the 1σ uncertainty,

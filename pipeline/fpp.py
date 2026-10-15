@@ -143,7 +143,7 @@ def runs(molusc_file=None, drop=()):
 fpps, nfpps = runs()
 res = dict(tic=a.tic, FPP_mean=float(np.mean(fpps)), FPP_sd=float(np.std(fpps, ddof=1)) if len(fpps) > 1 else None,
            FPP_sem=float(np.std(fpps, ddof=1) / np.sqrt(len(fpps))) if len(fpps) > 1 else None,
-           FPP=fpps, NFPP_max=float(np.max(nfpps)), runs=a.runs, draws=a.draws)
+           FPP=fpps, NFPP=nfpps, NFPP_mean=float(np.mean(nfpps)), NFPP_max=float(np.max(nfpps)), runs=a.runs, draws=a.draws)
 out = a.fold.replace(".npz", f"_fpp{a.tag}.json")
 with open(out, "w") as fh:            # written now so the default runs survive a failure in the MOLUSC runs
     json.dump(res, fh)
@@ -175,7 +175,8 @@ if a.molusc:
     drop = [x for x in a.drop.split(",") if x]
     fm, nm = runs(a.molusc, drop)
     res.update(FPP_m_mean=float(np.mean(fm)), FPP_m_sem=float(np.std(fm, ddof=1) / np.sqrt(len(fm))) if len(fm) > 1 else None,
-               FPP_m=fm, NFPP_m_max=float(np.max(nm)), molusc_survivors=len(m), molusc_used=n_used, drop=drop)
+               FPP_m=fm, NFPP_m=nm, NFPP_m_mean=float(np.mean(nm)), NFPP_m_max=float(np.max(nm)), molusc_survivors=len(m),
+               molusc_used=n_used, drop=drop)
 print(json.dumps(res))
 with open(out, "w") as fh:
     json.dump(res, fh)

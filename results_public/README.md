@@ -1,7 +1,7 @@
 # Data dictionary for `results_public/` and `candidates/`
 
 This page defines every column of the tables in this directory and of `candidates/ephemerides.csv` and
-`candidates/predictions.csv`. Counts are for the data of 14 October 2026, after the QLP re-search, the CTOI correction and the move of TIC 206609457 to tier L1 (665 candidates). The method behind each table is in the
+`candidates/predictions.csv`. Counts are for the data of 14 October 2026, after the QLP re-search, the CTOI correction, the move of TIC 206609457 to tier L1 and the correction of the combined TRICERATOPS probabilities (661 candidates). The method behind each table is in the
 [top-level README](../README.md) and in [`validation/`](../validation/). Where none of these states what a column
 means, the entry says "not documented; appears to be" and gives the likeliest reading.
 
@@ -64,17 +64,17 @@ of these labels, spelled exactly as shown. The definitions are the README's.
 | `tier` | Definition | Counted as a candidate | Rows in `candidates_allsky.csv` |
 |---|---|---|---|
 | `A` | Several counted candidates on the star | yes | 20 |
-| `B` | A single candidate on the star | yes | 297 |
-| `N` | A TIC star within 15″ could produce the dip; the TRICERATOPS and centroid probabilities combined give FPP < 0.5 and NFPP < 0.1, with MES ≥ 10 | yes | 177 |
+| `B` | A single candidate on the star | yes | 296 |
+| `N` | A TIC star within 15″ could produce the dip; the TRICERATOPS and centroid probabilities combined give FPP < 0.5 and NFPP < 0.1, with MES ≥ 10 | yes | 174 |
 | `L1` | SNR 7.5–9, selected by the false-alarm classifier (`fa_score_h` ≥ 0.80); passes TRICERATOPS and the per-sector centroid test | yes | 113 |
-| `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; listed but not counted | no | 531 |
+| `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; listed but not counted | no | 532 |
 | `L` | SNR 7.5–9, MES ≥ 9, not selected as tier L1 | no | 71 |
 | `likely EB` | Likely binary: a binary catalog lists the target, a matching eclipsing binary is nearby, or the fitted radius exceeds 20 R⊕; the Gaia RV binaries also carry it | no | 305 |
-| `likely nearby FP` | Likely nearby false positive. The README does not state the rule in one place. In the data, 1,115 of the 1,120 rows are in set `neighbour<15"` (a capable TIC star within 15″) and did not reach tier N; 18 failed the per-sector centroid test, which rejected the target and found a nearby star that fits (16 of them were counted candidates until then) | no | 1,120 |
+| `likely nearby FP` | Likely nearby false positive. The README does not state the rule in one place. In the data, 1,118 of the 1,123 rows are in set `neighbour<15"` (a capable TIC star within 15″) and did not reach tier N; 18 failed the per-sector centroid test, which rejected the target and found a nearby star that fits (16 of them were counted candidates until then) | no | 1,123 |
 | `likely false alarm` | In the data, 342 of the 343 rows are in set `SNR 7.5-9` with MES below 9 (7.1 to 8.9) and were not selected as tier L1; the other is TIC 141937667 (13.36 d), whose signal came from the QLP orbit-edge systematic ([details](../validation/qlp_orbit_edges.md)). The false-alarm classifier note uses the label for signals that fall below its score cut | no | 343 |
 | `reported` | A matching signal is already reported elsewhere: in the literature check, in a paper found through NASA ADS, or as a community TOI with a single transit or another period ([details](../validation/ctoi_matches.md)); `reported_as` says where | no | 13 |
 
-Tiers A, B, N and L1 together are the 607 counted full-sky candidates. In `tiers_earlier_candidates.csv` only tiers
+Tiers A, B, N and L1 together are the 603 counted full-sky candidates. In `tiers_earlier_candidates.csv` only tiers
 `A`, `B` and `C` occur, and tiers `A` and `B` are counted (58 rows). `ephemerides.csv` and `predictions.csv` keep the
 rows of candidates that later left the counted tiers, with their current tier, so every label above can occur there.
 
@@ -114,7 +114,7 @@ test was not run.
 
 | Value | Rows | Meaning |
 |---|---|---|
-| `Neptunian desert` | 28 (14 `N`, 12 `B`, 2 `L1`) | `P_d` < 3.2 d and `Rp_Re` 4–10 R⊕ (Castro-González et al. 2024). Flagged, not moved |
+| `Neptunian desert` | 27 (13 `N`, 12 `B`, 2 `L1`) | `P_d` < 3.2 d and `Rp_Re` 4–10 R⊕ (Castro-González et al. 2024). Flagged, not moved |
 
 `rv_flag` marks the result of the Gaia DR3 radial-velocity check
 ([details](../validation/gaia_companion_limits.md)). Empty means the check did not apply or found nothing.
@@ -130,10 +130,10 @@ meets several criteria; in the data the first that applies, in the order below, 
 
 | Value | Rows | Meaning |
 |---|---|---|
-| `grazing` | 152 | Impact parameter `b` ≥ 0.9 |
-| `RUWE > 1.4` | 134 | Gaia RUWE of the target above 1.4 |
+| `grazing` | 153 | Impact parameter `b` ≥ 0.9 |
+| `RUWE > 1.4` | 133 | Gaia RUWE of the target above 1.4 |
 | `MES < 10` | 181 | `MES` below 10 |
-| `TRICERATOPS FPP >= 0.5 or NFPP >= 0.1` | 62 | Fails the TRICERATOPS bar (FPP < 0.5 and NFPP < 0.1) |
+| `TRICERATOPS FPP >= 0.5 or NFPP >= 0.1` | 63 | Fails the TRICERATOPS bar (FPP < 0.5 and NFPP < 0.1) |
 | `centroid offset in all sectors` | 2 | The per-sector centroids reject the target at p < 0.001 and no catalogued star fits |
 
 ## `candidates_allsky.csv`
@@ -223,11 +223,11 @@ follow-up imaging and no multiplicity boost, and ten runs per signal.
 | `FPP` | Mean FPP over the ten runs, default priors | probability | TRICERATOPS not run (685 rows, none in tiers A, B, N or L1) |
 | `NFPP` | Largest NFPP over the ten runs, default priors | probability | as `FPP` |
 | `BF` | The centroid Bayes factor: how likely the measured centroid offset is if the transit is on the target, relative to a capable neighbour within 30″. In every row with `BF` > 1, `NFPP_c` ≤ `NFPP`; with `BF` < 1, `NFPP_c` ≥ `NFPP` | dimensionless | no ratio applied: the 685 rows without TRICERATOPS and 299 rows that have it, where `FPP_c` = `FPP` and `NFPP_c` = `NFPP` |
-| `FPP_c` | `FPP` combined with the centroid ratio | probability | as `FPP` |
-| `NFPP_c` | `NFPP` combined with the centroid ratio | probability | as `FPP` |
+| `FPP_c` | `FPP` combined with the centroid ratio, using the mean NFPP of the same runs ([details](../validation/fpp_combination.md)) | probability | as `FPP` |
+| `NFPP_c` | `NFPP` (the largest of the ten runs) combined with the centroid ratio | probability | as `FPP` |
 | `FPP_g` | `FPP` rerun with Gaia DR3 limits on companions (MOLUSC) and, for bright stars, Gaia epoch-RV limits on an eclipsing binary at the target | probability | not run (1,753 rows) |
 | `NFPP_g` | `NFPP` of the Gaia-constrained runs | probability | as `FPP_g` |
-| `FPP_gc` | `FPP_g` combined with the centroid ratio. The bar for counted candidates is `FPP_gc` < 0.5 and `NFPP_gc` < 0.1 | probability | as `FPP_g` |
+| `FPP_gc` | `FPP_g` combined with the centroid ratio, using the mean NFPP of the same runs. The bar for counted candidates is `FPP_gc` < 0.5 and `NFPP_gc` < 0.1 | probability | as `FPP_g` |
 | `NFPP_gc` | `NFPP_g` combined with the centroid ratio | probability | as `FPP_g` |
 | `rv_flag` | Gaia radial-velocity check; values in [Flag columns](#flag-columns) | text | no flag |
 
@@ -243,7 +243,7 @@ candidate (see [quirks](#known-quirks)).
 | `fa_score_h` | The hold-out score that tier L1 is selected on (cut 0.80), from models trained without the stars of the second inverted sample. Both scores come from the classifier retrained after the QLP re-search where the signal has a row in its table, and from the previous one otherwise | 0–1 | never empty |
 | `set` | Group the signal came from; values in [The `set` column](#the-set-column) | text | never empty |
 | `tier` | Reliability tier; values in [Tier labels](#tier-labels) | text | never empty |
-| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (2,459 rows) |
+| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (2,458 rows) |
 | `reported_as` | Where a signal labelled `reported` was reported: a CTOI (with its period, or `single transit`), a K2 candidate, or an ADS bibcode | text | not tier `reported` (2,977 rows) |
 | `fa_flag` | Low classifier score; see [Flag columns](#flag-columns) | text | no flag |
 | `desert_flag` | Neptunian desert; see [Flag columns](#flag-columns) | text | no flag |
@@ -340,7 +340,7 @@ candidate that leaves the counted tiers stays listed with its new tier.
 
 ### `candidates/ephemerides.csv`
 
-One row per registered candidate: 712 rows, of which 665 are counted now.
+One row per registered candidate: 712 rows, of which 661 are counted now.
 
 | Column | Meaning | Units, timescale | Empty means |
 |---|---|---|---|
