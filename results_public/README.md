@@ -1,7 +1,7 @@
 # Data dictionary for `results_public/` and `candidates/`
 
 This page defines every column of the tables in this directory and of `candidates/ephemerides.csv` and
-`candidates/predictions.csv`. Counts are for the data of 14 October 2026, after the QLP re-search, the CTOI correction, the move of TIC 206609457 to tier L1 and the correction of the combined TRICERATOPS probabilities (661 candidates). The method behind each table is in the
+`candidates/predictions.csv`. Counts are for the data of 14 October 2026, after the QLP re-search, the CTOI correction, the move of TIC 206609457 to tier L1, the correction of the combined TRICERATOPS probabilities and the cross-match with the TESS Ten Thousand eclipsing binaries (658 candidates). The method behind each table is in the
 [top-level README](../README.md) and in [`validation/`](../validation/). Where none of these states what a column
 means, the entry says "not documented; appears to be" and gives the likeliest reading.
 
@@ -64,17 +64,17 @@ of these labels, spelled exactly as shown. The definitions are the README's.
 | `tier` | Definition | Counted as a candidate | Rows in `candidates_allsky.csv` |
 |---|---|---|---|
 | `A` | Several counted candidates on the star | yes | 20 |
-| `B` | A single candidate on the star | yes | 296 |
+| `B` | A single candidate on the star | yes | 293 |
 | `N` | A TIC star within 15″ could produce the dip; the TRICERATOPS and centroid probabilities combined give FPP < 0.5 and NFPP < 0.1, with MES ≥ 10 | yes | 174 |
 | `L1` | SNR 7.5–9, selected by the false-alarm classifier (`fa_score_h` ≥ 0.80); passes TRICERATOPS and the per-sector centroid test | yes | 113 |
-| `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; listed but not counted | no | 532 |
+| `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; listed but not counted | no | 531 |
 | `L` | SNR 7.5–9, MES ≥ 9, not selected as tier L1 | no | 71 |
-| `likely EB` | Likely binary: a binary catalog lists the target, a matching eclipsing binary is nearby, or the fitted radius exceeds 20 R⊕; the Gaia RV binaries also carry it | no | 305 |
+| `likely EB` | Likely binary: a binary catalog lists the target, a matching eclipsing binary is nearby, or the fitted radius exceeds 20 R⊕; the Gaia RV binaries also carry it | no | 309 |
 | `likely nearby FP` | Likely nearby false positive. The README does not state the rule in one place. In the data, 1,118 of the 1,123 rows are in set `neighbour<15"` (a capable TIC star within 15″) and did not reach tier N; 18 failed the per-sector centroid test, which rejected the target and found a nearby star that fits (16 of them were counted candidates until then) | no | 1,123 |
 | `likely false alarm` | In the data, 342 of the 343 rows are in set `SNR 7.5-9` with MES below 9 (7.1 to 8.9) and were not selected as tier L1; the other is TIC 141937667 (13.36 d), whose signal came from the QLP orbit-edge systematic ([details](../validation/qlp_orbit_edges.md)). The false-alarm classifier note uses the label for signals that fall below its score cut | no | 343 |
 | `reported` | A matching signal is already reported elsewhere: in the literature check, in a paper found through NASA ADS, or as a community TOI with a single transit or another period ([details](../validation/ctoi_matches.md)); `reported_as` says where | no | 13 |
 
-Tiers A, B, N and L1 together are the 603 counted full-sky candidates. In `tiers_earlier_candidates.csv` only tiers
+Tiers A, B, N and L1 together are the 600 counted full-sky candidates. In `tiers_earlier_candidates.csv` only tiers
 `A`, `B` and `C` occur, and tiers `A` and `B` are counted (58 rows). `ephemerides.csv` and `predictions.csv` keep the
 rows of candidates that later left the counted tiers, with their current tier, so every label above can occur there.
 
@@ -133,7 +133,7 @@ meets several criteria; in the data the first that applies, in the order below, 
 | `grazing` | 153 | Impact parameter `b` ≥ 0.9 |
 | `RUWE > 1.4` | 133 | Gaia RUWE of the target above 1.4 |
 | `MES < 10` | 181 | `MES` below 10 |
-| `TRICERATOPS FPP >= 0.5 or NFPP >= 0.1` | 63 | Fails the TRICERATOPS bar (FPP < 0.5 and NFPP < 0.1) |
+| `TRICERATOPS FPP >= 0.5 or NFPP >= 0.1` | 62 | Fails the TRICERATOPS bar (FPP < 0.5 and NFPP < 0.1) |
 | `centroid offset in all sectors` | 2 | The per-sector centroids reject the target at p < 0.001 and no catalogued star fits |
 
 ## `candidates_allsky.csv`
@@ -204,7 +204,7 @@ test moved out of the counted tiers, signals examined for tier L1, and all 564 s
 
 | Column | Meaning | Units, timescale | Empty means |
 |---|---|---|---|
-| `binary_at_target` | Catalog entries within 3″ of the target that explain the signal, as `catalog P=period`: `gaia_eb`, `gaia_sb1`, `gaia_sb2`, `gaia_eb_orbit`, `gaia_orbit` (Gaia DR3 binary and orbit tables), `tess_eb` (TESS eclipsing-binary catalog), `vsx:type` (VSX eclipsing or ellipsoidal types only), `apogee_binary`. Also `Gaia DR3 RV variable (amplitude N km/s)` for the four `Gaia RV binary` rows of `rv_flag`. The period is omitted when the catalog has none | period in days | no catalog entry (2,940 rows) |
+| `binary_at_target` | Catalog entries within 3″ of the target that explain the signal, as `catalog P=period`: `gaia_eb`, `gaia_sb1`, `gaia_sb2`, `gaia_eb_orbit`, `gaia_orbit` (Gaia DR3 binary and orbit tables), `tess_eb` (TESS eclipsing-binary catalog), `t10k` (TESS Ten Thousand eclipsing binaries, Kostov et al. 2025; matched by TIC ID since 15 October 2026), `vsx:type` (VSX eclipsing or ellipsoidal types only), `apogee_binary`. Also `Gaia DR3 RV variable (amplitude N km/s)` for the four `Gaia RV binary` rows of `rv_flag`. The period is omitted when the catalog has none | period in days | no catalog entry (2,935 rows) |
 | `eb_nearby_same_period` | Eclipsing binaries within 60″ of the target whose period matches the candidate's at ratios 1/3, 1/2, 2/3, 1, 3/2, 2 or 3 to within 0.5%, as `catalog separation" P=period` (`gaia_eb`, `tess_eb`, `vsx:type`) | separation in arcsec, period in days | no such binary (2,884 rows) |
 | `papers_with_period` | NASA ADS bibcodes of papers whose full text mentions the star (TIC ID or host TOI) and also the candidate's period quoted to two or three decimals | bibcodes | none found (2,988 rows) |
 | `zenodo_with_period` | Zenodo records, as `zenodo:id`, whose title or description mention the star and the period | record IDs | no Zenodo record matched (every row) |
@@ -340,7 +340,7 @@ candidate that leaves the counted tiers stays listed with its new tier.
 
 ### `candidates/ephemerides.csv`
 
-One row per registered candidate: 712 rows, of which 661 are counted now.
+One row per registered candidate: 712 rows, of which 658 are counted now.
 
 | Column | Meaning | Units, timescale | Empty means |
 |---|---|---|---|

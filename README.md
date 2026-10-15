@@ -15,6 +15,13 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **TESS Ten Thousand eclipsing binaries (15 October 2026): 658 candidates.** We matched the catalog against
+  machine-readable tables of TESS full-frame-image candidates and eclipsing binaries, which the literature search does
+  not always find. Three tier B candidates are eclipsing binaries in the TESS Ten Thousand catalog (Kostov et al. 2025):
+  TIC 61754177 (1.88 d, half the binary's period), TIC 269693249 (2.32 d) and TIC 390928439 (8.14 d). They and one tier C
+  signal become likely EBs. DIAmante (Montalto et al. 2020), DTARPS-S (Melton et al. 2024) and Olmschenk et al. (2021)
+  list none of the counted candidates. The findability tables drop the three, leaving 487. 600 full-sky candidates and
+  58 from the earlier searches ([details](validation/catalog_crossmatch.md)).
 - **Validation thresholds only below 8 Earth radii (15 October 2026).** The TRICERATOPS validation thresholds (FPP <
   0.015, NFPP < 0.001) apply only to candidates smaller than 8 R⊕ (Giacalone et al. 2021): giant planets, brown dwarfs
   and low-mass stars cannot be told apart by radius. 13 of the 301 counted candidates that meet the thresholds are
@@ -422,7 +429,8 @@ folder in [`candidates/allsky/`](candidates/allsky/).
 
 **Reliability tiers.** Following an outside review, every candidate is now checked against Gaia DR3
 (RUWE, eclipsing binaries, non-single-star orbits), the TESS eclipsing-binary catalog (Prša et al.
-2022), APOGEE binaries (Kounkel et al. 2021) and VSX (`binary_check.py`), which flags both binaries
+2022), APOGEE binaries (Kounkel et al. 2021) and VSX (`binary_check.py`), and since 15 October the TESS Ten Thousand
+eclipsing binaries (Kostov et al. 2025; [details](validation/catalog_crossmatch.md)), which flags both binaries
 that earlier passed every automated check (TIC 9994636 and TIC 235005571). Tier A (several signals
 on the star) and tier B (single) are counted as candidates; tier C (grazing, or RUWE > 1.4) is listed
 but not counted. Of the 66 earlier candidates, 24 are tier A, 36 tier B and 6 tier C
@@ -550,15 +558,15 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) |
-|---|---|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 |
 
 All 2,990 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
@@ -580,7 +588,7 @@ the predictions have it too, so all four join on it.
 [`candidates/ephemerides.csv`](candidates/ephemerides.csv) gives the ephemeris of each registered
 candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 712:
 the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October, and 146 on 14 October: 145 from the QLP
-re-search and the L1 re-selection, and TIC 206609457 (UTC dates, column `registered`). 661 are counted now. The
+re-search and the L1 re-selection, and TIC 206609457 (UTC dates, column `registered`). 658 are counted now. The
 files are append-only. Candidates that leave the counted tiers keep their rows, with their current tier.
 [`candidates/predictions.csv`](candidates/predictions.csv)
 lists all 45,781 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
