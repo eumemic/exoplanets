@@ -22,8 +22,8 @@ Objects of Interest (TOIs) after masking the known TOIs.
   351 of `FPP_gc` change by more than 0.0015. Two candidates now fail FPP < 0.5, both narrowly: TIC 238187210 (26.03 d,
   tier B) moves to tier C and TIC 387221443 (15.20 d, tier N) to likely nearby false positive. Checking every tier
   against its rules also found two grazing tier N candidates from the QLP re-search, TIC 279052784 (1.17 d, b = 0.93) and
-  TIC 188129917 (3.26 d, b = 1.02), which move to tier C. 603 full-sky candidates and 58 from the earlier searches
-  ([details](validation/fpp_combination.md)).
+  TIC 188129917 (3.26 d, b = 1.02), which move to tier C. The findability tables now cover the 490 candidates left in
+  tiers A, B and N. 603 full-sky candidates and 58 from the earlier searches ([details](validation/fpp_combination.md)).
 - **TIC 206609457 joins tier L1 (14 October 2026): 665 candidates.** This 13.33-day signal (6.2 R⊕, SNR 7.5–9)
   passes the false-alarm classifier (hold-out score 0.84) but stayed in tier L because it had only the default
   TRICERATOPS run, whose NFPP (0.103) was just above the 0.1 limit; that run included three capable stars 44–63″ away.
