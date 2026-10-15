@@ -188,6 +188,12 @@ def run_once(target, d, N=200000, exptime=None, nsamples=None, molusc_file=None,
     evaluates all draws in one vectorised PyTransit call; it needs a scalar flux_err_0."""
     if not has_population(target):
         raise RuntimeError("the target has no field-star population, so calc_probs would skip six scenarios")
+    # Without the target's mass, radius, Teff or parallax calc_probs prints a warning, stops before computing anything and
+    # leaves every scenario equally likely (FPP 5/6 with one neighbour), which looks like a result.
+    s = target.stars.iloc[0]
+    missing = [c for c in ("mass", "rad", "Teff", "plx") if not np.isfinite(float(s[c]))]
+    if missing:
+        raise RuntimeError(f"TRICERATOPS cannot evaluate the target without its {', '.join(missing)}")
     exptime = fold_exptime(d) if exptime is None else exptime
     nsamples = auto_nsamples(exptime) if nsamples is None else nsamples
     target.calc_probs(time=d["time"], flux_0=d["flux"], flux_err_0=float(np.median(d["flux_err"])), P_orb=float(d["P"]),

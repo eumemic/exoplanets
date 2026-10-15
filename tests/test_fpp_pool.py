@@ -12,8 +12,10 @@ from fpp_pool import needs_more, state_path  # noqa: E402
 
 
 
-class FieldPopulationTests(unittest.TestCase):
-    """Without a field-star population TRICERATOPS silently skips six blended-star scenarios; runs must refuse."""
+class SilentFailureTests(unittest.TestCase):
+    """Inputs for which TRICERATOPS returns a plausible-looking but wrong result without an error, so runs must refuse
+    them: no field-star population (six blended-star scenarios skipped), or a target without mass, radius, Teff or
+    parallax (every scenario equally likely)."""
 
     def test_missing_or_empty_population_is_refused(self):
         import tempfile
@@ -31,6 +33,16 @@ class FieldPopulationTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
             fh.write("Mact,logg\n1,4.5\n")
         self.assertTrue(fc.has_population(SimpleNamespace(trilegal_fname=fh.name)))
+
+    def test_target_without_parallax_is_refused(self):
+        import tempfile
+        from types import SimpleNamespace
+        import pandas as pd
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write("Mact,logg\n1,4.5\n")
+        stars = pd.DataFrame(dict(ID=[1], mass=[0.64], rad=[0.67], Teff=[3783.0], plx=[float("nan")]))
+        with self.assertRaisesRegex(RuntimeError, "plx"):
+            fc.run_once(SimpleNamespace(trilegal_fname=fh.name, stars=stars), {}, N=10)
 
 
 class SubExposureTests(unittest.TestCase):
