@@ -22,6 +22,16 @@ for f in "$ROOT"/site/*; do
   cp -R "$f" "$OUT/"
 done
 
+# The share-image URL carries the commit, so sites that cache link previews (X keeps a card per image URL) fetch the
+# image again after each deploy instead of showing old counts.
+V="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || date +%s)"
+python3 - "$OUT" "$V" <<'PY'
+import pathlib, sys
+out, v = pathlib.Path(sys.argv[1]), sys.argv[2]
+for f in out.glob("*.html"):
+    f.write_text(f.read_text().replace('/exoplanets/og.png"', f'/exoplanets/og.png?v={v}"'))
+PY
+
 # Data the pages read at runtime (the CSV files themselves are the source of truth).
 cp "$ROOT/results_public/candidates_allsky.csv"        "$OUT/data/"
 cp "$ROOT/results_public/tiers_earlier_candidates.csv" "$OUT/data/"
