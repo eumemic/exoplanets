@@ -11,6 +11,28 @@ import fpp_core as fc  # noqa: E402
 from fpp_pool import needs_more, state_path  # noqa: E402
 
 
+
+class FieldPopulationTests(unittest.TestCase):
+    """Without a field-star population TRICERATOPS silently skips six blended-star scenarios; runs must refuse."""
+
+    def test_missing_or_empty_population_is_refused(self):
+        import tempfile
+        from types import SimpleNamespace
+        empty = tempfile.NamedTemporaryFile(suffix=".csv", delete=False).name
+        for fname in (None, "/nonexistent/x_gaia_background.csv", empty):
+            target = SimpleNamespace(trilegal_fname=fname)
+            self.assertFalse(fc.has_population(target))
+            with self.assertRaises(RuntimeError):
+                fc.run_once(target, {}, N=10)
+
+    def test_population_file_is_accepted(self):
+        import tempfile
+        from types import SimpleNamespace
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write("Mact,logg\n1,4.5\n")
+        self.assertTrue(fc.has_population(SimpleNamespace(trilegal_fname=fh.name)))
+
+
 class SubExposureTests(unittest.TestCase):
     def test_one_per_two_minutes(self):
         for sec, n in ((120, 1), (200, 2), (600, 5), (1800, 15)):

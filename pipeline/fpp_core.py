@@ -12,6 +12,7 @@ import math
 import os
 import pickle
 import re
+import time
 import types
 
 import numpy as np
@@ -103,6 +104,20 @@ def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_ar
     assert target is not None and len(target.pix_coords) == len(sectors), "TESScut downloads incomplete"
     if isinstance(target.trilegal_fname, str):
         target.trilegal_fname = os.path.join(cache_dir, target.trilegal_fname)
+    # Without a field-star population calc_probs skips the DTP, DEB, DEBx2P, BTP, BEB and BEBx2P scenarios without a word,
+    # which lowers the FPP; on 15 October 2026 the query failed for 353 targets set up together on one machine. Query
+    # again, and fail rather than return a target without one.
+    from triceratops.funcs import query_gaia_background
+    for wait in (0, 30, 90, 180):
+        if has_population(target):
+            break
+        time.sleep(wait)
+        with contextlib.chdir(cache_dir):
+            fname = query_gaia_background(float(target.stars["ra"].values[0]), float(target.stars["dec"].values[0]), tic,
+                                          verbose=0)
+        target.trilegal_fname = os.path.join(cache_dir, fname) if isinstance(fname, str) else None
+    if not has_population(target):
+        raise RuntimeError("no field-star population: the Gaia background query failed")
     # TIC entries flagged ARTIFACT (spurious 2MASS sources) or DUPLICATE are not stars and should be ignored (Paegert et al.
     # 2021); SPLIT entries are real. Drop them, with their pixel positions (TRICERATOPS's remove_star keeps the positions,
     # which misaligns them), before the aperture fluxes are computed.
@@ -157,6 +172,12 @@ def auto_nsamples(exptime):
     return max(1, math.ceil(exptime * 1440 / 2 - 1e-9))
 
 
+def has_population(target):
+    """Whether the target has the field-star population file that calc_probs's blended-star scenarios need."""
+    f = getattr(target, "trilegal_fname", None)
+    return isinstance(f, str) and os.path.isfile(f) and os.path.getsize(f) > 0
+
+
 def n_scenarios(target):
     """Scenarios calc_probs evaluates: 12 for the target and its companions, 3 per neighbour that could cause the dip."""
     return 12 + 3 * int((target.stars["tdepth"].values[1:] > 0).sum())
@@ -165,6 +186,8 @@ def n_scenarios(target):
 def run_once(target, d, N=200000, exptime=None, nsamples=None, molusc_file=None, drop=(), cc=None, cc_filt="TESS"):
     """One calc_probs on the fold d (an npz with time [days from mid-transit], flux, flux_err, P). parallel=True
     evaluates all draws in one vectorised PyTransit call; it needs a scalar flux_err_0."""
+    if not has_population(target):
+        raise RuntimeError("the target has no field-star population, so calc_probs would skip six scenarios")
     exptime = fold_exptime(d) if exptime is None else exptime
     nsamples = auto_nsamples(exptime) if nsamples is None else nsamples
     target.calc_probs(time=d["time"], flux_0=d["flux"], flux_err_0=float(np.median(d["flux_err"])), P_orb=float(d["P"]),
