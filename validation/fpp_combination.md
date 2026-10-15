@@ -27,7 +27,8 @@ per-run NFPP to its JSON output, and `pipeline/fpp_combine.py` holds the combina
   `BF` in the catalog and are left as they were). None is negative now.
 - The median `FPP_c` of the counted candidates goes from 0.041 to 0.042 and the median `FPP_gc` from 0.012 to 0.013.
   301 counted candidates now meet the TRICERATOPS validation thresholds apart from imaging (FPP < 0.015 and
-  NFPP < 0.001), against 305 before.
+  NFPP < 0.001), against 305 before. Since 15 October these counts leave out candidates larger than 8 R⊕, to which the
+  thresholds do not apply (Giacalone et al. 2021): 288.
 
 ## Tier changes
 

@@ -15,6 +15,11 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **Validation thresholds only below 8 Earth radii (15 October 2026).** The TRICERATOPS validation thresholds (FPP <
+  0.015, NFPP < 0.001) apply only to candidates smaller than 8 R⊕ (Giacalone et al. 2021): giant planets, brown dwarfs
+  and low-mass stars cannot be told apart by radius. 13 of the 301 counted candidates that meet the thresholds are
+  larger, so 288 (253 full-sky and 35 from the earlier searches) meet them apart from high-resolution imaging. Pointed
+  out in [issue #1](https://github.com/eumemic/exoplanets/issues/1).
 - **TRICERATOPS combined with the centroid ratio from run means (14 October 2026): 661 candidates.** The combined
   probabilities `FPP_c` and `FPP_gc` used the mean FPP of ten TRICERATOPS runs with the largest NFPP of the ten. When the
   runs disagree, the largest NFPP can exceed the mean FPP, and 22 rows, 15 of them counted, had negative values. Both

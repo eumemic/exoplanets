@@ -75,7 +75,9 @@ def catalog():
         "search_rows": {k: by("search", k, a) for k in (FIRST, RESEARCH)},
     }
     fpp = [tier_fpp(r) for r in both]
-    out["validation_level"] = sum(1 for f, n in fpp if f < 0.015 and n < 0.001)
+    # the TRICERATOPS validation thresholds (Giacalone et al. 2021), which apply only below 8 Earth radii: giant planets,
+    # brown dwarfs and low-mass stars cannot be told apart by radius
+    out["validation_level"] = sum(1 for (f, n), r in zip(fpp, both) if f < 0.015 and n < 0.001 and num(r["Rp_Re"]) < 8)
     out["median_fpp_default"] = statistics.median(num(r["FPP_c"]) for r in both if ok(num(r["FPP_c"])))
     out["median_fpp_gaia"] = statistics.median(f for f, _ in fpp if ok(f))
     out["checks"] = {
