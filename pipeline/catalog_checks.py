@@ -5,6 +5,8 @@ none). Run by the checks in rules.py.
   masks (the star's other signals at their current ephemerides). A refit after the run makes the result stale.
 - counted_measured_centroids: every counted candidate has per-sector centroid measurements (the test itself needs at
   least two sectors).
+- centroid_inputs_current: every centroid measurement in results_public/products/centroids.csv used the signal's
+  current ephemeris.
 """
 import csv
 import math
@@ -87,3 +89,17 @@ def triceratops_inputs_current(products_csv, measurements_allsky, ephemerides_cs
 def counted_measured_centroids(table_csv, counted):
     return [f"TIC {r['TIC']} P {r['P_d']} (tier {r['tier']}): no per-sector centroid measurement"
             for r in _rows(table_csv) if r["tier"] in counted and not r["cs_sectors"]]
+
+
+def centroid_inputs_current(centroids_csv, measurements_allsky, tol):
+    cat = {(r["TIC"], r["P_d"]): dict(P=_f(r["P_d"]), T0=_f(r["T0_BJD"]), dur=_f(r["T14_h"]))
+           for r in _rows(measurements_allsky)}
+    problems = []
+    for c in _rows(centroids_csv):
+        if c["table"] != "candidates_allsky":
+            continue
+        used = dict(P=_f(c["period"]), T0=_f(c["t0_btjd"]) + 2457000, dur=_f(c["duration_h"]))
+        diff = same_ephemeris(used, cat[(c["TIC"], c["P_d"])], tol)
+        if diff:
+            problems.append(f"TIC {c['TIC']} P {c['P_d']} ({c['batch']}): " + "; ".join(diff))
+    return problems

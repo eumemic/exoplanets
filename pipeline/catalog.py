@@ -6,6 +6,8 @@ Inputs:
   decided (fits, vetting, stellar parameters, pixel and centroid tests, binary and literature checks, the centroid Bayes
   factor BF, classifier scores, rv_flag), and for the earlier searches the A/B/C label they were given (base_tier).
 - results_public/products/triceratops.csv: the TRICERATOPS result of each signal (triceratops_table.py).
+- results_public/products/centroids.csv: per-sector centroid results measured since the copy of the measured columns
+  (centroid_table.py); where a row has one, it replaces the row's centroid columns.
 - results_public/overrides.csv: decisions made by hand, each with its reason.
 Outputs: the same rows with the TRICERATOPS columns, tier, c_reason and flags derived. Columns copied from the inputs
 are written exactly as they are there.
@@ -18,11 +20,13 @@ The rules (pipeline/params.toml [tiers] and [flags] hold the numbers). Full sky,
 3. likely nearby FP, where there is evidence that the signal comes from a nearby star: the per-sector centroids reject
    the target (cs_p_target < centroid_reject_p) and a capable neighbour fits them (cs_p_neighbour >=
    centroid_neighbour_p); or the signal is in set neighbour<15" and its TRICERATOPS result fails the bar.
-4. SNR 7.5-9: L1 if fa_score_h >= fa_score_h_min, the bar is passed, b < b_max and RUWE <= ruwe_max; else likely false
-   alarm if MES < lowband_mes_min; else C if grazing or RUWE; else L.
+4. SNR 7.5-9: L1 if fa_score_h >= fa_score_h_min, the bar is passed, b < b_max, RUWE <= ruwe_max and there is a
+   transit fit; else likely false alarm if MES < lowband_mes_min; else C if grazing or RUWE (or, for a signal that
+   would otherwise be L1, no transit fit); else L.
 5. SNR >= 9 and neighbour<15": C if grazing (b >= b_max), RUWE > ruwe_max or MES < mes_min, in that order of c_reason;
-   then C if there is no TRICERATOPS result (none is not evidence either way) or, for SNR >= 9, the bar is not passed.
-   What remains is N (neighbour<15") or counted (SNR >= 9).
+   then C if there is no TRICERATOPS result (none is not evidence either way) or, for SNR >= 9, the bar is not passed;
+   then C if there is no transit fit (b is empty), since grazing cannot be ruled out without one. What remains is N
+   (neighbour<15") or counted (SNR >= 9).
 6. Per-sector centroids: a counted row (L1, N, SNR >= 9) whose test rejects the target with no capable neighbour that
    fits becomes C ("centroid offset in all sectors").
 7. Counted SNR >= 9 rows are A where the star has at least system_min counted rows, else B.
@@ -53,6 +57,7 @@ DERIVED_EARLIER = TRI + ["tier", "c_reason", "centroid_flag"]
 TRI_FAIL = "TRICERATOPS FPP >= 0.5 or NFPP >= 0.1"
 NO_RESULT = "no TRICERATOPS result"
 NO_PARALLAX = "no TRICERATOPS result (no TIC parallax)"
+NO_FIT = "no transit fit"
 CENTROID = "centroid offset in all sectors"
 NB = 'neighbour<15"'
 
@@ -132,13 +137,17 @@ def tier_allsky(r, v, P):
         return "likely nearby FP", ""
     if s == NB and has and not passes:
         return "likely nearby FP", ""
+    fitted = math.isfinite(b)
     if s == "SNR 7.5-9":
-        if num(r["fa_score_h"]) >= P["tiers.fa_score_h_min"] and passes and not grazing and not high_ruwe:
+        selected = num(r["fa_score_h"]) >= P["tiers.fa_score_h_min"] and passes and not grazing and not high_ruwe
+        if selected and fitted:
             return "L1", ""
         if mes < P["tiers.lowband_mes_min"]:
             return "likely false alarm", ""
         if grazing or high_ruwe:
             return "C", "grazing" if grazing else "RUWE > 1.4"
+        if selected:
+            return "C", NO_FIT
         return "L", ""
     if grazing:
         return "C", "grazing"
@@ -148,11 +157,11 @@ def tier_allsky(r, v, P):
         return "C", "MES < 10"
     if not has:
         return "C", NO_PARALLAX if v.get("status") == "degenerate" else NO_RESULT
-    if s == NB:
-        return "N", ""
-    if not passes:
+    if s != NB and not passes:
         return "C", TRI_FAIL
-    return "counted", ""
+    if not fitted:
+        return "C", NO_FIT
+    return ("N", "") if s == NB else ("counted", "")
 
 
 def centroid_out(r, P):
@@ -188,6 +197,15 @@ def centroid_flag(r, P):
 
 # the build -------------------------------------------------------------------------------------------------------------
 DECISIONS = ("tier", "c_reason")         # overrides of these replace a rule's outcome; others replace an input
+CS = ["cs_sectors", "cs_offset_arcsec", "cs_pa_deg", "cs_p_target", "cs_neighbour", "cs_neighbour_sep_arcsec", "cs_p_neighbour"]
+
+
+def centroids_into(rows, table, centroids):
+    for r in rows:
+        c = centroids.get((table, r["TIC"], r["P_d"]))
+        if c is not None:
+            for k in CS:
+                r[k] = c[k]
 
 
 def overrides_for(over, table, rows, decisions):
@@ -204,18 +222,21 @@ def overrides_for(over, table, rows, decisions):
             hit[0]["c_reason"] = ""
 
 
-def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_csv, out_allsky, out_earlier, P):
-    """The TRICERATOPS table names, for each catalog row (table, TIC, P_d), the result it uses."""
+def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_csv, out_allsky, out_earlier, P,
+          centroids_csv=None):
+    """The TRICERATOPS and centroid tables name, for each catalog row (table, TIC, P_d), the result it uses."""
     results = {}
     for r in read_rows(triceratops_csv):
         r["degenerate"] = r["degenerate"] == "yes"
         results[(r["table"], r["TIC"], r["P_d"])] = r
+    centroids = {(r["table"], r["TIC"], r["P_d"]): r for r in read_rows(centroids_csv)} if centroids_csv else {}
     over = read_rows(overrides_csv)
 
     def result_for(r, table):
         return results.get((table, r["TIC"], r["P_d"]))
 
     a = read_rows(measurements_allsky)
+    centroids_into(a, "candidates_allsky", centroids)
     for r in a:
         r["reported_as"] = ""
     overrides_for(over, "candidates_allsky", a, decisions=False)
@@ -250,6 +271,7 @@ def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_
                             and P["flags.desert_rp_min"] <= rp <= P["flags.desert_rp_max"] else "")
 
     e = read_rows(measurements_earlier)
+    centroids_into(e, "tiers_earlier_candidates", centroids)
     overrides_for(over, "tiers_earlier_candidates", e, decisions=False)
     for r in e:
         v = tri_values(result_for(r, "tiers_earlier_candidates"), num(r["BF"]))

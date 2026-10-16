@@ -65,10 +65,10 @@
     }
    },
    "inputs": {
-    "results_public/candidates_allsky.csv": "6f60b38ba27a6cbeda7c049b93b1b2ab94092ff605800909278d5c0dde654b6c"
+    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c"
    },
    "outputs": {
-    "figures/allsky.png": "430f4020c7c5ae1aca66b7e291132298cf1799fdb14bd92909f51d1230d5bb30"
+    "figures/allsky.png": "c4fe8efaba4a964d77952ab061688c8d7b00514146b5cd9ae33d2968acb48386"
    },
    "params": {
     "catalog.counted_allsky": [
@@ -78,7 +78,7 @@
      "L1"
     ]
    },
-   "stamp": "c47977c2760c184883ebd4d71071244eb321452a416c3b3e9b567808dfb787f8"
+   "stamp": "4b121f263e323b259c1749ed39c9c26397d60ca16998e1c67993b60dc95d339a"
   },
   "catalog": {
    "code": {
@@ -95,22 +95,25 @@
     "parts": {
      "catalog.ALLSKY": "a576d9b8f073e712cd6ec3e1ff1c340848c30771515e6c0261c80fdf70c2dd33",
      "catalog.CENTROID": "a54eea6926e9fe59da6bd1c75c91cda31a774f0293a7bcaeced4ad24d67fa085",
+     "catalog.CS": "622ead7a7da1234185eb57af29a59cbb0daccae3052ddb4640f6df90f68ed49b",
      "catalog.DECISIONS": "e0d582d4b3c68f25a975c4ebc71e392c6e8a5fad879e9b92d32a6158bf2747c6",
      "catalog.EARLIER": "911de415ce29f7565917e3c2391791536b62e98519f8b81d2c90723cd55e6127",
      "catalog.NB": "f720267246a98bd0ca5ca958c21fe5838097562f8adc15a909172cb0836cd5cf",
+     "catalog.NO_FIT": "7df81799e15b95611f968f1ecd378ee7db2dbda9e6b43c9d6ba41d9f302996e2",
      "catalog.NO_PARALLAX": "3a2d9ebb0c764ea5fe6fa8f97e828f0e4725e66908d3da5fa7b1d9f43e235dbb",
      "catalog.NO_RESULT": "99af082cd24fd19e217a81f6025e866b90480679442597cd64cb9bb61394a70a",
      "catalog.TRI": "c533f7ea12fc344cb7ec186b57bebf82612fc28ddcb244ccbe1d7d25f04b9182",
      "catalog.TRI_FAIL": "d66dfaff7cd2a358202742688f2557b1ab374abcadc5d8301c75b9fbf34ef091",
      "catalog.bar": "dc701db84325db965565fcd793dc95f8a2de591738779b21937f4a815f5ded75",
-     "catalog.build": "27c9077fec5f08aac4c18c341055e97a5575d022caf1a0ac94999fe44d9fa570",
+     "catalog.build": "9fac01464ea27e0b9985cc3d5fc5904c11cfbb1a029e09948c4f5a01964a2d78",
      "catalog.centroid_flag": "1c5d998d1a377e0958bece04921f1112c795370384c618250a13a569fbaf9055",
      "catalog.centroid_out": "4e186903932c1fe3e734d7509b28322c4754f02ba4cac860c482ec4535fce063",
+     "catalog.centroids_into": "994a4e8d5bc5f4abf959035dfa4fc4a4974a4cc090cdc15b2dcb16183fb05595",
      "catalog.fmt": "5ecc454c388f319103d641bbdb5d13af015ba1801e40e91445ca3935c406496e",
      "catalog.num": "7039590953762847248b0bfd44d8b485e3dfe8f5060fbbec1c7079771db156a6",
      "catalog.overrides_for": "52ddd55dc30a60b9b958e5974842de18a6a72e3ad5d43fbe50f8555024851c16",
      "catalog.read_rows": "3cfead4ed8dbc6774d9a63bc9dcacced2176cdbdf6a714b09da1dd7d0b9ccdb8",
-     "catalog.tier_allsky": "ff50378bd73c8353f07f6ad9a1ccca4eff7bc7014c98d8c7bc023004ecc08dd9",
+     "catalog.tier_allsky": "0bd97da161453ff5e7eeba6285f875dd86f0d501cff1f9af809c25c0379a7bf0",
      "catalog.tier_earlier": "4f273fa2fa4714842d1460215fcf30339173e6d2ac1ae07aad82108f8e8043f8",
      "catalog.tri_values": "3e98c9bcc08d36dc71d9d5457c0ca6f5fbe5a5fdfdb953c051cae9541144d1e5",
      "catalog.write_rows": "be5ddab821690918ceee987328a1f2b4b680173b2f426be67d27244c5a4714df",
@@ -119,17 +122,18 @@
      "dag.context.covers": "c5a41fd8db921eb20ee52190f46188a55573d305ba993a91a878e57125ab1e34",
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "fpp_combine.combine": "b4ffbc305e9b077fbdfe46dbd328e3b8688b8686e0a2aac6e57ad23556658139",
-     "rules.catalog": "c314bf62928d10952fe472cde5f505d298fecce1450dfb62112156055a971f39"
+     "rules.catalog": "eb3d9100aaf739a61e0fc0c266f6a3e0aab016171c7ca5d40a56456972dc0e88"
     }
    },
    "inputs": {
     "results_public/overrides.csv": "83350a8c69ffb1f2f0d4b815f25b73c35e66ed796995076b9b6a7b06454bdfe1",
+    "results_public/products/centroids.csv": "4aa72fd431f08aaeda3a50c442b8188360931a86aa30f082f4a15bae16934736",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
     "results_public/products/measurements_earlier.csv": "e777c95acb700d68fc7a9b7bf5e72fd3541d1c8ea525fc340cc56688da943b6d",
-    "results_public/products/triceratops.csv": "24f385dd953c55b77aa8fd33464cd2ef99b5b17935f153240ef0e280537f9995"
+    "results_public/products/triceratops.csv": "e3eb390529f377e4fdf7601a7d38a25967b9d210fb531ad18a6e4f53581822f9"
    },
    "outputs": {
-    "results_public/candidates_allsky.csv": "6f60b38ba27a6cbeda7c049b93b1b2ab94092ff605800909278d5c0dde654b6c",
+    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "params": {
@@ -162,7 +166,126 @@
     "tiers.ruwe_max": 1.4,
     "tiers.system_min": 2
    },
-   "stamp": "5010ffd429635d0b1638a8f5951ae661b03833bcc1b49f681b03b54ced8e39ea"
+   "stamp": "bca36ebf6d0d6d7ee2f76b5471f96b7cebae8f76d4182a80db431534ff675bb7"
+  },
+  "centroid_inputs_current": {
+   "code": {
+    "effects": {
+     "catalog_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {},
+     "python": "3.12.13"
+    },
+    "parts": {
+     "catalog_checks._f": "8df0c40c0304216fb016c1b0d4985aedeb85ba96e1b844fdc1cc57254ba71e62",
+     "catalog_checks._phase_min": "3d68f4f9853a327030c7214ea910c98beca0da7416e6c88e60f0cf58285855eb",
+     "catalog_checks._rows": "ee0de6a3b9adf3cc82125af25a5ce68e3d4089f24fcba75b3507dab42d3d8456",
+     "catalog_checks.centroid_inputs_current": "9781ba28cbab146d391247d623bd8ee1a8aee9fd89e6bf8940d88290d28628af",
+     "catalog_checks.same_ephemeris": "a2b58878849d267de990d15fb1c7fabd087d63d2c66d2624076eb8624a4d1d78",
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "82e65da1af2dedf2c04192aec009a3f50d3ea3a736709df67caadce207f4cf10",
+     "dag.context.covers": "c5a41fd8db921eb20ee52190f46188a55573d305ba993a91a878e57125ab1e34",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "rules.centroid_inputs_current": "a45a6ee918d36b5c650b43c145d16d58565c1a6cee14127aae79715b2520b3a0"
+    }
+   },
+   "inputs": {
+    "results_public/products/centroids.csv": "4aa72fd431f08aaeda3a50c442b8188360931a86aa30f082f4a15bae16934736",
+    "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8"
+   },
+   "outputs": {},
+   "params": {
+    "freshness.depth_ppm": 0.5,
+    "freshness.duration_h": 0.005,
+    "freshness.period_d": 2e-06,
+    "freshness.phase_min": 0.5
+   },
+   "result": "passed",
+   "stamp": "224459004893cc85cf5f06b30493f3d78f0093a765cba88225bd3797d3e4598f"
+  },
+  "centroid_table": {
+   "code": {
+    "effects": {
+     "catalog": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "centroid_table": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "centroid_test": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {
+      "numpy": {
+       "version": "2.5.3"
+      },
+      "pandas": {
+       "version": "2.3.3"
+      },
+      "python-dateutil": {
+       "version": "2.9.0.post0"
+      },
+      "pytz": {
+       "version": "2026.5"
+      },
+      "scipy": {
+       "version": "1.18.1"
+      },
+      "six": {
+       "version": "1.17.0"
+      },
+      "tzdata": {
+       "version": "2026.5"
+      }
+     },
+     "python": "3.12.13"
+    },
+    "parts": {
+     "catalog.read_rows": "3cfead4ed8dbc6774d9a63bc9dcacced2176cdbdf6a714b09da1dd7d0b9ccdb8",
+     "centroid_table.COLUMNS": "dc6269349b4da6a025e264edc790d67a477b8b5598ad4da42220bbdd5b15ab9f",
+     "centroid_table._g2": "57201f6b401ab21347996111d602b7bb11c4f58ff268312aac57e6b0b570ac10",
+     "centroid_table._r1": "08be24a8f5acbfb02ed896726389ae7b2719c946ee8c632022a2fdf70262cc5b",
+     "centroid_table.build": "f095d8e8cd85729d3e7d48253ebca1be1d3747006840ea9252582a4537dd5c3a",
+     "centroid_test.FLOOR": "4ac9b4edf8e9633d1fc67a6d21887cca28c7cc6f023221a15953d18b0ed60f78",
+     "centroid_test.MAX_OFFSET": "6d0e146c3e9c78b98e8657614f1b49e76437d34b7355268c56b88fe89e247256",
+     "centroid_test.PHANTOM": "a7e08eb542d58d246382082b87f4da27827c22daf5d870df7c3d50ff1207354f",
+     "centroid_test.analyse": "7dfae3105cfe8674ad9efb24601c78c77ff48dcee5440b6a235334d38c1b97b6",
+     "centroid_test.load_json": "093d9943999027e82fbdd35c307a30185179bc4bc662c1916a5732ba57c63f2c",
+     "centroid_test.p_source": "e65c72503f5703b8c328c6c4f267c781cbbb900beee492fc76b386253b70ad45",
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "82e65da1af2dedf2c04192aec009a3f50d3ea3a736709df67caadce207f4cf10",
+     "dag.context.covers": "c5a41fd8db921eb20ee52190f46188a55573d305ba993a91a878e57125ab1e34",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "rules.centroid_table": "1f76e969abc905240b5efd9e210dd7eb81258cc5ca033beccde4386949caac1e"
+    }
+   },
+   "inputs": {
+    "results_cloud/t10/cs/tic131351509_P1.4051.json": "d11f26e5af1faa94a2829d933fe32021d83f47073f45923a32e8619f3cb21d1f",
+    "results_cloud/t10/cs/tic1393293_P4.2869.json": "0c9301cb0d01129ce4d199797aa4cb68a3c76e2cdc538ffc4b3efbd66f060a48",
+    "results_cloud/t10/cs/tic183449657_P4.5735.json": "0c8a8bfa11409d1d519969f1e8ab89441d2c467c77ac5cd6aed7d986bc08cb95",
+    "results_cloud/t10/cs/tic229511659_P7.0838.json": "65eeaca01b2c40fdf4d8d279e55947ede9b9d0ee43b5f61e77a5575178156837",
+    "results_cloud/t10/cs/tic284852238_P6.1711.json": "9f9ac754266164a517eb690a0f8927a84b809b6ed91309677aba7e4074cac4df",
+    "results_cloud/t10/cs/tic341420672_P5.8428.json": "551645148165372b2c479e936d1fcb57eb18c5f5a5f6b7683d045464cc552700",
+    "results_cloud/t10/cs/tic389115138_P4.0117.json": "197c64d35879cb914149d5cc0b0d65a4595b23a454c7206141b35a34f4daaaec",
+    "results_cloud/t10/cs/tic39303816_P3.5547.json": "fc0e3e6a0f579c2abf73124e9b688dfb88a1e69b65e663fa0c6de549d8200290",
+    "results_cloud/t10/cs/tic411473566_P2.2656.json": "7b1c4494590a89a6ca678bac7dce06aecd9dd4d0d54fdec79245968e78fc3cb9",
+    "results_cloud/t10/cs/tic55102356_P2.9635.json": "5450edc1bb2940de30972d70fc71496dbea920cd44a7055c62cd0d013e8c0033",
+    "results_cloud/t10/cs/tic70378814_P0.9016.json": "1ae3813ed0b51bc13a9b279afe3b2c8fc09945728f2e8c8d4090bc40adb109c8",
+    "results_cloud/t10/cs/tic73543060_P3.3113.json": "f640c77a3785ab287bf391683d88980927e7882518f68b0e17d5805fcf9b958d",
+    "results_cloud/t10/list.csv": "c38add8096d77dd2991cec446e7c60ebe892017c237c4894e1adab16d8d00bd7",
+    "results_cloud/t10/stars.csv": "d527a05c7c84184ce75e28f0ddd6084535824a592adc2a1b85424cd81d322c0c",
+    "results_public/products/centroid_batches.csv": "100db43a25a97a877b96215f378d0a5511f3f17505d725ceb69ad86e554e6c2e",
+    "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
+    "results_public/products/measurements_earlier.csv": "e777c95acb700d68fc7a9b7bf5e72fd3541d1c8ea525fc340cc56688da943b6d"
+   },
+   "outputs": {
+    "results_public/products/centroids.csv": "4aa72fd431f08aaeda3a50c442b8188360931a86aa30f082f4a15bae16934736"
+   },
+   "params": {
+    "triceratops.match_period_rel": 0.002
+   },
+   "stamp": "dac91596b551ee76b7090f49894671da4849b3fa76140db3f1ac04f8bfd4993c"
   },
   "counted_measured_centroids": {
    "code": {
@@ -186,10 +309,9 @@
     }
    },
    "inputs": {
-    "results_public/candidates_allsky.csv": "6f60b38ba27a6cbeda7c049b93b1b2ab94092ff605800909278d5c0dde654b6c",
+    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
-   "message": "AssertionError: 12 counted candidates have no per-sector centroid measurement:\nTIC 70378814 P 0.901648 (tier B): no per-sector centroid measurement\nTIC 131351509 P 1.405073 (tier B): no per-sector centroid measurement\nTIC 411473566 P 2.265618 (tier B): no per-sector centroid measurement\nTIC 55102356 P 2.963495 (tier B): no per-sector centroid measurement\nTIC 73543060 P 3.311334 (tier B): no per-sector centroid measurement\nTIC 39303816 P 3.554709 (tier B): no per-sector centroid measurement\nTIC 389115138 P 4.011714 (tier B): no per-sector centroid measurement\nTIC 183449657 P 4.573497 (tier B): no per-sector centroid measurement\nTIC 341420672 P 5.842848 (tier B): no per-sector centroid measurement\nTIC 284852238 P 6.171111 (tier B): no per-sector centroid measurement\nTIC 229511659 P 7.083774 (tier A): no per-sector centroid measurement\nTIC 1393293 P 4.286872 (tier N): no per-sector centroid measurement",
    "outputs": {},
    "params": {
     "catalog.counted_allsky": [
@@ -203,8 +325,8 @@
      "B"
     ]
    },
-   "result": "failed",
-   "stamp": "36364c57e4609863210393926f9b6073ee8976ee8bcf19385e609172e8450eae"
+   "result": "passed",
+   "stamp": "0802dbd499b629eea1ccd0c6fac8094a23db90a9a3203663c83433e961e99011"
   },
   "triceratops_inputs_current": {
    "code": {
@@ -233,9 +355,8 @@
    "inputs": {
     "candidates/ephemerides.csv": "7076df2fc362f943e8d3cb5c954fd56b59e55e243297cbf745cdd452cc77d4a9",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
-    "results_public/products/triceratops.csv": "24f385dd953c55b77aa8fd33464cd2ef99b5b17935f153240ef0e280537f9995"
+    "results_public/products/triceratops.csv": "e3eb390529f377e4fdf7601a7d38a25967b9d210fb531ad18a6e4f53581822f9"
    },
-   "message": "AssertionError: 1 TRICERATOPS results ran on inputs that have changed since:\ncandidates_allsky TIC 322895933 P 2.147166 (t2/part_nog0): duration 2.49 -> 2.61 h",
    "outputs": {},
    "params": {
     "freshness.depth_ppm": 0.5,
@@ -244,8 +365,8 @@
     "freshness.phase_min": 0.5,
     "triceratops.match_period_rel": 0.002
    },
-   "result": "failed",
-   "stamp": "81e655ead34080dc9d06f9b10837080ae2fc486c242edd27a78cc62ed2176fee"
+   "result": "passed",
+   "stamp": "cf887b78987e097c670a6bcce3e1d562ced9e5c9f6d286fa4d15547ecd5db342"
   },
   "triceratops_table": {
    "code": {
@@ -5503,6 +5624,12 @@
     "results_cloud/t2/part_e0/tic442925573_P14.5441_fpp.json": "7d8ddb542596bab95c1d5b469e8390bc29234e8e321e9667cd557f121770e27f",
     "results_cloud/t2/part_e0/tic454361195_P0.6017_fpp.json": "97935a6bf7c9e79ffdab6846ec521ccedfdaabcca5c263555906e0b7ce97917d",
     "results_cloud/t2/part_e0/tic91191423_P0.6106_fpp.json": "05a2289cc2cfe409a836e8368296cb6170bd90e0c4d7407ac253709ce84b5809",
+    "results_cloud/t2/part_f0/folds/tic218983448_P17.4687.npz": "95824417760e658c737303f1302ea18e1fe7f77a6cdf4bbfa5a844540f57708b",
+    "results_cloud/t2/part_f0/folds/tic322895933_P2.1472.npz": "8d1091dbdb09592d372b3fae10a7e8ca0401c3d22674eb47d39b1ea9faa12f9f",
+    "results_cloud/t2/part_f0/list.csv": "5391c961761a38f97d66ca2b608bee70f84cf64c492de67acf5cf6c289d22450",
+    "results_cloud/t2/part_f0/runs.jsonl": "ba538648196a5f1ffd3e73496b0b68a74eba2e827b262ad7aac3fab15094e40c",
+    "results_cloud/t2/part_f0/tic218983448_P17.4687_fpp.json": "9f33b614d07683c0c8c3c61f18e0379745c97e93e9647755e56135375f0c44d9",
+    "results_cloud/t2/part_f0/tic322895933_P2.1472_fpp.json": "6793a899aa4976dad0055dcc988dc2e232c1e313d70e76760e00a88fee33fe00",
     "results_cloud/t2/part_long/folds/tic1001474604_P16.1126.npz": "66a39e94f3d8fc1965981182393e158620c5ff6c72bdf4a80de2a8139977173f",
     "results_cloud/t2/part_long/folds/tic101129774_P1.9386.npz": "c7e7234d9edfba4dea2fe3f6372c2af70cbc09e3c39f1059c42be5c9915cdf6d",
     "results_cloud/t2/part_long/folds/tic101824521_P29.6322.npz": "8148d27236c8b2690992461c9971844ad0aac1396a5f7ec296924f1522122ff8",
@@ -8045,10 +8172,10 @@
     "results_cloud/t2/part_x0/tic442925572_P14.5441_fpp.json": "29bf86b63bb67fdb59657f8ee82020b3dc679c71bd9b08b3cc9c8638e03b034d",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
     "results_public/products/measurements_earlier.csv": "e777c95acb700d68fc7a9b7bf5e72fd3541d1c8ea525fc340cc56688da943b6d",
-    "results_public/products/triceratops_batches.csv": "03d5ea3d9e5dbfc378340713cd5cbf0db1c97b8d8258435f32c3a29da59b1644"
+    "results_public/products/triceratops_batches.csv": "50a4ac24c49173c40a9d33a2e761a3b2de2271204174076817080331c630242f"
    },
    "outputs": {
-    "results_public/products/triceratops.csv": "24f385dd953c55b77aa8fd33464cd2ef99b5b17935f153240ef0e280537f9995"
+    "results_public/products/triceratops.csv": "e3eb390529f377e4fdf7601a7d38a25967b9d210fb531ad18a6e4f53581822f9"
    },
    "params": {
     "triceratops.match_period_rel": 0.002,
@@ -8056,7 +8183,7 @@
     "triceratops.phase_bin_min": 2.0,
     "triceratops.runs": 10
    },
-   "stamp": "de8b71577c02cf6fed794cf40c8a2e1c074e6f6eebc956930c00a79b07acd25b"
+   "stamp": "0b9f8a60e407c4470941bf409efa45c972b7e9a08fc8dc2fcdcea11fdb908063"
   }
  },
  "version": 1

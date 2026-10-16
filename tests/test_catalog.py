@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pipeline"))
 
 import catalog as cat  # noqa: E402
 import catalog_checks as cc  # noqa: E402
+import centroid_table as ctab  # noqa: E402
 import triceratops_table as tt  # noqa: E402
 from dag.params import load  # noqa: E402
 
@@ -80,6 +81,10 @@ class TierRuleTests(unittest.TestCase):
                          ("likely nearby FP", ""))
         self.assertEqual(self.t(row(binary_at_target="vsx", cs_p_target="0.0001", cs_p_neighbour="0.3")), ("likely EB", ""))
         self.assertEqual(self.t(row()), ("counted", ""))
+        self.assertEqual(self.t(row(b="")), ("C", cat.NO_FIT))                                   # no fit, not counted
+        self.assertEqual(self.t(row(b="", set='neighbour<15"')), ("C", cat.NO_FIT))
+        self.assertEqual(self.t(row(b="", set='neighbour<15"'), tri(0.7, 0.3)), ("likely nearby FP", ""))
+        self.assertEqual(self.t(row(b="", set="SNR 7.5-9", MES="9.5")), ("C", cat.NO_FIT))
 
     def test_the_bar_prefers_gaia_limited_values(self):
         v = tri(0.01, 0.001)
@@ -214,6 +219,26 @@ class FreshnessTests(unittest.TestCase):
         self.assertIn("7.00000 d signal was not masked", probs[0])
         write_csv(d / "p.csv", [dict(p, duration_h="2.61", masks="7.0,1501.0,3.0")])
         self.assertEqual(cc.triceratops_inputs_current(d / "p.csv", d / "m.csv", d / "eph.csv", tol, 0.002), [])
+
+
+class CentroidTableTests(unittest.TestCase):
+    def test_measurements_become_catalog_columns_and_artifacts_are_not_neighbours(self):
+        root = Path(tempfile.mkdtemp())
+        d = root / "b1"
+        (d / "cs").mkdir(parents=True)
+        (d / "list.csv").write_text("set,tier,tic,P_d,period,t0,duration_h,depth_ppm,sectors,MES,source_tic,ra,dec,key\n"
+                                    "t10,B,5,3.0,3.0,1500.0,2.0,2000,\"1,2,3\",15,,10.0,20.0,tic5_P3.0000\n")
+        secs = [dict(sector=s, east=e, north=n, quality=0.9, offset_arc=1.0) for s, e, n in ((1, 9.5, 0.3), (2, 10.4, -0.2), (3, 10.1, 0.4))]
+        stars = [dict(tic=5, east=0.0, north=0.0, sep=0.0, Tmag=10.0), dict(tic=6, east=10.0, north=0.0, sep=10.0, Tmag=12.0),
+                 dict(tic=7, east=10.0, north=0.1, sep=10.0, Tmag=11.0)]
+        (d / "cs" / "tic5_P3.0000.json").write_text(json.dumps(dict(key="tic5_P3.0000", sectors=secs, stars=stars)))
+        (d / "stars.csv").write_text("key,tic,disposition\ntic5_P3.0000,5,\ntic5_P3.0000,6,\ntic5_P3.0000,7,ARTIFACT\n")
+        (root / "batches.csv").write_text("batch,order,finished_utc,purpose\nb1,1,,\n")
+        rows = ctab.build(root / "batches.csv", root, [("candidates_allsky", "5", "3.0")], root / "out.csv")
+        r = rows[0]
+        self.assertEqual((r["cs_sectors"], r["cs_neighbour"]), (3, 6))            # TIC 7 is an artifact
+        self.assertLess(float(r["cs_p_target"]), 0.001)
+        self.assertEqual(r["cs_offset_arcsec"], "10.0")
 
 
 if __name__ == "__main__":

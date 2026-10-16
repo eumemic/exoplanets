@@ -3,6 +3,7 @@ Run from pipeline/ with `../.venv/bin/python -m dag status|run|check` (see dag/_
 import allsky_figure as af
 import catalog as cat
 import catalog_checks as cc
+import centroid_table as ct
 import triceratops_table as tt
 from dag import check, rule
 
@@ -27,8 +28,20 @@ def triceratops_table(ctx):
              match_rel=ctx.param("triceratops.match_period_rel"))
 
 
+@rule(inputs=["results_public/products/centroid_batches.csv", "results_cloud/t10/list.csv", "results_cloud/t10/stars.csv",
+              "results_cloud/t10/cs/*.json", "results_public/products/measurements_allsky.csv",
+              "results_public/products/measurements_earlier.csv"],
+      outputs=["results_public/products/centroids.csv"], params=["triceratops.match_period_rel"])
+def centroid_table(ctx):
+    rows = [(t, r["TIC"], r["P_d"]) for t, f in (("candidates_allsky", "measurements_allsky.csv"),
+                                                 ("tiers_earlier_candidates", "measurements_earlier.csv"))
+            for r in cat.read_rows(ctx.input(f"results_public/products/{f}"))]
+    ct.build(ctx.input("results_public/products/centroid_batches.csv"), ctx.root / "results_cloud", rows,
+             ctx.output("results_public/products/centroids.csv"), match_rel=ctx.param("triceratops.match_period_rel"))
+
+
 @rule(inputs=["results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv",
-              "results_public/products/triceratops.csv", "results_public/overrides.csv"],
+              "results_public/products/triceratops.csv", "results_public/products/centroids.csv", "results_public/overrides.csv"],
       outputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv"],
       params=["catalog.counted_allsky", "tiers.*", "flags.*"])
 def catalog(ctx):
@@ -36,7 +49,8 @@ def catalog(ctx):
     cat.build(ctx.input("results_public/products/measurements_allsky.csv"),
               ctx.input("results_public/products/measurements_earlier.csv"),
               ctx.input("results_public/products/triceratops.csv"), ctx.input("results_public/overrides.csv"),
-              ctx.output("results_public/candidates_allsky.csv"), ctx.output("results_public/tiers_earlier_candidates.csv"), P)
+              ctx.output("results_public/candidates_allsky.csv"), ctx.output("results_public/tiers_earlier_candidates.csv"), P,
+              centroids_csv=ctx.input("results_public/products/centroids.csv"))
 
 
 @check(inputs=["results_public/products/triceratops.csv", "results_public/products/measurements_allsky.csv",
@@ -56,3 +70,11 @@ def counted_measured_centroids(ctx):
                 + cc.counted_measured_centroids(ctx.input("results_public/tiers_earlier_candidates.csv"),
                                                 ctx.param("catalog.counted_earlier")))
     assert not problems, f"{len(problems)} counted candidates have no per-sector centroid measurement:\n" + "\n".join(problems)
+
+
+@check(inputs=["results_public/products/centroids.csv", "results_public/products/measurements_allsky.csv"], params=["freshness.*"])
+def centroid_inputs_current(ctx):
+    tol = {k.split(".")[1]: v for k, v in ctx.params().items() if k.startswith("freshness.")}
+    problems = cc.centroid_inputs_current(ctx.input("results_public/products/centroids.csv"),
+                                          ctx.input("results_public/products/measurements_allsky.csv"), tol)
+    assert not problems, f"{len(problems)} centroid measurements used an ephemeris that has changed since:\n" + "\n".join(problems)

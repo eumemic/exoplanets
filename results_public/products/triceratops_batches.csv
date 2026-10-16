@@ -19,3 +19,4 @@ t2/part_cl1,17,2026-10-16T01:01,"signals rerun on clean machines after cut-off M
 t2/part_cl2,18,2026-10-16T01:01,"signals rerun on clean machines after cut-off MOLUSC files (3 of 4)"
 t2/part_cl3,19,2026-10-16T01:00,"signals rerun on clean machines after cut-off MOLUSC files (4 of 4)"
 t2/part_e0,20,2026-10-16T01:22,"16 signals rerun with the ephemeris of their transit fit"
+t2/part_f0,21,2026-10-16T06:20,"TIC 322895933 with its fitted ephemeris, and TIC 218983448, whose only run had failed on an empty fold"
