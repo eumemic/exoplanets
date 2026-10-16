@@ -8,6 +8,7 @@ import doc_numbers
 import findability as fb
 import folders as fo
 import predict
+import tri_plan as tp
 import triceratops_table as tt
 from dag import check, rule
 
@@ -18,16 +19,18 @@ def allsky_figure(ctx):
             ctx.param("catalog.counted_allsky"))
 
 
-@rule(inputs=["results_public/products/triceratops_batches.csv", "results_cloud/t2/part*/list.csv",
-              "results_cloud/t2/part*/runs.jsonl", "results_cloud/t2/part*/*_fpp.json", "results_cloud/t2/part*/folds/*.npz",
+STORE = "results_cloud/store"
+
+
+@rule(inputs=[f"{STORE}/tri/*/*/request.json", f"{STORE}/tri/*/*/result.json", f"{STORE}/fold/*/*/fold.npz",
               "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
       outputs=["results_public/products/triceratops.csv"], params=["triceratops.*"])
 def triceratops_table(ctx):
+    """The TRICERATOPS result each catalog row uses, from the store (triceratops_table.py, tri_store.py)."""
     rows = [(t, r["TIC"], r["P_d"]) for t, f in (("candidates_allsky", "measurements_allsky.csv"),
                                                  ("tiers_earlier_candidates", "measurements_earlier.csv"))
             for r in cat.read_rows(ctx.input(f"results_public/products/{f}"))]
-    tt.build(ctx.input("results_public/products/triceratops_batches.csv"), ctx.root / "results_cloud", rows,
-             ctx.output("results_public/products/triceratops.csv"), runs=ctx.param("triceratops.runs"),
+    tt.build(ctx.root / STORE, rows, ctx.output("results_public/products/triceratops.csv"), runs=ctx.param("triceratops.runs"),
              min_survivors=ctx.param("triceratops.min_survivors"), phase_bin_min=ctx.param("triceratops.phase_bin_min"),
              match_rel=ctx.param("triceratops.match_period_rel"))
 
@@ -57,14 +60,24 @@ def catalog(ctx):
               centroids_csv=ctx.input("results_public/products/centroids.csv"))
 
 
-@check(inputs=["results_public/products/triceratops.csv", "results_public/products/measurements_allsky.csv",
-               "candidates/ephemerides.csv"], params=["freshness.*", "triceratops.match_period_rel"])
-def triceratops_inputs_current(ctx):
+@rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", "candidates/ephemerides.csv",
+              "data/known/toi.csv", "results_public/products/triceratops.csv"],
+      outputs=["results_public/products/triceratops_plan.csv"], params=["tiers.*", "freshness.*", "triceratops.match_period_rel"])
+def triceratops_plan(ctx):
+    """The rows that need a TRICERATOPS result or show one, with the inputs a current result has (tri_plan.py)."""
     tol = {k.split(".")[1]: v for k, v in ctx.params().items() if k.startswith("freshness.")}
-    problems = cc.triceratops_inputs_current(ctx.input("results_public/products/triceratops.csv"),
-                                             ctx.input("results_public/products/measurements_allsky.csv"),
-                                             ctx.input("candidates/ephemerides.csv"), tol, ctx.param("triceratops.match_period_rel"))
-    assert not problems, f"{len(problems)} TRICERATOPS results ran on inputs that have changed since:\n" + "\n".join(problems)
+    tp.build(ctx.input("results_public/candidates_allsky.csv"), ctx.input("results_public/tiers_earlier_candidates.csv"),
+             ctx.input("candidates/ephemerides.csv"), ctx.input("data/known/toi.csv"),
+             ctx.input("results_public/products/triceratops.csv"), ctx.output("results_public/products/triceratops_plan.csv"),
+             ctx.params(), tol, ctx.param("triceratops.match_period_rel"))
+
+
+@check(inputs=["results_public/products/triceratops_plan.csv"])
+def triceratops_current(ctx):
+    rows = [r for r in cat.read_rows(ctx.input("results_public/products/triceratops_plan.csv")) if r["status"] in ("pending", "stale")]
+    assert not rows, (f"{len(rows)} TRICERATOPS results are missing or ran on inputs that have changed (cloud.py plan runs "
+                      "them):\n" + "\n".join(f"{r['table']} TIC {r['TIC']} P {r['P_d']} ({r['status']}): {r['reason']}"
+                                             for r in rows[:60]))
 
 
 @check(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv"],
@@ -189,14 +202,14 @@ def markdown_tables(ctx):
 
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_cloud/glue/build/folder_sources.csv",
-              "results_public/products/triceratops.csv", "results_cloud/t2/part*/*_fpp.json"],
+              "results_public/products/triceratops.csv", f"{STORE}/tri/*/*/fpp.json"],
       outputs=["candidates/allsky"], params=["catalog.folder_tiers_allsky"], inplace={"candidates/allsky": "ledger"},
       allow_reads=["results_cloud"])
 def folders(ctx):
     """Candidate folders (folders.py). Source files are read through the index, which records their hashes."""
     n = fo.build(ctx.root, ctx.input("results_public/candidates_allsky.csv"),
                  ctx.input("results_cloud/glue/build/folder_sources.csv"),
-                 ctx.input("results_public/products/triceratops.csv"), ctx.root / "results_cloud",
+                 ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE,
                  ctx.param("catalog.folder_tiers_allsky"))
     print(f"folders: {n}")
 
@@ -211,12 +224,12 @@ def folders_complete(ctx):
 
 
 @rule(inputs=["results_public/tiers_earlier_candidates.csv", "results_public/products/triceratops.csv",
-              "results_cloud/t2/part*/*_fpp.json"],
+              f"{STORE}/tri/*/*/fpp.json"],
       outputs=["candidates/TIC*_P*"], inplace={"candidates/TIC*_P*": "ledger"})
 def earlier_folders(ctx):
     """The earlier searches' candidate folders (folders.py): every row has one, with the catalog's TRICERATOPS result."""
     n = fo.build_earlier(ctx.root, ctx.input("results_public/tiers_earlier_candidates.csv"),
-                         ctx.input("results_public/products/triceratops.csv"), ctx.root / "results_cloud")
+                         ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE)
     print(f"earlier folders: {n}")
 
 

@@ -40,7 +40,7 @@ def _same(a, b):
     return os.path.exists(b) and os.path.getsize(a) == os.path.getsize(b) and _sha(a) == _sha(b)
 
 
-def build(root, catalog_csv, sources_csv, triceratops_csv, results_root, folder_tiers):
+def build(root, catalog_csv, sources_csv, triceratops_csv, store_root, folder_tiers):
     base = os.path.join(root, "candidates", "allsky")
     existing = set(os.listdir(base))
     sources = {r["candidate_id"]: r for r in _rows(sources_csv)}
@@ -61,16 +61,16 @@ def build(root, catalog_csv, sources_csv, triceratops_csv, results_root, folder_
                         raise ValueError(f"{src} no longer matches the source index")
                     shutil.copyfile(src, os.path.join(d, name))
             n["created"] += 1
-        _sync(d, tri.get((r["TIC"], r["P_d"])), results_root, n)
+        _sync(d, tri.get((r["TIC"], r["P_d"])), store_root, n)
     return n
 
 
-def _sync(d, t, results_root, n):
-    """triceratops_gaia.json is the result the catalog uses (t, a row of triceratops.csv, or None), and the results of
-    earlier methods are removed."""
+def _sync(d, t, store_root, n):
+    """triceratops_gaia.json is the result the catalog uses (t, a row of triceratops.csv, or None; its file is in the
+    store entry the row names), and the results of earlier methods are removed."""
     target = os.path.join(d, "triceratops_gaia.json")
     if t and t["degenerate"] != "yes":
-        src = os.path.join(results_root, t["batch"], f"{t['key']}_fpp.json")
+        src = os.path.join(store_root, "tri", t["store"][:2], t["store"], "fpp.json")
         if not _same(src, target):
             shutil.copyfile(src, target)
             n["updated"] += 1
@@ -83,7 +83,7 @@ def _sync(d, t, results_root, n):
             n["removed"] += 1
 
 
-def build_earlier(root, catalog_csv, triceratops_csv, results_root):
+def build_earlier(root, catalog_csv, triceratops_csv, store_root):
     base = os.path.join(root, "candidates")
     tri = {(r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv) if r["table"] == "tiers_earlier_candidates"}
     n = dict(created=0, updated=0, removed=0)
@@ -92,5 +92,5 @@ def build_earlier(root, catalog_csv, triceratops_csv, results_root):
         if not os.path.isdir(d):
             raise ValueError(f"{r['candidate_id']} has no folder; the earlier searches' folders are made by "
                              "package_candidates.py, and a new row needs one before the build can keep it")
-        _sync(d, tri.get((r["TIC"], r["P_d"])), results_root, n)
+        _sync(d, tri.get((r["TIC"], r["P_d"])), store_root, n)
     return n

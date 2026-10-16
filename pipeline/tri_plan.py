@@ -1,0 +1,132 @@
+"""results_public/products/triceratops_plan.csv: every catalog row whose tier can depend on TRICERATOPS
+(catalog.needs_triceratops, column needed) or that shows a TRICERATOPS result, the inputs a current result must have run
+with, and whether the result in use (triceratops.csv) is current. Built by the rule triceratops_plan in rules.py; the
+check triceratops_current fails while any row is pending (needed, and missing or out of date) or stale (shown in the
+catalog but out of date), and the cloud runner (cloud.py) runs those rows.
+
+The inputs of a signal, as every TRICERATOPS batch since 15 October has made them:
+- the ephemeris and duration: the catalog's (full sky) or the transit registry's (earlier searches), and the depth;
+- masks: every other signal on the star, from both tables and the TOI catalog (data/known/toi.csv), as
+  "P,t0 (BTJD),duration (h)" joined by ";";
+- drop: the eclipsing-binary scenarios on the target ("EB,EBx2P") where Gaia's radial velocities exclude them.
+A result is current while its ephemeris, duration and depth match within the freshness tolerances and every other
+catalog signal of the star is masked at its current ephemeris (masks of TOIs are not compared: the TOI catalog is a
+dated snapshot, and a TOI's period is not ours to keep current). Status: current, legacy (current, from a batch that
+did not keep all of its inputs), or pending with the reason.
+"""
+import csv
+import math
+
+import catalog
+import catalog_checks as cc
+
+COLUMNS = ["table", "TIC", "P_d", "tier", "needed", "key", "tic", "period", "t0", "duration_h", "depth_ppm", "masks", "drop",
+           "status", "reason"]
+RV_EXCLUDES_EB = "Gaia RVs exclude an EB on the target"
+
+
+def _rows(path):
+    with open(path, newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def _f(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return math.nan
+
+
+def known_signals(allsky, earlier, eph, toi, match_rel):
+    """{tic: [(P, t0 BTJD, duration h, source)]}: the catalog's signals (the registry's ephemeris for the earlier
+    searches) and the TOIs with a period, epoch and duration."""
+    out = {}
+    for r in allsky:
+        out.setdefault(int(r["TIC"]), []).append((_f(r["P_d"]), _f(r["T0_BJD"]) - 2457000, _f(r["T14_h"]), "catalog"))
+    for r in earlier:
+        e = _registry(eph, r, match_rel)
+        if e:
+            out.setdefault(int(r["TIC"]), []).append((_f(e["period_d"]), _f(e["T0_BJD_TDB"]) - 2457000, _f(e["duration_h"]), "catalog"))
+    for t in toi:
+        p, t0, d = _f(t.get("Period (days)")), _f(t.get("Epoch (BJD)")), _f(t.get("Duration (hours)"))
+        if p > 0 and math.isfinite(t0) and math.isfinite(d):
+            out.setdefault(int(float(t["TIC ID"])), []).append((p, t0 - 2457000, d, "toi"))
+    return out
+
+
+def _registry(eph, r, match_rel):
+    hits = [e for e in eph.get(int(r["TIC"]), []) if abs(_f(e["period_d"]) / _f(r["P_d"]) - 1) < match_rel]
+    return hits[0] if hits else None
+
+
+def item(table, r, eph, signals, match_rel):
+    """The inputs a TRICERATOPS run of this row takes (the columns of an fpp_fleet.py signal list)."""
+    if table == "candidates_allsky":
+        P, t0, dur, depth = _f(r["P_d"]), _f(r["T0_BJD"]) - 2457000, _f(r["T14_h"]), r["depth_ppm"]
+    else:
+        e = _registry(eph, r, match_rel)
+        if e is None:
+            return None
+        P, t0, dur, depth = _f(e["period_d"]), _f(e["T0_BJD_TDB"]) - 2457000, _f(e["duration_h"]), e["depth_ppm"]
+    tic = int(r["TIC"])
+    others = [s for s in signals.get(tic, []) if abs(s[0] / P - 1) > match_rel]
+    return dict(key=f"tic{tic}_P{P:.4f}", tic=tic, period=repr(P), t0=repr(t0), duration_h=repr(dur), depth_ppm=depth,
+                masks=";".join(f"{p:.7f},{t:.6f},{d:.3f}" for p, t, d, _ in others),
+                drop="EB,EBx2P" if r["rv_flag"] == RV_EXCLUDES_EB else "", _others=others)
+
+
+def status(it, used, tol, match_rel):
+    """(status, reason) of the result in use against the inputs the row needs now."""
+    if used is None:
+        return "pending", "no result"
+    cur = dict(P=_f(it["period"]), T0=_f(it["t0"]) + 2457000, dur=_f(it["duration_h"]), depth=_f(it["depth_ppm"]))
+    was = dict(P=_f(used["period"]), T0=_f(used["t0_btjd"]) + 2457000, dur=_f(used["duration_h"]), depth=_f(used["depth_ppm"]))
+    diff = cc.same_ephemeris(was, cur, tol)
+    masks = [tuple(map(float, m.split(","))) for m in used["masks"].split(";") if m]
+    for p, t0, d, src in it["_others"]:
+        if src != "catalog":
+            continue
+        hit = [m for m in masks if abs(m[0] / p - 1) < match_rel]
+        if not hit:
+            diff.append(f"the star's {p:.5f} d signal was not masked")
+            continue
+        dd = cc.same_ephemeris(dict(P=hit[0][0], T0=hit[0][1] + 2457000, dur=hit[0][2]), dict(P=p, T0=t0 + 2457000, dur=d), tol)
+        if dd:
+            diff.append(f"mask of the {p:.5f} d signal: " + ", ".join(dd))
+    if (used["drop"] or "") != it["drop"]:
+        diff.append(f"drop {used['drop'] or 'none'} -> {it['drop'] or 'none'}")
+    if diff:
+        return "pending", "; ".join(diff)
+    return ("legacy" if used.get("legacy") == "yes" else "current"), ""
+
+
+def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, out_csv, P, tol, match_rel):
+    allsky, earlier = _rows(allsky_csv), _rows(earlier_csv)
+    eph = {}
+    for e in _rows(ephemerides_csv):
+        eph.setdefault(int(e["TIC"]), []).append(e)
+    with open(toi_csv, newline="") as fh:
+        toi = list(csv.DictReader(line for line in fh if not line.startswith("#")))
+    signals = known_signals(allsky, earlier, eph, toi, match_rel)
+    used = {(r["table"], r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv)}
+    out = []
+    for table, rows in (("candidates_allsky", allsky), ("tiers_earlier_candidates", earlier)):
+        for r in rows:
+            need, u = catalog.needs_triceratops(r, P, table), used.get((table, r["TIC"], r["P_d"]))
+            if not need and u is None:
+                continue
+            it = item(table, r, eph, signals, match_rel)
+            if it is None:
+                st, why = "pending", "not in the transit registry (no ephemeris)"
+                it = dict(key="", tic=r["TIC"], period="", t0="", duration_h="", depth_ppm="", masks="", drop="")
+            else:
+                st, why = status(it, u, tol, match_rel)
+            if not need and st == "pending":
+                st = "stale"
+            out.append(dict({k: v for k, v in it.items() if not k.startswith("_")}, table=table, TIC=r["TIC"], P_d=r["P_d"],
+                            tier=r["tier"], needed="yes" if need else "", status=st, reason=why))
+    with open(out_csv, "w", newline="") as fh:
+        w = csv.DictWriter(fh, COLUMNS, lineterminator="\n")
+        w.writeheader()
+        w.writerows(out)
+    return out

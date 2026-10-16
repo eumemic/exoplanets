@@ -15,7 +15,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pipeline"))
 import catalog as cat  # noqa: E402
 import catalog_checks as cc  # noqa: E402
 import centroid_table as ctab  # noqa: E402
+import tri_plan as tp  # noqa: E402
 import triceratops_table as tt  # noqa: E402
+import store  # noqa: E402
+import tri_store  # noqa: E402
 from dag.params import load  # noqa: E402
 
 P = load(Path(__file__).resolve().parents[1] / "pipeline" / "params.toml")
@@ -175,7 +178,8 @@ class TriceratopsTableTests(unittest.TestCase):
     def run_build(self, root, batches, rows=(("candidates_allsky", "5", "3.0"),)):
         with open(root / "batches.csv", "w") as fh:
             fh.write("batch,order,finished_utc,purpose\n" + "".join(f"{b},{i},,\n" for i, b in enumerate(batches)))
-        return tt.build(root / "batches.csv", root, list(rows), root / "out.csv")
+        tri_store.import_batches(store.Store(root / "store"), root, root / "batches.csv")
+        return tt.build(root / "store", list(rows), root / "out.csv")
 
     def test_a_later_batch_replaces_an_earlier_one(self):
         root = Path(tempfile.mkdtemp())
@@ -196,6 +200,17 @@ class TriceratopsTableTests(unittest.TestCase):
         rows = self.run_build(root, [old, self.batch(root, "b2")])
         self.assertEqual([r["key"] for r in rows], ["tic5_P3.0000"])
 
+    def test_import_is_idempotent_and_refuses_a_different_result(self):
+        root = Path(tempfile.mkdtemp())
+        rows = self.run_build(root, [self.batch(root, "b1")])
+        self.assertEqual(rows, self.run_build(root, ["b1"]))          # importing again changes nothing
+        s = store.Store(root / "store")
+        self.assertEqual(len(s.keys("tri")), 1)
+        req, res, _ = s.get("tri", rows[0]["store"])
+        self.assertIn("lightcurves", req["legacy"])
+        with self.assertRaises(ValueError):
+            s.put("tri", req, dict(res, seq=99))
+
     def test_degenerate_results_are_kept_without_values(self):
         root = Path(tempfile.mkdtemp())
         rows = self.run_build(root, [self.batch(root, "b1", probs=(("", 1 / 18), ("", 1 / 18)))])
@@ -203,22 +218,35 @@ class TriceratopsTableTests(unittest.TestCase):
 
 
 class FreshnessTests(unittest.TestCase):
-    def test_changed_duration_and_unmasked_sibling_are_reported(self):
-        d = Path(tempfile.mkdtemp())
-        m = {c: "" for c in cat.ALLSKY if c not in cat.DERIVED_ALLSKY}
-        write_csv(d / "m.csv", [dict(m, TIC="5", P_d="3.0", T0_BJD="2458500.0", T14_h="2.61", depth_ppm="500"),
-                                dict(m, TIC="5", P_d="7.0", T0_BJD="2458501.0", T14_h="3.0", depth_ppm="400")])
-        write_csv(d / "eph.csv", [dict(TIC="0", period_d="1", T0_BJD_TDB="0", duration_h="1", depth_ppm="1")])
-        p = dict(table="candidates_allsky", TIC="5", P_d="3.0", batch="b1", period="3.0", t0_btjd="1500.0",
-                 duration_h="2.49", depth_ppm="500", masks="")
-        write_csv(d / "p.csv", [p])
-        tol = dict(period_d=2e-6, phase_min=0.5, duration_h=0.005, depth_ppm=0.5)
-        probs = cc.triceratops_inputs_current(d / "p.csv", d / "m.csv", d / "eph.csv", tol, 0.002)
-        self.assertEqual(len(probs), 1)
-        self.assertIn("duration 2.49 -> 2.61 h", probs[0])
-        self.assertIn("7.00000 d signal was not masked", probs[0])
-        write_csv(d / "p.csv", [dict(p, duration_h="2.61", masks="7.0,1501.0,3.0")])
-        self.assertEqual(cc.triceratops_inputs_current(d / "p.csv", d / "m.csv", d / "eph.csv", tol, 0.002), [])
+    TOL = dict(period_d=2e-6, phase_min=0.5, duration_h=0.005, depth_ppm=0.5)
+
+    def test_changed_duration_unmasked_sibling_and_drops_are_reported(self):
+        others = [(7.0, 1501.0, 3.0, "catalog"), (9.0, 1502.0, 2.0, "toi")]
+        it = dict(period="3.0", t0="1500.0", duration_h="2.61", depth_ppm="500", drop="", _others=others)
+        used = dict(period="3.0", t0_btjd="1500.0", duration_h="2.49", depth_ppm="500", masks="", drop="", legacy="yes")
+        st, why = tp.status(it, used, self.TOL, 0.002)
+        self.assertEqual(st, "pending")
+        self.assertIn("duration 2.49 -> 2.61 h", why)
+        self.assertIn("7.00000 d signal was not masked", why)
+        self.assertNotIn("9.00000", why)                         # a TOI's mask is not compared
+        used = dict(used, duration_h="2.61", masks="7.0,1501.0,3.0")
+        self.assertEqual(tp.status(it, used, self.TOL, 0.002), ("legacy", ""))
+        self.assertIn("drop", tp.status(it, dict(used, drop="EB,EBx2P"), self.TOL, 0.002)[1])
+        self.assertEqual(tp.status(it, None, self.TOL, 0.002), ("pending", "no result"))
+
+    def test_rows_decided_before_the_bar_need_no_result(self):
+        r = {c: "" for c in cat.ALLSKY}
+        r.update(b="0.3", ruwe="1.0", MES="12", Rp_Re="2", fa_score_h="0.9")
+        need = lambda **kw: cat.needs_triceratops(dict(r, **kw), P, "candidates_allsky")
+        self.assertTrue(need(set="SNR>=9"))
+        self.assertFalse(need(set="SNR>=9", MES="9.5"))
+        self.assertFalse(need(set="SNR>=9", b="0.95"))
+        self.assertTrue(need(set=cat.NB, b="0.95"))                 # failing the bar makes it a likely nearby FP
+        self.assertFalse(need(set=cat.NB, reported_as="TOI-1.01"))
+        self.assertFalse(need(set=cat.NB, cs_p_target="0.0001", cs_p_neighbour="0.5"))
+        self.assertTrue(need(set="SNR 7.5-9"))
+        self.assertFalse(need(set="SNR 7.5-9", fa_score_h="0.5"))
+        self.assertFalse(cat.needs_triceratops(dict(b="0.95", ruwe="1"), P, "tiers_earlier_candidates"))
 
 
 class CentroidTableTests(unittest.TestCase):

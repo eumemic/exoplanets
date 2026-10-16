@@ -164,6 +164,27 @@ def tier_allsky(r, v, P):
     return ("N", "") if s == NB else ("counted", "")
 
 
+def needs_triceratops(r, P, table):
+    """Whether a row's tier can depend on its TRICERATOPS result under the rules: the rows the build must have a current
+    result for (tri_plan.py). A row decided before the bar is consulted (reported, binary, centroids that fit a
+    neighbour; grazing, high RUWE or low MES outside the neighbour set; a low-band signal the classifier does not
+    select) does not need one."""
+    grazing, high_ruwe = num(r["b"]) >= P["tiers.b_max"], num(r["ruwe"]) > P["tiers.ruwe_max"]
+    if table == "tiers_earlier_candidates":
+        return not (grazing or high_ruwe)
+    if r["papers_with_period"] or r["zenodo_with_period"] or r.get("reported_as"):
+        return False
+    if r["binary_at_target"] or r["eb_nearby_same_period"] or num(r["Rp_Re"]) > P["tiers.rp_eb_min"]:
+        return False
+    if num(r["cs_p_target"]) < P["tiers.centroid_reject_p"] and num(r["cs_p_neighbour"]) >= P["tiers.centroid_neighbour_p"]:
+        return False
+    if r["set"] == NB:
+        return True
+    if r["set"] == "SNR 7.5-9":
+        return num(r["fa_score_h"]) >= P["tiers.fa_score_h_min"] and not grazing and not high_ruwe
+    return not (grazing or high_ruwe or num(r["MES"]) < P["tiers.mes_min"])
+
+
 def centroid_out(r, P):
     """None if the per-sector centroids do not reject the target, else the tier they send a counted row to (a row
     whose centroids also fit a neighbour is already a likely nearby FP by rule 3)."""

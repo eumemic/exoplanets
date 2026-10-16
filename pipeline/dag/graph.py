@@ -352,6 +352,15 @@ class Project:
             ran.append(name)
             if not ok:
                 failed_checks.append(name)
+        if not dry_run and not targets:             # entries of rules that no longer exist
+            loaded_private = any(r.private for r in self.rules.values())
+            for lock, private in ((self.lock, False), (self.private_lock, True)):
+                if private and not loaded_private:
+                    continue
+                for name in [n for n in lock.data["rules"] if n not in self.rules]:
+                    lock.remove(name)
+                    log(f"removed {name} from the lock: the rule no longer exists")
+                lock.save()
         self.hasher.save()
         return ran, failed_checks
 
