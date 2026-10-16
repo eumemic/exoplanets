@@ -290,7 +290,8 @@ def tri_items(keys, cc, base, rerun_legacy=False, runs=10, molusc_sample=0):
         if not base and not cs:
             raise SystemExit(f"{it['key']}: --no-base, and no contrast curve for TIC {tic}")
         x = dict(item=it, fold_request=freq, molusc_request=mreq, molusc_samples=more, base_runs=base, cc=cs,
-                 star=star_hash(star.drop(labels=["GAIA_DR3"]).to_dict()), not_hosts=nonhost.get(tic, []))
+                 star=star_hash(star.drop(labels=["GAIA_DR3"]).to_dict()), not_hosts=nonhost.get(tic, []),
+                 molusc_todo=[int(r.get("sample", 0)) for r in [mreq] + more if r and not s.has("molusc", st.key_of(r))])
         x["prior"] = None if molusc_sample else prior_result(s, in_use.get(it["key"]), x, code, env, runs)
         out.append(x)
     return out, stars, gaia, man, dict(reuse, code=code, env=env, molusc_sample=int(molusc_sample),
@@ -504,8 +505,10 @@ def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, 
     # a fit: 3,000 steps of 32 walkers, ~2-5 min on one core
     # a vetting ~1-2 min on one core, a pixel follow-up ~3-5 min (difference images of two sectors)
     n_vet, n_pix = len(extra.get("vet", [])), len(extra.get("pixel", []))
+    # a MOLUSC sample of one star not in the store: ~1.9 process-minutes (2,300 in 71 min on 62 processes, 16 October)
+    n_mol = len({(int(x["item"]["tic"]), k) for x in out for k in x.get("molusc_todo", [])})
     hours = (15 + variants * 2 * runs * 0.4 / max(1, vc - 1) + len(cs_out) * 2.0 / 6 + len(fit_out) * 5.0 / max(1, vc - 1)
-             + n_vet * 2.0 / max(1, vc - 1) + n_pix * 5.0 / max(1, min(16, vc - 1))) / 60
+             + n_vet * 2.0 / max(1, vc - 1) + n_pix * 5.0 / max(1, min(16, vc - 1)) + n_mol * 1.9 / max(1, vc - 2)) / 60
     est = dict(instance=itype, spot_usd_per_h=price, hours=round(hours, 2), usd=round(price * hours, 2) if price else None,
                limit_hours=round(max(1.0, 3 * hours), 1))
     p = dict(id=bid, commit=commit, created=datetime.now(timezone.utc).isoformat(timespec="seconds"), runs=runs,
@@ -689,7 +692,7 @@ def launch(p, d, kit_url, boot_url, limit_min, itype):
         InstanceMarketOptions=dict(MarketType="spot", SpotOptions=dict(SpotInstanceType="one-time",
                                                                        InstanceInterruptionBehavior="terminate")),
         InstanceInitiatedShutdownBehavior="terminate",
-        BlockDeviceMappings=[dict(DeviceName="/dev/xvda", Ebs=dict(VolumeSize=60, VolumeType="gp3", DeleteOnTermination=True))],
+        BlockDeviceMappings=[dict(DeviceName="/dev/xvda", Ebs=dict(VolumeSize=100, VolumeType="gp3", DeleteOnTermination=True))],
         UserData=user_data(kit_url, boot_url, limit_min),
         TagSpecifications=[dict(ResourceType="instance", Tags=[dict(Key="project", Value="exoplanets"),
                                                                dict(Key="batch", Value=p["id"]),
@@ -819,7 +822,9 @@ def follow(bid, store_root=st.ROOT, limit_h=None):
                 hb = s3.get_object(Bucket=AWS["bucket"], Key=f"batches/{bid}/heartbeat.json")
                 beat = json.loads(hb["Body"].read())
                 last_beat = hb["LastModified"].timestamp()
-                stage = beat.get("stage")
+                stage = beat.get("stage") + "".join(f", {k} {a} of {b}" for k, (a, b) in (beat.get("progress") or {}).items())
+                if beat.get("disk_free_gb") is not None:
+                    stage += f", disk {beat['disk_free_gb']:.0f} GB free"
             except s3.exceptions.NoSuchKey:
                 stage = "no heartbeat yet"
             ended = s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/done.json").get("KeyCount", 0)

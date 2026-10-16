@@ -35,6 +35,7 @@ VENVS = {"requirements.txt": ".venv", "requirements-triceratops.txt": ".venv-tri
 ENV = dict(os.environ, EXO_DATA_SOURCE="s3", OMP_NUM_THREADS="1", NUMBA_NUM_THREADS="1", MKL_NUM_THREADS="1",
            OPENBLAS_NUM_THREADS="1")
 STATE = {"stage": "starting", "uploaded": [], "failed": [], "t0": time.time()}
+PROGRESS = {}           # {label: (file patterns, total)}: the heartbeat counts the files done
 
 
 def log(msg):
@@ -59,7 +60,9 @@ def put(url, data, tries=4):
 
 def heartbeat(urls, stop):
     while not stop.wait(60):
-        put(urls["heartbeat"], json.dumps(dict(STATE, now=time.time())).encode())
+        progress = {k: [sum(len(glob.glob(p)) for p in pats), n] for k, (pats, n) in PROGRESS.items()}
+        put(urls["heartbeat"], json.dumps(dict(STATE, now=time.time(), progress=progress,
+                                               disk_free_gb=round(shutil.disk_usage(HOME).free / 1e9, 1))).encode())
 
 
 def _norm(n):
@@ -175,10 +178,7 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
               open(os.path.join(d, "item.json"), "w"))
     ok = True
     for src, url in ((big, urls["big"][key]), (d, urls["items"][key])):      # the large archive first
-        arc = src + ".tgz"
-        with tarfile.open(arc, "w:gz") as tf:
-            tf.add(src, arcname=".")
-        ok = put(url, open(arc, "rb").read()) and ok
+        ok = _upload_dir(src, url) and ok
     bad = {k: v["problems"] for k, v in checks.items() if v["problems"]}
     log(f"{key}: {'uploaded' if ok else 'UPLOAD FAILED'} ({', '.join(lab or 'base' for lab, _ in done)})"
         + (f"; checks: {bad}" if bad else ""))
@@ -227,10 +227,7 @@ def pack_reused(x, R, jobs, info, urls):
                    remote=True), open(os.path.join(d, "item.json"), "w"))
     ok = True
     for src, url in ((big, urls["big"][key]), (d, urls["items"][key])):
-        arc = src + ".tgz"
-        with tarfile.open(arc, "w:gz") as tf:
-            tf.add(src, arcname=".")
-        ok = put(url, open(arc, "rb").read()) and ok
+        ok = _upload_dir(src, url) and ok
     log(f"{key}: {'kept' if ok else 'UPLOAD FAILED'} (target setup unchanged; result {x['prior']['tri'][:12]} kept)")
     return ok
 
@@ -330,10 +327,7 @@ def run_fits(plan, B, R, info, urls, procs):
         os.makedirs(d, exist_ok=True)
         shutil.copyfile(out, os.path.join(d, "fit.json"))
         json.dump(dict(info, key=key), open(os.path.join(d, "item.json"), "w"))
-        arc = d + ".tgz"
-        with tarfile.open(arc, "w:gz") as tf:
-            tf.add(d, arcname=".")
-        ok = put(urls["fit"][key], open(arc, "rb").read())
+        ok = _upload_dir(d, urls["fit"][key])
         (STATE["uploaded"] if ok else STATE["failed"]).append(f"fit:{key}")
         log(f"fit {key}: {'uploaded' if ok else 'UPLOAD FAILED'}")
 
@@ -342,10 +336,15 @@ def run_fits(plan, B, R, info, urls, procs):
 
 
 def _upload_dir(d, url):
+    """Pack a folder, upload it, then delete the folder and the archive: the copies of every signal kept on the instance
+    filled its 60 GB disk after about 165 signals with five MOLUSC files each (16 October 2026)."""
     arc = d + ".tgz"
     with tarfile.open(arc, "w:gz") as tf:
         tf.add(d, arcname=".")
-    return put(url, open(arc, "rb").read())
+    ok = put(url, open(arc, "rb").read())
+    os.remove(arc)
+    shutil.rmtree(d, ignore_errors=True)
+    return ok
 
 
 def run_vet(plan, B, R, info, urls, procs):
@@ -442,10 +441,7 @@ def return_after_centroids(proc, plan, R, info, urls):
         os.makedirs(d, exist_ok=True)
         shutil.copyfile(f, os.path.join(d, f"{key}.json"))
         json.dump(dict(info, key=key), open(os.path.join(d, "item.json"), "w"))
-        arc = d + ".tgz"
-        with tarfile.open(arc, "w:gz") as tf:
-            tf.add(d, arcname=".")
-        ok = put(urls["cs"][key], open(arc, "rb").read())
+        ok = _upload_dir(d, urls["cs"][key])
         (STATE["uploaded"] if ok else STATE["failed"]).append(f"cs:{key}")
         log(f"cs {key}: {'uploaded' if ok else 'UPLOAD FAILED'}")
 
@@ -522,11 +518,14 @@ def main():
                                 str(min(max(2, (os.cpu_count() or 4) - 2), max(2, len({it["tic"] for it in items}))))],
                                cwd=PIPE, env=dict(ENV, EXO_MOLUSC_SAMPLE=str(sample)),
                                stdout=open(os.path.join(HOME, "molusc.log"), "a"), stderr=subprocess.STDOUT)
+        outs = ["molusc"] + [f"molusc_s{s_}" for s_ in range(1, n_samples)]
+        PROGRESS["MOLUSC"] = ([os.path.join(R, o, "tic*_kept.csv.gz") for o in outs], len({it["tic"] for it in items}) * len(outs))
         mol = threading.Thread(target=molusc_all)
         mol.start()
         rc = run(["fpp_fleet.py", os.path.join(R, "list.csv"), "--stars", os.path.join(B, "stars.parquet"), "--out",
                   os.path.join(R, "t2"), "--procs", str(nproc), "--molusc", os.path.join(R, "molusc")], "fleet.log")
         mol.join()
+        PROGRESS.pop("MOLUSC", None)
         log(f"fleet prep exit {rc}; MOLUSC done ({n_samples} sample{'s' if n_samples > 1 else ''})")
         jobs = {r["key"]: r for r in csv.DictReader(open(os.path.join(R, "t2", "jobs.csv")))}
         STATE["stage"] = "results kept"

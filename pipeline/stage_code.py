@@ -1,7 +1,7 @@
 """The code and packages of each stored stage, so that a stored result made by other code is out of date.
 
 results_public/products/stage_code.json (rule stage_code) holds, for each kind of stored result (fold, tri_setup, molusc,
-tri, fit, centroid), a short hash of the stage's code now (dag.codehash: the functions it runs, traced through imports)
+molusc_sample, tri, fit, centroid), a short hash of the stage's code now (dag.codehash: the functions it runs, traced through imports)
 and of the lock file of its packages. Each result table records the same hashes for the result in use (column code of
 triceratops.csv, fits.csv and centroids.csv, "kind=hash" joined by spaces; empty for a legacy result, which did not
 record its code). A result is out of date when a stage of it has another hash now: tri_plan.py lists such TRICERATOPS
