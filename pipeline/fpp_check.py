@@ -24,10 +24,10 @@ import pandas as pd
 BLENDED = {"DTP", "DEB", "DEBx2P", "BTP", "BEB", "BEBx2P"}
 
 
-def gate(fpp, runs, fold_time, cadence_s, duration_h, n_runs=10, min_survivors=20000, phase_bin_min=2.0):
+def gate(fpp, runs, fold_time, cadence_s, duration_h, n_runs=10, min_survivors=20000, phase_bin_min=2.0, tic=None):
     """The checks of one signal's result: fpp (its <key>_fpp.json), runs (its runs.jsonl records), the fold's times and
-    cadence, and the signal's duration. Returns (problems, degenerate); a degenerate result (the target not evaluated)
-    skips the checks on the runs, since it is kept without values."""
+    cadence, the signal's duration and (tic) the star it is on. Returns (problems, degenerate); a degenerate result (the
+    target not evaluated) skips the checks on the runs, since it is kept without values."""
     n, blended, degenerate = collections.Counter(), 0, False
     for r in runs:
         if "error" in r:
@@ -47,6 +47,11 @@ def gate(fpp, runs, fold_time, cadence_s, duration_h, n_runs=10, min_survivors=2
             problems.append("no blended-star scenario in any run (no field-star population)")
         if gaia and fpp.get("molusc_survivors", 0) < min_survivors:
             problems.append(f"{fpp.get('molusc_survivors')} MOLUSC survivors (a cut-off file)")
+        # TRICERATOPS takes the first star of its TIC query as the target; where the TIC has a duplicate entry at the
+        # star's position the query can list that first, and the star itself then counts as a neighbour
+        hosts = {int(i) for r in runs if "error" not in r for i, s, _ in r["probs"] if s == "TP"}
+        if tic is not None and hosts and hosts != {int(tic)}:
+            problems.append(f"TRICERATOPS evaluated TIC {', '.join(map(str, sorted(hosts)))} as the target, not TIC {tic}")
     width = cadence_s / 86400 if cadence_s < 540 else phase_bin_min / 1440
     dur = float(duration_h) / 24
     edges = np.arange(-3 * dur, 3 * dur + 1e-9, width)

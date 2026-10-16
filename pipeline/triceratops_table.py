@@ -7,7 +7,8 @@ entry is used (the batches run before the store keep their order). A catalog row
 the same TIC and the closest period within a relative difference of match_rel; keys left over (older periods from before
 a refit) are not used. A used result must pass the checks of fpp_check.py; a result in which TRICERATOPS never evaluated
 the target (every scenario equally likely, as for a target without a TIC parallax) is kept as degenerate, with its
-values empty. Column store is the entry's key, batch the batch that computed it, legacy is yes for a result
+values empty. A newer result that fails the checks is not used: the signal's latest result that passes them is, and
+the rejected ones are listed in triceratops_rejected.csv. Column store is the entry's key, batch the batch that computed it, legacy is yes for a result
 imported from a batch that did not keep all of its inputs, and lightcurves the hash of the light-curve list its fold was
 made from (lcindex.list_hash; empty for a fold that did not record it, made from the searched list), and code the hashes
 of the code and packages of its stages (stage_code.py; empty for a legacy result).
@@ -38,10 +39,22 @@ def _request(store, kind, key):
         return json.load(fh)
 
 
-def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase_bin_min=2.0, match_rel=0.002):
+def _ranked(store):
+    """{signal key: [(store key, request, result)]}: each signal's entries whose checks passed (a legacy entry has none),
+    latest (highest seq) first."""
+    out = collections.defaultdict(list)
+    for k, (req, res, chk) in store.entries("tri").items():
+        if chk is None or chk.get("passed"):
+            out[req["signal_key"]].append((k, req, res))
+    return {sk: sorted(v, key=lambda x: -x[2]["seq"]) for sk, v in out.items()}
+
+
+def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase_bin_min=2.0, match_rel=0.002,
+          rejected_csv=None):
     """catalog_rows: [(table, TIC, P_d)] with TIC and P_d as written in the measurement tables."""
     store = st.Store(store_root)
-    latest = tri_store.latest(store)                # signal key -> (store key, request, result)
+    ranked = _ranked(store)
+    latest = {sk: v[0] for sk, v in ranked.items()}  # signal key -> (store key, request, result)
     by_tic = collections.defaultdict(list)
     for k in latest:
         tic, per = k[3:].split("_P")
@@ -56,20 +69,28 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
         if k in owner:
             raise ValueError(f"TRICERATOPS result {k} matches two catalog rows: {owner[k]} and {row}")
         use[row], owner[k] = k, row
-    rows, problems = [], []
+    rows, problems, rejected = [], [], []
     for row, key in use.items():
-        skey, req, res = latest[key]
-        batch, j, sig = res["batch"], res["fpp"], req.get("signal") or res.get("signal")
-        if sig is None:
-            problems.append(f"{key} ({batch}): not in the batch's list.csv")
+        for skey, req, res in ranked[key]:
+            batch, j, sig = res["batch"], res["fpp"], req.get("signal") or res.get("signal")
+            if sig is None:
+                found, deg = ["not in the batch's list.csv"], False
+            elif res["fold_key"] is None:
+                found, deg = ["no fold"], False
+            else:
+                f = np.load(os.path.join(store.path("fold", res["fold_key"]), "fold.npz"))
+                found, deg = fpp_check.gate(j, res["runs"], f["time"], int(f["cadence_s"]), sig["duration_h"], runs,
+                                            min_survivors, phase_bin_min, tic=int(req["tic"]))
+            if not found:
+                break
+            if req.get("legacy"):               # a legacy result is the oldest: there is nothing to fall back on
+                problems += [f"{key} ({batch}): {x}" for x in found]
+                break
+            rejected.append(dict(key=key, batch=batch, store=skey, problems="; ".join(found)))
+        else:
+            continue                            # no result passes the checks: the row has none (tri_plan lists it)
+        if found:
             continue
-        if res["fold_key"] is None:
-            problems.append(f"{key} ({batch}): no fold")
-            continue
-        f = np.load(os.path.join(store.path("fold", res["fold_key"]), "fold.npz"))
-        found, deg = fpp_check.gate(j, res["runs"], f["time"], int(f["cadence_s"]), sig["duration_h"], runs, min_survivors,
-                                    phase_bin_min)
-        problems += [f"{key} ({batch}): {x}" for x in found]
         gaia = "FPP_m_mean" in j
         stages = {k: _request(store, k, res.get(f)) for k, f in (("fold", "fold_key"), ("tri_setup", "setup_key"),
                                                                   ("molusc", "molusc_key")) if res.get(f)}
@@ -94,4 +115,9 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
         w = csv.DictWriter(fh, COLUMNS, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
+    if rejected_csv:
+        with open(rejected_csv, "w", newline="") as fh:
+            w = csv.DictWriter(fh, ["key", "batch", "store", "problems"], lineterminator="\n")
+            w.writeheader()
+            w.writerows(sorted(rejected, key=lambda r: r["key"]))
     return rows

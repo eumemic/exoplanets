@@ -38,15 +38,18 @@ def stage_code(ctx):
               f"{STORE}/fold/*/*/fold.npz", f"{STORE}/fold/*/*/request.json", f"{STORE}/tri_setup/*/*/request.json",
               f"{STORE}/molusc/*/*/request.json",
               "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
-      outputs=["results_public/products/triceratops.csv"], params=["triceratops.*"])
+      outputs=["results_public/products/triceratops.csv", "results_public/products/triceratops_rejected.csv"],
+      params=["triceratops.*"])
 def triceratops_table(ctx):
-    """The TRICERATOPS result each catalog row uses, from the store (triceratops_table.py, tri_store.py)."""
+    """The TRICERATOPS result each catalog row uses, from the store (triceratops_table.py, tri_store.py), and the newer
+    results the checks rejected."""
     rows = [(t, r["TIC"], r["P_d"]) for t, f in (("candidates_allsky", "measurements_allsky.csv"),
                                                  ("tiers_earlier_candidates", "measurements_earlier.csv"))
             for r in cat.read_rows(ctx.input(f"results_public/products/{f}"))]
     tt.build(ctx.root / STORE, rows, ctx.output("results_public/products/triceratops.csv"), runs=ctx.param("triceratops.runs"),
              min_survivors=ctx.param("triceratops.min_survivors"), phase_bin_min=ctx.param("triceratops.phase_bin_min"),
-             match_rel=ctx.param("triceratops.match_period_rel"))
+             match_rel=ctx.param("triceratops.match_period_rel"),
+             rejected_csv=ctx.output("results_public/products/triceratops_rejected.csv"))
 
 
 @rule(inputs=[f"{STORE}/centroid/*/*/request.json", f"{STORE}/centroid/*/*/result.json", f"{STORE}/centroid/*/*/*.json",

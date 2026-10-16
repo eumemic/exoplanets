@@ -168,7 +168,7 @@ class TriceratopsTableTests(unittest.TestCase):
         with open(d / "runs.jsonl", "w") as fh:
             for mode in ("d", "m"):
                 for k in range(runs):
-                    fh.write(json.dumps(dict(key=key, mode=mode, k=k, probs=[[1, s, v] for s, v in probs])) + "\n")
+                    fh.write(json.dumps(dict(key=key, mode=mode, k=k, probs=[[5, s, v] for s, v in probs])) + "\n")
         (d / f"{key}_fpp.json").write_text(json.dumps(dict(
             tic=5, FPP_mean=0.1, NFPP_mean=0.01, NFPP_max=0.02, runs=runs, exptime_min=2.0, n_points=100, sectors="1,2",
             n_scenarios=15, FPP_m=[0.1] * runs, FPP_m_mean=0.05, NFPP_m_mean=0.01, NFPP_m_max=0.02, molusc_survivors=survivors)))
@@ -256,6 +256,21 @@ class TriceratopsTableTests(unittest.TestCase):
         self.assertTrue(problems)
         rows = tt.build(root2 / "store", [("candidates_allsky", "5", "3.0")], root2 / "out.csv")
         self.assertEqual(rows[0]["batch"], "b1")
+
+    def test_a_result_on_another_tic_entry_is_rejected_and_the_previous_one_used(self):
+        root = Path(tempfile.mkdtemp())
+        self.run_build(root, [self.batch(root, "b1")])
+        s = store.Store(root / "store")
+        d, plan_item = self.cloud_item(root)
+        (d / "runs.jsonl").write_text((d / "runs.jsonl").read_text().replace("[[5, ", "[[9, "))   # a duplicate listed first
+        key, problems = tri_store.ingest_item(s, d, plan_item, "bX", 10 ** 9)
+        rows = tt.build(root / "store", [("candidates_allsky", "5", "3.0")], root / "out.csv",
+                        rejected_csv=root / "rejected.csv")
+        self.assertEqual(rows[0]["batch"], "b1")
+        with open(root / "rejected.csv") as fh:
+            rej = list(csv.DictReader(fh))
+        self.assertEqual([(r["batch"], r["store"]) for r in rej], [("bX", key)])
+        self.assertIn("TIC 9 as the target, not TIC 5", rej[0]["problems"])
 
     def test_contrast_curve_runs_are_stored_as_their_own_kind(self):
         root = Path(tempfile.mkdtemp())
