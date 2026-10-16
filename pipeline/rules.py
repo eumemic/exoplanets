@@ -22,7 +22,8 @@ def allsky_figure(ctx):
 STORE = "results_cloud/store"
 
 
-@rule(inputs=[f"{STORE}/tri/*/*/request.json", f"{STORE}/tri/*/*/result.json", f"{STORE}/fold/*/*/fold.npz",
+@rule(inputs=[f"{STORE}/tri/*/*/request.json", f"{STORE}/tri/*/*/result.json", f"{STORE}/tri/*/*/check.json",
+              f"{STORE}/fold/*/*/fold.npz",
               "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
       outputs=["results_public/products/triceratops.csv"], params=["triceratops.*"])
 def triceratops_table(ctx):

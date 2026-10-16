@@ -67,7 +67,7 @@
     }
    },
    "inputs": {
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c"
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a"
    },
    "outputs": {
     "figures/allsky.png": "c4fe8efaba4a964d77952ab061688c8d7b00514146b5cd9ae33d2968acb48386"
@@ -80,7 +80,7 @@
      "L1"
     ]
    },
-   "stamp": "4a05f62f1fe33a8f9583e6a7ed6c8e6e498c7834cc2b292baafe00c617917546"
+   "stamp": "963a2bd83317fcd2ea4802c84ea84460055c46ea51c3f7539d4da731dc177cda"
   },
   "catalog": {
    "code": {
@@ -134,10 +134,10 @@
     "results_public/products/centroids.csv": "e68c53c85c8523ca588014cce905ecae75613cd1059be031d6f83ad903f00689",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
     "results_public/products/measurements_earlier.csv": "e777c95acb700d68fc7a9b7bf5e72fd3541d1c8ea525fc340cc56688da943b6d",
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48"
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96"
    },
    "outputs": {
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "params": {
@@ -170,7 +170,7 @@
     "tiers.ruwe_max": 1.4,
     "tiers.system_min": 2
    },
-   "stamp": "61c4dd7f8acee2566e795d70bc1baac29049cca9b445b58956ffd1a04bd1ae58"
+   "stamp": "dbb9fc023930ac28f8a87351acf384ffead39defe5491c9358ddb7df89434be2"
   },
   "centroid_inputs_current": {
    "code": {
@@ -319,7 +319,7 @@
     }
    },
    "inputs": {
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "outputs": {},
@@ -336,7 +336,7 @@
     ]
    },
    "result": "passed",
-   "stamp": "2667290169d97e8c6ee766268db6746e2ae38c8da07cc2e04feb3f6df7be4e4f"
+   "stamp": "68137b025ff9194dff0fd11fd43364cdc7d0487cff9fa7dd4d4126fb726bb1ad"
   },
   "documents": {
    "code": {
@@ -410,15 +410,15 @@
    },
    "inputs": {
     "candidates/TIC*_P* (ledger)": "b0511f38e462468604067e7140b821585076b452c7534f4ba8292fcc59f56d69",
-    "results_cloud/store/tri/*/*/fpp.json": "ebf30caf317a65908ba0925d94aefb576857d1f79acb3debb30cd731d92614dd",
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48",
+    "results_cloud/store/tri/*/*/fpp.json": "b63905784590c4819398bf1095fd2777ea7f211788b7f1ec9b3c223845358510",
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "outputs": {
     "candidates/TIC*_P*": "b0511f38e462468604067e7140b821585076b452c7534f4ba8292fcc59f56d69"
    },
    "params": {},
-   "stamp": "db08dc962c7aa29ec8b5f133f3d3181678e2ef1b3b1b39f3be88d24bbf77ff92"
+   "stamp": "d0594e60389f313a1b32057a7d9aec26859f285a8fc183b57d10124f5985db39"
   },
   "earlier_folders_complete": {
    "code": {
@@ -445,13 +445,13 @@
    },
    "inputs": {
     "candidates/TIC*_P*": "b0511f38e462468604067e7140b821585076b452c7534f4ba8292fcc59f56d69",
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48",
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "9d518c50b96f7fc2561a1dae17f34b484d40d85cfc08edb1990057b64653d56a"
+   "stamp": "8cd28cedb35bd02ff4a9d995d670e745d048efb0a19f0e271d8be5c3e5f7174e"
   },
   "findability": {
    "code": {
@@ -575,7 +575,7 @@
     "results_cloud/as/cands_allsky.csv": "1e3955484f81238e151176db0121737f3cb5fd613aeb25610ad563a1c78154f6",
     "results_cloud/qfull/exo-q*/results/cands_q*.csv": "83ca58a30ea30d4bc89c0aa8bcd39a5bc3fd407c3124c3d0b073c5a790007665",
     "results_cloud/shard*/cands_allsky.csv": "468944f14b2a6af3e4fc40142f26a0bb8bfec25d6499613fadb3da5fd833e554",
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c"
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a"
    },
    "outputs": {
     "validation/findability_transits.csv.gz": "4e06f639721385098e3a607499b6cf13ea2fd1cb2467702d88802e6c0e93f062"
@@ -588,7 +588,7 @@
      "N"
     ]
    },
-   "stamp": "6fa86549aa76ea3e5cc08525506469dedccf1feca5daa2a7e3c2bbea253b2a46"
+   "stamp": "c39194a598ccd98844924a045a3306aad6e12ef5464d91f7f83faf045e445b19"
   },
   "fits_match_catalog": {
    "code": {
@@ -617,13 +617,13 @@
    "inputs": {
     "candidates/*/transit_fit.json": "ae8f491ce84591bbcd937c67f8b2ab41aa3c8e287103644e5b19e33a4c7e616f",
     "candidates/allsky/*/transit_fit.json": "b7ced7b090130a70092fd2cb70c8f4b7268550605f31bc1b0df61fbfb4fcfc83",
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "9a74b26b6632899fb74630e822764f7c99d2b01c357e37c5ee6d5a682e1c3062"
+   "stamp": "3ff2d64893670cf56291262592b55357c6fc01de4ffd6df64bbe9bc1e7a4cf41"
   },
   "folders": {
    "code": {
@@ -655,14 +655,14 @@
     }
    },
    "inputs": {
-    "candidates/allsky (ledger)": "3dc60b6bb3c8bf05ab449d2bdba676bd91523b092379e061f9f0877d39b3e7a0",
+    "candidates/allsky (ledger)": "5c39b0a8759192c0c299644b106416a51226cd1cae6137ed2094d3885f475ba5",
     "results_cloud/glue/build/folder_sources.csv": "b6396d7fb0a6feaf8d591f1449369aabd4c5930c954193acd1dc71ab8ce032dc",
-    "results_cloud/store/tri/*/*/fpp.json": "ebf30caf317a65908ba0925d94aefb576857d1f79acb3debb30cd731d92614dd",
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48"
+    "results_cloud/store/tri/*/*/fpp.json": "b63905784590c4819398bf1095fd2777ea7f211788b7f1ec9b3c223845358510",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96"
    },
    "outputs": {
-    "candidates/allsky": "3dc60b6bb3c8bf05ab449d2bdba676bd91523b092379e061f9f0877d39b3e7a0"
+    "candidates/allsky": "5c39b0a8759192c0c299644b106416a51226cd1cae6137ed2094d3885f475ba5"
    },
    "params": {
     "catalog.folder_tiers_allsky": [
@@ -674,7 +674,7 @@
      "L"
     ]
    },
-   "stamp": "67f804a98e50efb65c5871db63c1530d9c6e9c80ee447ca6174c335d4aac60f5"
+   "stamp": "a407dd97ccd621b98336c10d9224f68ddad8a6662074d5bfe2e686cfaca5a641"
   },
   "folders_complete": {
    "code": {
@@ -700,9 +700,9 @@
     }
    },
    "inputs": {
-    "candidates/allsky": "3dc60b6bb3c8bf05ab449d2bdba676bd91523b092379e061f9f0877d39b3e7a0",
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48"
+    "candidates/allsky": "5c39b0a8759192c0c299644b106416a51226cd1cae6137ed2094d3885f475ba5",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96"
    },
    "outputs": {},
    "params": {
@@ -716,7 +716,7 @@
     ]
    },
    "result": "passed",
-   "stamp": "f578b401eaab3fb7d97a1f68838adc5ac2b06b6fdf59feb76fd85675d56d8ad3"
+   "stamp": "7059c6efaeb2f2ced14f9526aebc18b946d4b9e6ad89b26bdef8f5dd79bddd15"
   },
   "markdown_tables": {
    "code": {
@@ -812,9 +812,9 @@
    "inputs": {
     "candidates/ephemerides.csv": "78c8a8927c64776cda5e63e5078d7b3cb2e1333b014a35a32066741f2508537a",
     "candidates/predictions.csv": "c4b1de7d04575eaa6859d86792b4dd50d01b8d10abbbd0023618dc75ac182178",
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
     "results_public/funnel_allsky.csv": "77d8675aac765e237fd4301569308b3e7eaba5bd2650f01b6550b0a19bc95caa",
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48",
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694",
     "validation/false_alarm_classifier_scores_star.csv.gz": "d9a6d31e7856939085b28e9401ff5803515c5c7fa3d0a8a7e53b3c5e809ec46d",
     "validation/findability.json": "70bf323774735aa9347d657c6fa55379b82fbd52d610f605c684cfaf35870b1a",
@@ -847,7 +847,7 @@
     "tiers.centroid_neighbour_p": 0.01,
     "tiers.centroid_reject_p": 0.001
    },
-   "stamp": "f4882af6cabdd7de4a869a375a66bec65a9270ab641ab10492941c9a297b5ede"
+   "stamp": "5624ed63d1a1f4b5fc42df8d98fa9fd3357575462d597ddfe69c3048e3d3049b"
   },
   "prose_claims": {
    "code": {
@@ -965,7 +965,7 @@
     "candidates/predictions.csv (ledger)": "c4b1de7d04575eaa6859d86792b4dd50d01b8d10abbbd0023618dc75ac182178",
     "data/catalogs/*.parquet": "49ef648c1e28ea3a0fe12f207234a5573d447f230d0006eafd859f6c3b2b97f6",
     "data/tess_schedule/TESS_orbit_times.csv": "c5a919f01f4c18aade2daa8c086d7192d607ee50589dfd65470d9a5cec684055",
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "outputs": {
@@ -975,7 +975,7 @@
    "params": {
     "registry.until": "2027-06-30"
    },
-   "stamp": "7200f55e57e93c640eea14dc66d697109629462f5bc1b753b2aff27cc8f1ded4"
+   "stamp": "2f38a2597e751b0a9ae873b62afbdcc66a9baad287357f2b26e85c24f6871fa0"
   },
   "spoc_measured": {
    "code": {
@@ -1022,7 +1022,7 @@
     }
    },
    "inputs": {
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
     "results_public/products/spoc_2min.csv": "bb7fa2c58b3c65d65552541dc2bf55ee6c1257e08c987d7fbf50336f044c3887",
     "validation/findability.csv": "1c8b97cb19dc5dc6210b4b5c6299308fb3e276886a690a4a47b5be69390e1cdb",
     "validation/findability_transits.csv.gz": "4e06f639721385098e3a607499b6cf13ea2fd1cb2467702d88802e6c0e93f062"
@@ -1035,7 +1035,7 @@
     "freshness.phase_min": 0.5
    },
    "result": "passed",
-   "stamp": "a2252c278fde84356ce4e88b7f15159dc3d21932c9b0340c942296d455032135"
+   "stamp": "3ddd367bb0ec12f85ebef31d0da86775847ec5a2df255c1bb147121f75958645"
   },
   "spoc_recheck": {
    "code": {
@@ -1111,12 +1111,12 @@
     }
    },
    "inputs": {
-    "results_public/products/triceratops_plan.csv": "6dfdaff0a937a2f3d4336a592f294f7708a1a784fc5a41f663b2d6fea653000c"
+    "results_public/products/triceratops_plan.csv": "9c4afe62cd7dda5e9cc8ab730f3020f1e3606512d69d7d2b530f112fc5bb31ea"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "39a3a7e2998f47c1049877386b82d9f62e991f9109159f3bf7b7a4867f76dd64"
+   "stamp": "1da032b85ba672c1375292f4396769166db9992b9320aa6367cb2c77b49666f0"
   },
   "triceratops_plan": {
    "code": {
@@ -1158,12 +1158,12 @@
    "inputs": {
     "candidates/ephemerides.csv": "78c8a8927c64776cda5e63e5078d7b3cb2e1333b014a35a32066741f2508537a",
     "data/known/toi.csv": "edb90f4494ea15f4aa1145c56c54c6e5853b5e553c636541cbb5f5da625a5631",
-    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48",
+    "results_public/candidates_allsky.csv": "f5ab7492bfab3efd2b413f61e1f9a958df9dd5fd277462a8a560a306d49c9b9a",
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
    },
    "outputs": {
-    "results_public/products/triceratops_plan.csv": "6dfdaff0a937a2f3d4336a592f294f7708a1a784fc5a41f663b2d6fea653000c"
+    "results_public/products/triceratops_plan.csv": "9c4afe62cd7dda5e9cc8ab730f3020f1e3606512d69d7d2b530f112fc5bb31ea"
    },
    "params": {
     "freshness.depth_ppm": 0.5,
@@ -1183,7 +1183,7 @@
     "tiers.system_min": 2,
     "triceratops.match_period_rel": 0.002
    },
-   "stamp": "80e8ae8f561fc7c7ebc012d53d5ff5538d9cb94f0755914c2b1e6dc7a61a263c"
+   "stamp": "9da64e6fc6dfc506867065b5df22d779b00e8bbcd146ce0d3434f1d54936bee0"
   },
   "triceratops_table": {
    "code": {
@@ -1220,7 +1220,7 @@
      "fpp_check.BLENDED": "fb734edfc3215e0997471a75ca397f52b16c14cb9ba6900953dded89a4ed8618",
      "fpp_check.gate": "431eb35f356a06ce3fd394b7469e2ee68fbaeef84b25adb2ae71ce044df8e4c1",
      "rules.STORE": "0bf9ef2c583c26238722fc8c1fb6d31418d873303c843c6c86253e2a387b9018",
-     "rules.triceratops_table": "fa6a924712dc0b19ce463916d00799a055f5a54dc4029fccce2ca224ff3e3405",
+     "rules.triceratops_table": "4d922274ec1cc8c30eb0ac673d0cde8ea03b49431e905cfb2e3e173ec8691e40",
      "store.ROOT": "4f3f0499fd86a6c853238889cf32bb7ff7dcc7ad1b2392a9117da8175b60a61a",
      "store.Store": "dc848444353b4e2ab522df3accbbd081112aba7b2b04646064561906ccd9fc3c",
      "store.key_of": "4b86820d299b78fc074a4ef9d52d35dda95c62c448f570d5da5226a511555504",
@@ -1230,14 +1230,15 @@
     }
    },
    "inputs": {
-    "results_cloud/store/fold/*/*/fold.npz": "efa87cd6b4c837bb23271fb18559f6299c2c7c2593b44fbdc543b760ef979d94",
-    "results_cloud/store/tri/*/*/request.json": "1777c679fd9a96b0d0a72cc4a450c2ea06ccd284fc98f03cb85a9f30654c4305",
-    "results_cloud/store/tri/*/*/result.json": "b689dcc864082048178d80856dae99d2387d0b9ebd72755abd36d155180f982a",
+    "results_cloud/store/fold/*/*/fold.npz": "8116372915e403a0becffdc221fe7fee64779c708af44930702810586b29ea7f",
+    "results_cloud/store/tri/*/*/check.json": "c0951af5323aaffd63303fe66b0f5cbd5c766030a515c728d4b23bd7e953b96c",
+    "results_cloud/store/tri/*/*/request.json": "581e0b79bf2b5a2719048393cd43b64a5cadaeb32082fecb60b213223e699236",
+    "results_cloud/store/tri/*/*/result.json": "62231279e007793c6b4674a612ab758499f1a280306f3a1ff7b7bf0cc0d61d34",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
     "results_public/products/measurements_earlier.csv": "e777c95acb700d68fc7a9b7bf5e72fd3541d1c8ea525fc340cc56688da943b6d"
    },
    "outputs": {
-    "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48"
+    "results_public/products/triceratops.csv": "e35e20f81f2abb24a21aad6dee01e53829a9c2b724c0939fa4745a31c554cb96"
    },
    "params": {
     "triceratops.match_period_rel": 0.002,
@@ -1245,7 +1246,7 @@
     "triceratops.phase_bin_min": 2.0,
     "triceratops.runs": 10
    },
-   "stamp": "a5acc16a2d35dd642c23bdf4c5845efd88cc5ea839e0938511ba0e6d45a72181"
+   "stamp": "b32c3837de298534dae5948b89205cb140d12c0c4a62474b06c4c090044ab475"
   }
  },
  "version": 1

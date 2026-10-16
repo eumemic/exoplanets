@@ -319,8 +319,11 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
     p = json.load(open(os.path.join(d, "plan.json")))
     s3 = s3client()
     prefix = f"batches/{bid}/items/"
+    # what has gone into which store: a batch can be ingested into a trial store first and the main one later
     done_path = os.path.join(d, "ingested.json")
-    done = json.load(open(done_path)) if os.path.exists(done_path) else {}
+    ledger = json.load(open(done_path)) if os.path.exists(done_path) else {}
+    root = os.path.abspath(store_root)
+    done = ledger.setdefault(root, {})
     by_key = {x["item"]["key"]: x for x in p["items"]}
     store = st.Store(store_root)
     for o in s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=prefix).get("Contents", []):
@@ -338,7 +341,7 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
         tkey, problems = tri_store.ingest_item(store, idir, item, bid, int(time.time()), n_runs=p["runs"])
         done[key] = dict(store=tkey, problems=problems)
         with open(done_path, "w") as fh:
-            json.dump(done, fh, indent=1)
+            json.dump(ledger, fh, indent=1)
         if not quiet:
             print(f"  {key}: stored {tkey[:12]}" + (f"; FAILED CHECKS: {problems}" if problems else ""), flush=True)
     return done
