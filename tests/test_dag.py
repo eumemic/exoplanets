@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pipeline"))
 
 from dag import BuildError, Project  # noqa: E402
 from dag.codehash import CodeIndex  # noqa: E402
+from dag.context import covers, match, overlap  # noqa: E402
 from dag.hashing import FileHasher, canonical_json, sha256_json  # noqa: E402
 
 
@@ -362,6 +363,77 @@ class InPlaceTests(unittest.TestCase):
         (self.root / "ledger.txt").write_text("a\nc\n")                                        # a row removed by hand
         with self.assertRaises(BuildError):
             self.run_all()
+
+
+class PatternTests(unittest.TestCase):
+    def test_a_wildcard_stays_within_one_component(self):
+        self.assertTrue(match("candidates/*/fit.json", "candidates/TIC1/fit.json"))
+        self.assertFalse(match("candidates/*/fit.json", "candidates/allsky/TIC1/fit.json"))
+        self.assertTrue(match("candidates/**/fit.json", "candidates/allsky/TIC1/fit.json"))
+        self.assertTrue(match("candidates/**/fit.json", "candidates/fit.json"))
+
+    def test_covers_paths_inside_matched_directories(self):
+        self.assertTrue(covers("candidates/TIC*", "candidates/TIC1_P2/vetting.json"))
+        self.assertFalse(covers("candidates/TIC*", "candidates/allsky/TIC1_P2/vetting.json"))
+        self.assertTrue(covers("candidates/allsky", "candidates/allsky/TIC1/vetting.json"))
+        self.assertFalse(covers("candidates/allsky", "candidates/allsky2"))
+
+    def test_overlap(self):
+        self.assertTrue(overlap("candidates/*/fit.json", "candidates/TIC*"))
+        self.assertTrue(overlap("candidates/allsky/*/fit.json", "candidates/allsky"))
+        self.assertFalse(overlap("candidates/allsky/*/fit.json", "candidates/TIC*"))
+        self.assertFalse(overlap("candidates/ephemerides.csv", "candidates/TIC*"))
+        self.assertTrue(overlap("a/**/x", "a/b/c"))
+
+
+FOLDER_RULES = '''
+from dag import rule, check
+
+
+@rule(inputs=["data/names.txt"], outputs=["out/F*"], inplace={"out/F*": "ledger"})
+def folders(ctx):
+    for n in ctx.input("data/names.txt").read_text().split():
+        ctx.output(f"out/F{n}/a.txt").write_text(n)
+
+
+@rule(inputs=["out/*/a.txt"], outputs=["out/summary.txt"])
+def summary(ctx):
+    ctx.output("out/summary.txt").write_text(" ".join(p.read_text() for p in ctx.inputs("out/*/a.txt")))
+'''
+
+
+class PatternOutputTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / "pipeline" / "rules.py", FOLDER_RULES)
+        write(self.root / "data" / "names.txt", "1 2")
+
+    def run_all(self, **kw):
+        return Project(self.root).run(log=lambda *_: None, **kw)
+
+    def test_pattern_output_is_hashed_and_followed(self):
+        p = Project(self.root)
+        self.assertEqual(p.deps["summary"], {"folders"})
+        self.run_all()
+        self.assertEqual((self.root / "out" / "summary.txt").read_text(), "1 2")
+        self.assertEqual(self.run_all(), ([], []))
+        write(self.root / "data" / "names.txt", "1 2 3")
+        self.assertEqual(self.run_all()[0], ["folders", "summary"])
+        self.assertEqual((self.root / "out" / "summary.txt").read_text(), "1 2 3")
+        (self.root / "out" / "F2" / "a.txt").write_text("x")                 # a file in a folder edited by hand
+        self.assertEqual(Project(self.root).status("folders").state, "edited")
+        with self.assertRaises(BuildError):
+            self.run_all()
+
+    def test_writes_outside_the_pattern_and_overlapping_outputs_are_refused(self):
+        write(self.root / "pipeline" / "rules.py", FOLDER_RULES.replace('ctx.output(f"out/F{n}/a.txt").write_text(n)',
+                                                                         '(ctx.root / "out" / f"G{n}.txt").write_text(n)'))
+        with self.assertRaises(BuildError) as cm:
+            self.run_all()
+        self.assertIn("G1.txt", str(cm.exception))
+        write(self.root / "pipeline" / "rules.py", FOLDER_RULES.replace('outputs=["out/summary.txt"]', 'outputs=["out/Fsummary"]'))
+        with self.assertRaises(BuildError):
+            Project(self.root)
 
 
 if __name__ == "__main__":

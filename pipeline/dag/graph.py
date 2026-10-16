@@ -4,9 +4,11 @@ A rule is a Python function declared with @rule(inputs=..., outputs=..., params=
 - the code it depends on (codehash.CodeIndex: the functions it reaches, the third-party distributions they import),
 - the values of the parameters it declares (params.toml),
 - the contents of its inputs (files, directories, and the files matched by glob patterns).
-Rule B depends on rule A when one of B's inputs is one of A's outputs. A rule is up to date when its stamp equals the
-one in the lock and its outputs still have the hashes the lock recorded. Because the stamp uses the contents of the
-inputs, an upstream rule that reruns but writes identical files leaves everything after it up to date.
+An output is a file, a directory, or a glob pattern (the paths it matches, hashed together like a pattern input); no
+two rules' outputs may name the same files. Rule B depends on rule A when one of B's inputs can name one of A's outputs
+or a file inside one. A rule is up to date when its stamp equals the one in the lock and its outputs still have the
+hashes the lock recorded. Because the stamp uses the contents of the inputs, an upstream rule that reruns but writes
+identical files leaves everything after it up to date.
 A check is a rule without outputs whose function raises if the data are wrong; the lock records whether it passed.
 
 Two kinds of output are also inputs (`inplace`):
@@ -25,8 +27,8 @@ from pathlib import Path
 from . import params as P
 from .audit import Watch
 from .codehash import CodeIndex, Environment
-from .context import RunContext, covers, is_glob
-from .hashing import FileHasher, sha256_json
+from .context import RunContext, is_glob, overlap
+from .hashing import FileHasher, sha256_bytes, sha256_json
 from .lock import Lock
 from .markers import template as doc_template
 
@@ -43,14 +45,11 @@ class Rule:
         self.is_check, self.allow_reads = is_check, list(allow_reads)
         self.inplace = dict(inplace or {})
         for path, mode in self.inplace.items():
-            if path not in self.outputs or mode not in ("template", "ledger"):
-                raise ValueError(f"rule {name}: in-place file {path} must be an output, as 'template' or 'ledger'")
+            if path not in self.outputs or mode not in ("template", "ledger") or (mode == "template" and is_glob(path)):
+                raise ValueError(f"rule {name}: in-place file {path} must be an output, as 'template' (a file) or 'ledger'")
         for p in self.inputs + self.outputs:
             if os.path.isabs(p) or ".." in Path(p).parts:
                 raise ValueError(f"rule {name}: paths are relative to the repository root, without '..': {p}")
-        for o in self.outputs:
-            if is_glob(o):
-                raise ValueError(f"rule {name}: an output cannot be a pattern: {o}")
         self.module = None          # set by Project: the module name as the code index knows it
 
 
@@ -147,17 +146,15 @@ class Project:
         self.owner = {}
         for r in self.rules.values():
             for o in r.outputs:
-                if o in self.owner:
-                    raise BuildError(f"{o} is an output of both {self.owner[o]} and {r.name}")
+                for o2, owner in self.owner.items():
+                    if overlap(o, o2):
+                        raise BuildError(f"{o} ({r.name}) and {o2} ({owner}) can name the same files")
                 self.owner[o] = r.name
         self.deps = {}
         for r in self.rules.values():
-            d = set()
-            for pat in r.inputs:
-                for o, owner in self.owner.items():
-                    if (covers(pat, o) or pat.startswith(o.rstrip("/") + "/")) and owner != r.name:
-                        d.add(owner)        # the input is that output, or lies inside an output directory
-            self.deps[r.name] = d
+            # the input is that output, lies inside an output directory, or can match what an output pattern matches
+            self.deps[r.name] = {owner for pat in r.inputs for o, owner in self.owner.items()
+                                 if owner != r.name and overlap(pat, o)}
         self.order, state = [], {}
 
         def visit(n, path):
@@ -181,7 +178,7 @@ class Project:
         out = {}
         for pat in r.inputs:
             if is_glob(pat):
-                files = {h.relative_to(self.root).as_posix(): self.hasher.path(h) for h in sorted(self.root.glob(pat))}
+                files = self.matched(pat)
                 out[pat] = sha256_json(sorted(files.items())) if files else None
                 self._details.setdefault(r.name, {})[pat] = files
             else:
@@ -190,14 +187,24 @@ class Project:
             out[f"{path} ({mode})"] = self.inplace_hash(path, mode)
         return out
 
+    def matched(self, pattern):
+        """{path: hash} of the files and directories a glob pattern matches."""
+        return {h.relative_to(self.root).as_posix(): self.hasher.path(h) for h in sorted(self.root.glob(pattern))}
+
+    def path_hash(self, path):
+        """The hash of a file or directory, or one hash over everything a pattern matches; None if there is nothing."""
+        if is_glob(path):
+            files = self.matched(path)
+            return sha256_json(sorted(files.items())) if files else None
+        return self.hasher.path(self.root / path)
+
     def inplace_hash(self, path, mode):
+        if mode == "ledger":
+            return self.path_hash(path)
         p = self.root / path
         if not p.exists():
             return None
-        if mode == "template":
-            from .hashing import sha256_bytes
-            return sha256_bytes(doc_template(p.read_text()).encode())
-        return self.hasher.path(p)
+        return sha256_bytes(doc_template(p.read_text()).encode())
 
     def code_info(self, r, with_env=True):
         parts, effects, external = self.code.closure(r.module, r.func.__name__, ignore=REGISTRATION)
@@ -222,7 +229,7 @@ class Project:
         return {"old": old, "new": self._details.get(name, {})}
 
     def output_hashes(self, r):
-        return {o: self.hasher.path(self.root / o) for o in r.outputs}
+        return {o: self.path_hash(o) for o in r.outputs}
 
     # status ----------------------------------------------------------------------------------------------------
     def status(self, name, _memo=None):
@@ -331,7 +338,7 @@ class Project:
         ctx = RunContext(self.root, r, P.select(self.params, r.params))
         result, message = "passed", ""
         t0 = time.time()
-        with Watch(self.root, r, r.inputs, [self.root / o for o in r.outputs]) as w:
+        with Watch(self.root, r, r.inputs, r.outputs) as w:
             try:
                 r.func(ctx)
             except Exception as ex:

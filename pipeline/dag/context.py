@@ -12,12 +12,49 @@ def is_glob(p):
     return any(c in GLOB for c in p)
 
 
+def _match(pat, parts):
+    if not pat:
+        return not parts
+    if pat[0] == "**":
+        return any(_match(pat[1:], parts[i:]) for i in range(len(parts) + 1))
+    return bool(parts) and fnmatch.fnmatchcase(parts[0], pat[0]) and _match(pat[1:], parts[1:])
+
+
+def match(pattern, rel):
+    """True if the glob pattern matches the relative path as Path.glob would: a wildcard stays within one component of
+    the path, and ** stands for any number of components."""
+    return _match(pattern.rstrip("/").split("/"), rel.split("/"))
+
+
 def covers(pattern, rel):
-    """True if a declared input pattern covers the relative path: the same path, a path inside a declared directory,
-    or a match of a glob pattern."""
+    """True if a declared path or pattern covers the relative path: the same path, a match of the pattern, or a path
+    inside a declared directory or inside a directory the pattern matches."""
     if is_glob(pattern):
-        return fnmatch.fnmatchcase(rel, pattern)
+        parts = rel.split("/")
+        return any(match(pattern, "/".join(parts[:i])) for i in range(len(parts), 0, -1))
     return rel == pattern or rel.startswith(pattern.rstrip("/") + "/")
+
+
+def overlap(a, b):
+    """True if two declared paths or patterns can name the same file, or one can lie inside the other. Two components
+    that both have wildcards are taken to overlap, so the answer errs towards True."""
+    for x, y in zip(a.rstrip("/").split("/"), b.rstrip("/").split("/")):
+        if x == "**" or y == "**":
+            return True
+        gx, gy = is_glob(x), is_glob(y)
+        if gx and gy:
+            continue
+        if (gx and not fnmatch.fnmatchcase(y, x)) or (gy and not fnmatch.fnmatchcase(x, y)) or (not gx and not gy and x != y):
+            return False
+    return True
+
+
+def base(pattern):
+    """The directory above a pattern's first component with a wildcard (the pattern itself if it has none)."""
+    parts = pattern.rstrip("/").split("/")
+    if is_glob(pattern):
+        parts = parts[:next(i for i, x in enumerate(parts) if is_glob(x))]
+    return "/".join(parts)
 
 
 class RunContext:
@@ -40,9 +77,14 @@ class RunContext:
         return sorted(self.root.glob(pattern))
 
     def output(self, rel):
-        if rel not in self._outputs:
+        """The absolute path of a declared output, or of a path inside an output directory or matched by an output
+        pattern. Its parent directory is created."""
+        if rel in self._outputs:
+            p = self._outputs[rel]
+        elif any(covers(o, rel) for o in self.rule.outputs):
+            p = self.root / rel
+        else:
             raise KeyError(f"rule {self.rule.name}: {rel} is not a declared output")
-        p = self._outputs[rel]
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
 

@@ -141,6 +141,25 @@ def folders(ctx):
 @check(inputs=["candidates/allsky", "results_public/candidates_allsky.csv", "results_public/products/triceratops.csv"],
        params=["catalog.folder_tiers_allsky"])
 def folders_complete(ctx):
-    problems = cc.folders_complete(ctx.root, ctx.input("results_public/candidates_allsky.csv"),
-                                   ctx.input("results_public/products/triceratops.csv"), ctx.param("catalog.folder_tiers_allsky"))
+    problems = cc.folders_complete(ctx.root, "candidates/allsky", ctx.input("results_public/candidates_allsky.csv"),
+                                   ctx.input("results_public/products/triceratops.csv"), "candidates_allsky",
+                                   ("vetting.json", "vetting.png", "followup.json"), ctx.param("catalog.folder_tiers_allsky"))
+    assert not problems, f"{len(problems)} folder problems:\n" + "\n".join(problems[:40])
+
+
+@rule(inputs=["results_public/tiers_earlier_candidates.csv", "results_public/products/triceratops.csv",
+              "results_cloud/t2/part*/*_fpp.json"],
+      outputs=["candidates/TIC*_P*"], inplace={"candidates/TIC*_P*": "ledger"})
+def earlier_folders(ctx):
+    """The earlier searches' candidate folders (folders.py): every row has one, with the catalog's TRICERATOPS result."""
+    n = fo.build_earlier(ctx.root, ctx.input("results_public/tiers_earlier_candidates.csv"),
+                         ctx.input("results_public/products/triceratops.csv"), ctx.root / "results_cloud")
+    print(f"earlier folders: {n}")
+
+
+@check(inputs=["candidates/TIC*_P*", "results_public/tiers_earlier_candidates.csv", "results_public/products/triceratops.csv"])
+def earlier_folders_complete(ctx):
+    problems = cc.folders_complete(ctx.root, "candidates", ctx.input("results_public/tiers_earlier_candidates.csv"),
+                                   ctx.input("results_public/products/triceratops.csv"), "tiers_earlier_candidates",
+                                   ("vetting.json", "vetting.png", "transit_fit.json"))
     assert not problems, f"{len(problems)} folder problems:\n" + "\n".join(problems[:40])

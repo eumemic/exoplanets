@@ -7,8 +7,8 @@ rule runs, the hook checks each path against the rule's declarations:
   matplotlib and astropy caches) or from the rule's `allow_reads`; a file in a temporary directory may be read only
   if the rule wrote it in the same run, since a file left there earlier is exactly the kind of hidden input this
   exists to catch;
-- writing is allowed only to declared outputs (and temporary files next to them) and to the system temporary
-  directory.
+- writing is allowed only to declared outputs (files, directories, or the paths an output pattern matches, and
+  temporary files next to them) and to the system temporary directory.
 Files read by compiled code that bypasses Python's file functions (for example pyarrow reading Parquet) are not seen.
 """
 import os
@@ -16,7 +16,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from .context import covers, is_glob
+from .context import base, covers, is_glob
 
 _ACTIVE = None
 _INSTALLED = False
@@ -64,11 +64,11 @@ def install():
 
 
 class Watch:
-    def __init__(self, root, rule, input_patterns, output_paths):
+    def __init__(self, root, rule, input_patterns, output_patterns):
         self.root = os.path.realpath(root)
         self.rule = rule
         self.inputs = list(input_patterns)
-        self.outputs = {os.path.realpath(p) for p in output_paths}
+        self.outputs = [o.rstrip("/") for o in output_patterns]       # relative to the root; files, directories, patterns
         self.written = set()
         self.violations = []
         self.busy = False
@@ -97,20 +97,24 @@ class Watch:
             return p[len(self.root) + 1:]
         return None
 
+    def _output(self, rel):
+        """rel is an output, lies inside one or is matched by an output pattern, or is a temporary file next to an
+        output file."""
+        return rel is not None and any(covers(o, rel) or (not is_glob(o) and rel.startswith(o + ".")) for o in self.outputs)
+
     def access(self, path, kind):
         p = os.path.realpath(os.path.join(os.getcwd(), path))
+        rel = self._rel(p)
         if kind in ("write", "mkdir"):
-            inside = self._rel(p) is not None
-            parent = kind == "mkdir" and any(o.startswith(p + os.sep) for o in self.outputs)
-            if parent or p in self.outputs or any(p.startswith(o + ".") or p.startswith(o + os.sep) for o in self.outputs) or (
-                    not inside and self._under(p, self.write_ok_prefixes)):
+            parent = kind == "mkdir" and rel is not None and any(
+                rel == "" or base(o) == rel or base(o).startswith(rel + "/") for o in self.outputs)
+            if parent or self._output(rel) or (rel is None and self._under(p, self.write_ok_prefixes)):
                 self.written.add(p)
                 return
             self.violations.append(("write", p))
             return
-        if p in self.written or p in self.outputs or any(p.startswith(o + os.sep) for o in self.outputs):
+        if p in self.written or self._output(rel):
             return
-        rel = self._rel(p)
         if rel is not None:
             if rel.split(os.sep)[0] in INTERNAL or "__pycache__" in rel or rel.endswith(".py"):
                 return                                       # Python internals; code is hashed separately
@@ -128,13 +132,11 @@ class Watch:
         if rel is None or rel.split(os.sep)[0] in INTERNAL or "__pycache__" in rel:
             return
         for pat in self.inputs:
-            parts = pat.rstrip("/").split("/")
-            if is_glob(pat):                    # the directory above the first component with a wildcard
-                parts = parts[:next(i for i, x in enumerate(parts) if is_glob(x))]
-            base = "/".join(parts)
-            if rel == "" or rel == base or rel.startswith(base + "/") or base.startswith(rel + "/"):
+            b = base(pat)
+            if rel == "" or rel == b or rel.startswith(b + "/") or b.startswith(rel + "/"):
                 return
-        if any(rel == os.path.relpath(o, self.root) for o in self.outputs):
+        # an output directory, a directory inside one, or the directory in which an output pattern finds its paths
+        if self._output(rel) or any(is_glob(o) and base(o) == rel for o in self.outputs):
             return
         self.violations.append(("list", p))
 
