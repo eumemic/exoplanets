@@ -6,7 +6,7 @@ rule runs, the hook checks each path against the rule's declarations:
 - reading outside it is allowed only from the Python installation and system and cache directories (fonts, time zones,
   matplotlib and astropy caches) or from the rule's `allow_reads`; a file in a temporary directory may be read only
   if the rule wrote it in the same run, since a file left there earlier is exactly the kind of hidden input this
-  exists to catch;
+  exists to catch (files in a temporary directory the rule made, by whatever process, count as written by it);
 - writing is allowed only to declared outputs (files, directories, or the paths an output pattern matches, and
   temporary files next to them) and to the system temporary directory.
 Files read by compiled code that bypasses Python's file functions (for example pyarrow reading Parquet) are not seen.
@@ -29,6 +29,18 @@ CACHE_DIRS = [f"{HOME}/.matplotlib", f"{HOME}/.cache", f"{HOME}/.config/matplotl
 INTERNAL = (".venv", ".venv-trice", ".git", ".dag-cache")
 
 
+def _fd_dir(fd):
+    """The path of an open directory descriptor: os.remove and os.rmdir report a bare name with dir_fd when
+    shutil.rmtree deletes a tree."""
+    try:
+        if sys.platform == "darwin":
+            import fcntl
+            return os.fsdecode(fcntl.fcntl(fd, fcntl.F_GETPATH, b"\0" * 1024).rstrip(b"\0"))
+        return os.readlink(f"/proc/self/fd/{fd}")
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
 def _hook(event, args):
     w = _ACTIVE
     if w is None or w.busy:
@@ -47,7 +59,15 @@ def _hook(event, args):
             w.listing(os.path.dirname(os.fsdecode(args[0])) or ".")
         elif event in ("os.remove", "os.rmdir", "shutil.rmtree", "os.mkdir"):
             if args and isinstance(args[0], (str, bytes, os.PathLike)):
-                w.access(os.fsdecode(args[0]), "mkdir" if event == "os.mkdir" else "write")
+                path = os.fsdecode(args[0])
+                fd = args[1] if event in ("os.remove", "os.rmdir") and len(args) > 1 else None
+                if isinstance(fd, int) and not os.path.isabs(path):
+                    base = _fd_dir(fd)
+                    path = os.path.join(base, path) if base else path
+                w.access(path, "mkdir" if event == "os.mkdir" else "write")
+        elif event in ("tempfile.mkdtemp", "tempfile.mkstemp"):
+            if args and isinstance(args[0], (str, bytes, os.PathLike)):
+                w.made.add(os.path.realpath(os.fsdecode(args[0])))     # this run's own temporary file or directory
         elif event in ("os.rename", "shutil.move", "shutil.copyfile"):
             for x in args[:2]:
                 if isinstance(x, (str, bytes, os.PathLike)):
@@ -71,6 +91,7 @@ class Watch:
         self.inputs = list(input_patterns)
         self.outputs = [o.rstrip("/") for o in output_patterns]       # relative to the root; files, directories, patterns
         self.written = set()
+        self.made = set()                   # temporary files and directories made in this run (and what is in them)
         self.violations = []
         self.busy = False
         tmp = os.path.realpath(tempfile.gettempdir())
@@ -114,7 +135,7 @@ class Watch:
                 return
             self.violations.append(("write", p))
             return
-        if p in self.written or self._output(rel):
+        if p in self.written or self._output(rel) or self._under(p, self.made):
             return
         if rel is not None:
             if rel.split(os.sep)[0] in INTERNAL or "__pycache__" in rel or rel.endswith(".py"):

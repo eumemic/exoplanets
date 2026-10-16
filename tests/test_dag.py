@@ -318,6 +318,16 @@ class RunnerTests(unittest.TestCase):
         self.run_all()
         self.assertEqual(self.out("a.txt"), "24")
 
+    def test_a_temporary_directory_made_in_the_run_is_its_own(self):
+        write(self.root / "pipeline" / "rules.py", RULES.replace(
+            'x = int(ctx.input("data/in.txt").read_text())',
+            'import tempfile, subprocess, shutil, os\n    d = tempfile.mkdtemp()\n'
+            '    subprocess.run(["sh", "-c", "echo 3 > y.txt"], cwd=d, check=True)\n'
+            '    extra = int(open(os.path.join(d, "y.txt")).read())\n    shutil.rmtree(d)\n'
+            '    x = int(ctx.input("data/in.txt").read_text()) + extra'))
+        self.run_all()
+        self.assertEqual(self.out("a.txt"), "30")
+
     def test_undeclared_write_fails(self):
         write(self.root / "pipeline" / "rules.py", RULES.replace(
             'ctx.output("out/b.txt").write_text(', '(ctx.root / "out" / "extra.txt").write_text("x")\n    '
