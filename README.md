@@ -15,7 +15,33 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **Candidate tables built from their inputs (16 October 2026): <!--n:catalog.counted.total-->644<!--/n--> candidates.** The two candidate tables had
+- **TRICERATOPS recomputed, every input recorded (16 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** Every TRICERATOPS
+  result the tiers use was computed again on AWS and stored under a hash of everything that determines it: the light
+  curves and the fold, the target setup, the file of simulated companions from MOLUSC (now seeded), the seeds of the
+  runs, the code and the packages. The default-prior FPPs reproduce the earlier ones to 12 significant digits, except
+  where a fix below changed the setup; the Gaia-limited FPPs change by 1% at the median but by more than a factor of 3
+  for 24 signals, all with
+  FPPs below 0.05, because the ten runs of a signal share one MOLUSC sample, whose draw matters most where few simulated
+  companions survive. Three faults in the target setups were found and fixed, and none changes a tier: TRICERATOPS had
+  taken a duplicate TIC entry at TIC 212350442's position as the target, so its earlier values treated the star as its
+  own neighbour (it remains a likely nearby false positive); 6 signals on stars with a second signal in the same
+  sectors had used the other signal's setup; and galaxies, which the TIC lists as extended sources and often again as a
+  point source without a parallax, now host no nearby-star scenarios, while their light stays in the aperture (26
+  signals; issue #2). The per-sector centroid test no longer takes a galaxy as the neighbour that fits (3 signals
+  measured again). TIC 288979445 (C to B) and TIC 397216278 (likely nearby false positive to N) enter the counted tiers,
+  and TIC 158505607 leaves (B to C: its Gaia-limited FPP went from 0.495 to 0.506, against the bar of 0.5); 5 likely
+  nearby false positives become tier C. <!--n:catalog.validation.total-->255<!--/n--> counted candidates meet the validation thresholds apart from
+  high-resolution imaging, against 252: 12 enter and 9 leave, 18 of them with an FPP that moved by less than 0.01 across
+  0.015, the largest change being TIC 211405734 of the earlier searches (0.0008 to 0.018). The transit fits behind the
+  fitted columns are stored results too (`results_public/products/fits.csv`); the fit of TIC 201862011 had not
+  converged, so that row now shows no fitted values. The light curves behind each result are recorded and compared with
+  MAST's on a date (`lightcurves.csv`, `redo.csv`), so a redelivered product, such as the expected fix of the QLP
+  Sectors 99–104 timing, marks the results made from it out of date, as does a change to the code that made them. A
+  change to a cheap stage reruns TRICERATOPS only where that stage's output changes: the fixes above reran 33 signals
+  and kept the other 2,296 results.
+  <!--n:catalog.counted.allsky-->587<!--/n--> full-sky candidates and <!--n:catalog.counted.earlier-->58<!--/n--> from the earlier searches
+  ([inputs and rules](results_public/products/README.md)).
+- **Candidate tables built from their inputs (16 October 2026): 644 candidates.** The two candidate tables had
   been built once, on 11 October, and then edited in place by each later release. They are now rebuilt from their
   inputs by one set of written rules (`pipeline/catalog.py`), run by a build system (`pipeline/dag/`) that reruns
   everything downstream of a changed input, parameter or function and stops at files edited by hand. The counted
@@ -33,7 +59,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   published folder now always stays; every signal now in tier C has a folder (50 of them new); and each folder's
   `triceratops_gaia.json` is the result the catalog uses. The counts that describe the current tables, here and in the
   data dictionary, are filled in from the tables by the build.
-  <!--n:catalog.counted.allsky-->586<!--/n--> full-sky candidates and <!--n:catalog.counted.earlier-->58<!--/n--> from the earlier searches
+  586 full-sky candidates and 58 from the earlier searches
   ([inputs and rules](results_public/products/README.md)).
 - **TRICERATOPS corrections (15 October 2026): 644 candidates.** Checks of the single-cadence rerun's outputs, made
   after its release, found runs that had gone wrong without an error, and rows the rerun had not covered. On the machine
@@ -623,15 +649,15 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) | TRICERATOPS corrections (15 October) | Tables built from their inputs (16 October) |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 | 22 | <!--n:catalog.tier.A-->22<!--/n--> |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 | 292 | <!--n:catalog.tier.B-->292<!--/n--> |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 | 160 | <!--n:catalog.tier.N-->160<!--/n--> |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 | 112 | <!--n:catalog.tier.L1-->112<!--/n--> |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 | 529 | <!--n:catalog.tier.C-->547<!--/n--> |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 | 72 | <!--n:catalog.tier.L-->72<!--/n--> |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 | 1,803 | <!--n:catalog.tier.other\|,-->1,785<!--/n--> |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) | TRICERATOPS corrections (15 October) | Tables built from their inputs (16 October) | TRICERATOPS recomputed (16 October) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 | 22 | 22 | <!--n:catalog.tier.A-->22<!--/n--> |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 | 292 | 292 | <!--n:catalog.tier.B-->292<!--/n--> |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 | 160 | 160 | <!--n:catalog.tier.N-->161<!--/n--> |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 | 112 | 112 | <!--n:catalog.tier.L1-->112<!--/n--> |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 | 529 | 547 | <!--n:catalog.tier.C-->552<!--/n--> |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 | 72 | 72 | <!--n:catalog.tier.L-->72<!--/n--> |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 | 1,803 | 1,785 | <!--n:catalog.tier.other\|,-->1,779<!--/n--> |
 
 All <!--n:catalog.rows.allsky|,-->2,990<!--/n--> signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
@@ -653,15 +679,15 @@ the predictions have it too, so all four join on it.
 ### Predicted transit times
 
 [`candidates/ephemerides.csv`](candidates/ephemerides.csv) gives the ephemeris of each registered
-candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are <!--n:registry.rows|,-->738<!--/n-->:
+candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are <!--n:registry.rows|,-->740<!--/n-->:
 the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October, 146 on 14 October (145 from the QLP
 re-search and the L1 re-selection, and TIC 206609457), 12 on 15 October, tier C signals counted after the
 TRICERATOPS rerun with single-cadence light curves, and 14 on 16 October, counted during the TRICERATOPS corrections
 (UTC dates, column `registered`; 3 of the 14 left the counted tiers again before the corrections were released).
-<!--n:registry.counted_now-->644<!--/n--> are counted now. The
+<!--n:registry.counted_now-->645<!--/n--> are counted now. The
 files are append-only. Candidates that leave the counted tiers keep their rows, with their current tier.
 [`candidates/predictions.csv`](candidates/predictions.csv)
-lists all <!--n:registry.predictions|,-->50,200<!--/n--> predicted transits from the registration date through June 2027, with the 1σ uncertainty,
+lists all <!--n:registry.predictions|,-->50,258<!--/n--> predicted transits from the registration date through June 2027, with the 1σ uncertainty,
 the UTC time at Earth's centre, and the TESS sector when the transit falls inside a published TESS
 orbit window and the star is on a detector. The median 1σ uncertainty of the next transit is <!--n:registry.median_next_sigma_min|.0f-->11<!--/n--> min.
 Of the 543 registered on 10 October, 62 have 656 transits in the published windows of Sectors 109–111 (through 3 December
@@ -954,10 +980,20 @@ from which it fills the numbers in this file, `results_public/README.md` and `va
 test that every TRICERATOPS and centroid result ran on the current ephemeris, that every counted candidate has
 per-sector centroids and every candidate with 2-minute data a SPOC re-measurement, that the folders hold the catalog's
 results, and that every table renders on GitHub. The expensive per-signal results (TRICERATOPS, by stage: fold, target
-setup, MOLUSC, runs; per-sector centroids) are kept, outside the repository, under the hash of everything that
-determines them; [`results_public/products/triceratops_plan.csv`](results_public/products/triceratops_plan.csv) lists
-the rows that need a TRICERATOPS result and whether the one in use is current, and the results computed before this
-store are marked `legacy` in `triceratops.csv`.
+setup, MOLUSC, runs; transit fits; per-sector centroids) are kept, outside the repository, under the hash of everything
+that determines them (their inputs, parameters, seeds, code and packages), and `pipeline/cloud.py` computes the missing and
+out-of-date ones on AWS spot instances: a result made from other inputs or by other code than the build's now is out of
+date, and the checks fail until it is computed again. A change to the code of a cheap stage (a fold, a target setup, a
+MOLUSC file) reruns that stage, and the TRICERATOPS runs only where its output comes out different: a target setup is
+compared by a hash of what the runs read from it (the star list with its flux ratios and depths, and the field-star
+population), and a result whose setup comes out the same is kept;
+[`results_public/products/triceratops_plan.csv`](results_public/products/triceratops_plan.csv) lists the rows that need
+a TRICERATOPS result and whether the one in use is current, and the results computed before this store are marked
+`legacy` in `triceratops.csv` and `fits.csv`. The light curves are a dated list too: `pipeline/lcindex.py refresh`
+records the products at MAST on a date, and the build then lists, in
+[`results_public/products/redo.csv`](results_public/products/redo.csv), every row whose light curves MAST has since
+redelivered or withdrawn, with the stages to redo; fits and TRICERATOPS results made from the old products are out of
+date until they are rerun.
 
 ## Layout
 

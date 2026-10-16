@@ -8,23 +8,23 @@
    "centroid": 1,
    "grazing": 148,
    "mes": 183,
-   "no_fit": 0,
+   "no_fit": 1,
    "no_parallax": 6,
    "no_result": 0,
-   "ruwe": 151,
+   "ruwe": 155,
    "triceratops": 58
   },
-  "c_reason_empty": 2443,
+  "c_reason_empty": 2438,
   "centroid_flagged_counted": 17,
   "counted": {
-   "allsky": 586,
+   "allsky": 587,
    "earlier": 58,
-   "total": 644
+   "total": 645
   },
   "cs": {
    "counted_unmeasured": 0,
-   "empty": 1863,
-   "filled": 1127,
+   "empty": 1862,
+   "filled": 1128,
    "p_empty_measured": 35
   },
   "earlier_tier": {
@@ -65,7 +65,7 @@
   },
   "fpp_not_run": 684,
   "from_research": 114,
-  "hosts": 573,
+  "hosts": 574,
   "l1_low_fa_score": 31,
   "lfa": {
    "low_band": 342,
@@ -74,18 +74,18 @@
   "lnfp": {
    "by_both": 77,
    "by_centroids": 86,
-   "by_triceratops": 1105,
-   "total": 1114
+   "by_triceratops": 1099,
+   "total": 1108
   },
-  "lower_confidence": 629,
+  "lower_confidence": 634,
   "median_fpp": {
    "default": 0.043,
-   "gaia": 0.0155
+   "gaia": 0.015
   },
-  "median_radius": 3.075,
+  "median_radius": 3.08,
   "nofit": {
-   "text": "1,042 `likely nearby FP`, 137 `C`, 114 `likely EB` and 1 `reported`",
-   "total": 1294
+   "text": "1,037 `likely nearby FP`, 142 `C`, 114 `likely EB`, 1 `likely false alarm` and 1 `reported`",
+   "total": 1295
   },
   "papers_empty": 2988,
   "reported_as_empty": 2977,
@@ -103,20 +103,20 @@
   "tier": {
    "A": 22,
    "B": 292,
-   "C": 547,
+   "C": 552,
    "L": 72,
    "L1": 112,
-   "N": 160,
+   "N": 161,
    "likely_EB": 315,
    "likely_false_alarm": 343,
-   "likely_nearby_FP": 1114,
-   "other": 1785,
+   "likely_nearby_FP": 1108,
+   "other": 1779,
    "reported": 13
   },
   "validation": {
-   "allsky": 224,
-   "earlier": 28,
-   "total": 252
+   "allsky": 229,
+   "earlier": 26,
+   "total": 255
   }
  },
  "classifier": {
@@ -184,7 +184,7 @@
    }
   },
   "expected": {
-   "AB": 27.36273023384287,
+   "AB": 27.499863820378604,
    "L1": 8.781610722754237,
    "N": 10.11297470255979
   },
@@ -231,22 +231,22 @@
   },
   "best_sector": {
    "below_7_1": {
-    "frac": 0.5569620253164557,
-    "n": 264
+    "frac": 0.5578947368421052,
+    "n": 265
    },
    "below_9": {
-    "frac": 0.7468354430379747,
-    "n": 354
+    "frac": 0.7473684210526316,
+    "n": 355
    },
-   "median": 6.6529723539873835
+   "median": 6.646824300447692
   },
-  "candidates": 474,
+  "candidates": 475,
   "ffi_only": {
-   "frac": 0.8122362869198312,
-   "n": 385
+   "frac": 0.8126315789473684,
+   "n": 386
   },
-  "first": 398,
-  "first_by_s96": 0.9271356783919598,
+  "first": 399,
+  "first_by_s96": 0.9273182957393483,
   "late": {
    "first": 22,
    "n": 51,
@@ -260,24 +260,24 @@
   },
   "through": {
    "26": {
-    "frac": 0.11392405063291139,
+    "frac": 0.11368421052631579,
     "n": 54
    },
    "55": {
-    "frac": 0.4050632911392405,
+    "frac": 0.40421052631578946,
     "n": 192
    },
    "69": {
-    "frac": 0.5970464135021097,
-    "n": 283
+    "frac": 0.5978947368421053,
+    "n": 284
    },
    "83": {
-    "frac": 0.7172995780590717,
-    "n": 340
+    "frac": 0.7178947368421053,
+    "n": 341
    },
    "96": {
-    "frac": 0.8713080168776371,
-    "n": 413
+    "frac": 0.871578947368421,
+    "n": 414
    }
   },
   "two_min": 89
@@ -286,12 +286,12 @@
   "rows": 154
  },
  "registry": {
-  "counted_now": 644,
+  "counted_now": 645,
   "median_next_sigma_min": 10.8,
   "planned_empty": 346,
-  "predictions": 50200,
-  "rows": 738,
-  "tess_sector_empty": 49368
+  "predictions": 50258,
+  "rows": 740,
+  "tess_sector_empty": 49426
  },
  "spoc": {
   "candidates": 89,
