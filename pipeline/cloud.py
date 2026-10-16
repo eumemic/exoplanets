@@ -32,6 +32,7 @@ import argparse
 import glob
 import hashlib
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -319,6 +320,15 @@ def fit_items(keys=None):
     if not items:
         return [], None, None
     table_of = {f"tic{r['TIC']}_P{float(r['P_d']):.4f}": "candidates_allsky" for r in rows["candidates_allsky"]}
+    measured = {f"tic{r['TIC']}_P{float(r['P_d']):.4f}": r for f in ("measurements_allsky.csv", "measurements_earlier.csv")
+                for r in pd.read_csv(os.path.join(ROOT, "results_public", "products", f), dtype=str,
+                                     keep_default_na=False).to_dict("records")}
+    for key, it in items.items():              # a row whose fit failed has no fitted epoch: start from the measured one
+        if not all(math.isfinite(float(it[c])) for c in ("t0", "duration_h")):
+            m = measured.get(key) or {}
+            if not (m.get("T0_BJD") and m.get("T14_h")):
+                raise SystemExit(f"{key}: no epoch and duration to start the fit from")
+            it.update(t0=repr(float(m["T0_BJD"]) - 2457000), duration_h=repr(float(m["T14_h"])))
     tics = sorted({int(it["tic"]) for it in items.values()})
     stars, man = star_rows(tics), manifest_rows(tics)
     code, env = fit_store.code_hash(), tri_store.env_hash("fold")
