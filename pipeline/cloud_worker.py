@@ -244,11 +244,14 @@ def prior_digests(R, priors):
         if os.path.exists(os.path.join(pd_, "state.pkl")):
             todo.append([os.path.join(pd_, "state.pkl"), pop if os.path.exists(pop) else "", os.path.join(pd_, "digest")])
     if todo:
+        lst = os.path.join(R, "prior", "todo.json")
+        with open(lst, "w") as fh:
+            json.dump(todo, fh)
         script = ("import json, sys; sys.path.insert(0, %r); import fpp_core as fc\n"
-                  "for st, pop, out in json.loads(sys.argv[1]):\n"
+                  "for st, pop, out in json.load(open(sys.argv[1])):\n"
                   "    t = fc.load_state(st); t.trilegal_fname = pop or None\n"
                   "    open(out, 'w').write(fc.setup_digest(t))\n") % PIPE
-        subprocess.run([os.path.join(EXO, ".venv-trice", "bin", "python"), "-c", script, json.dumps(todo)], check=True, env=ENV)
+        subprocess.run([os.path.join(EXO, ".venv-trice", "bin", "python"), "-c", script, lst], check=True, env=ENV)
     log(f"digests of {len(todo)} setups that results in use ran on")
 
 
@@ -258,26 +261,45 @@ def fetch_reused(B, R):
     path = os.path.join(B, "reuse", "remote.json")
     items = json.load(open(path)) if os.path.exists(path) else []
     fix = []
-    for i, x in enumerate(items):
+
+    def one(ix):
+        i, x = ix
         arc = os.path.join(R, f"reuse_{i}.tgz")
-        with urllib.request.urlopen(x["url"], timeout=300) as r, open(arc, "wb") as fh:
-            shutil.copyfileobj(r, fh)
+        for attempt in range(4):
+            try:
+                with urllib.request.urlopen(x["url"], timeout=300) as r, open(arc, "wb") as fh:
+                    shutil.copyfileobj(r, fh)
+                break
+            except Exception as ex:
+                if attempt == 3:
+                    raise
+                log(f"retrying a download: {ex!r}")
+                time.sleep(5 * (attempt + 1))
         with tarfile.open(arc) as tf:
+            names = set(tf.getnames())
             for member, dest in x["members"].items():
-                f = tf.extractfile("./" + member) if "./" + member in tf.getnames() else tf.extractfile(member)
+                f = tf.extractfile("./" + member) if "./" + member in names else tf.extractfile(member)
                 os.makedirs(os.path.dirname(os.path.join(R, dest)), exist_ok=True)
                 with open(os.path.join(R, dest), "wb") as out:
                     shutil.copyfileobj(f, out)
+        os.remove(arc)
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(16) as ex:
+        list(ex.map(one, enumerate(items)))
+    for x in items:
         if x.get("state"):
             fix.append([os.path.join(R, x["state"]), os.path.join(R, x["population"]) if x.get("population") else ""])
             if x.get("digest"):
                 with open(os.path.join(R, x["state"]) + ".digest", "w") as fh:
                     fh.write(x["digest"])
     if fix:
+        lst = os.path.join(R, "reuse_fix.json")
+        with open(lst, "w") as fh:
+            json.dump(fix, fh)
         script = ("import json, sys; sys.path.insert(0, %r); import fpp_core as fc\n"
-                  "for st, pop in json.loads(sys.argv[1]):\n"
+                  "for st, pop in json.load(open(sys.argv[1])):\n"
                   "    t = fc.load_state(st); t.trilegal_fname = pop or None; fc.save_state(t, st)\n") % PIPE
-        subprocess.run([os.path.join(EXO, ".venv-trice", "bin", "python"), "-c", script, json.dumps(fix)], check=True, env=ENV)
+        subprocess.run([os.path.join(EXO, ".venv-trice", "bin", "python"), "-c", script, lst], check=True, env=ENV)
     log(f"reused from the bucket: {len(items)} archives ({len(fix)} target setups)")
     prior_digests(R, [(x["prior"], int(x["tic"])) for x in items if x.get("prior")])
 
@@ -397,16 +419,18 @@ def main():
         log(f"fleet prep exit {rc}; MOLUSC exit {mol.returncode}")
         jobs = {r["key"]: r for r in csv.DictReader(open(os.path.join(R, "t2", "jobs.csv")))}
         STATE["stage"] = "results kept"
-        todo = []
+        todo, keep = [], []
         for x in plan["items"]:
             key = x["item"]["key"]
             if key not in jobs:
                 continue
             new = _read(_state(os.path.join(R, "t2"), jobs[key]) + ".digest")
-            if x.get("prior") and new and new == _read(os.path.join(R, "prior", key, "digest")):
-                (STATE["uploaded"] if pack_reused(x, R, jobs, info, urls) else STATE["failed"]).append(key)
-            else:
-                todo.append(x)
+            (keep if x.get("prior") and new and new == _read(os.path.join(R, "prior", key, "digest")) else todo).append(x)
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(16) as ex:
+            for x, ok in zip(keep, ex.map(lambda y: pack_reused(y, R, jobs, info, urls), keep)):
+                (STATE["uploaded"] if ok else STATE["failed"]).append(x["item"]["key"])
+        log(f"{len(keep)} results kept (target setup unchanged), {len(todo)} to run")
         STATE["stage"] = "runs"
         # several signals per fpp_pool call (about three runs per process), each uploaded when its call ends; fpp_pool
         # run reads a star's target from one file per star and sectors, so a call holds one depth of each
