@@ -15,13 +15,16 @@ from astroquery.mast import Catalogs
 warnings.filterwarnings("ignore")
 
 
-def capable_neighbours(tic, depth_ppm, radius_arcmin=2.5):
+def capable_neighbours(tic, depth_ppm, radius_arcmin=2.5, not_sources=()):
+    """not_sources: TIC entries that cannot be a signal's source although their light is real (galaxies and their cores:
+    ticfield.py), which are not counted."""
     t = Catalogs.query_criteria(catalog="Tic", ID=int(tic)).to_pandas().iloc[0]
     c = SkyCoord(t["ra"] * u.deg, t["dec"] * u.deg)
     nb = Catalogs.query_region(c, radius=radius_arcmin * u.arcmin, catalog="TIC").to_pandas()
     nb["ID"] = nb["ID"].astype(int)
     # TIC entries flagged ARTIFACT or DUPLICATE are not stars (Paegert et al. 2021); SPLIT entries are real
-    nb = nb[(nb["ID"] != int(tic)) & ~nb["disposition"].isin(["ARTIFACT", "DUPLICATE"])].copy()
+    nb = nb[(nb["ID"] != int(tic)) & ~nb["disposition"].isin(["ARTIFACT", "DUPLICATE"])
+            & ~nb["ID"].isin([int(x) for x in not_sources])].copy()
     nb["sep_arcsec"] = SkyCoord(nb["ra"].values * u.deg, nb["dec"].values * u.deg).separation(c).arcsec
     nb["dT"] = nb["Tmag"] - t["Tmag"]
     nb["flux_ratio"] = 10 ** (-0.4 * nb["dT"])

@@ -327,6 +327,68 @@ def split(out, parts):
     return [p[1] for p in load if p[1]]
 
 
+def vet_items(kind, keys=None):
+    """The vetting (kind vet) or pixel follow-up (kind pixel) of a batch: the rows with folders whose result is out of
+    date (vet_store.stale), or the named keys; each starts from the signal its vetting in use was made for (the search's
+    rank, period, epoch and duration; the search's density, masked TOIs and events where its candidate table has them:
+    search_signals.csv). Returns (items, stars, manifest)."""
+    import followup
+    import lcindex
+    import ticfield
+    import vet_store as vs
+    prod = os.path.join(ROOT, "results_public", "products")
+    vet = {(r["table"], vs.signal_key(r)): r for r in vs._rows(os.path.join(prod, "vetting.csv"))}
+    sig = {(r["table"], vs.signal_key(r)): r for r in vs._rows(os.path.join(ROOT, "results_cloud", "glue", "build",
+                                                                             "search_signals.csv"))}
+    if keys:
+        want = [k for k in vet if k[1] in set(keys)]
+        if {k[1] for k in want} != set(keys):
+            raise SystemExit(f"no catalog row has the key: {sorted(set(keys) - {k[1] for k in want})}")
+    else:
+        tiers = __import__("dag.params", fromlist=["load"]).load(os.path.join(PIPE, "params.toml"))["catalog.folder_tiers_allsky"]
+        folders = {r["candidate_id"] for r in vs._rows(os.path.join(ROOT, "results_public", "candidates_allsky.csv"))
+                   if r["tier"] in tiers} | {r["candidate_id"] for r in vs._rows(os.path.join(ROOT, "results_public",
+                                                                                          "tiers_earlier_candidates.csv"))}
+        bad = vs.stale(os.path.join(prod, "vetting.csv"), os.path.join(prod, "lightcurves_searched.csv"),
+                       os.path.join(prod, "lightcurves.csv"), os.path.join(prod, "stage_code.json"), folders)
+        word = "vetting" if kind == "vet" else "pixel follow-up"
+        want = [(t, vs.signal_key(dict(TIC=tic, P_d=p))) for t, tic, p, why in bad if word in why]
+    want = [k for k in want if vet[k]["vet_store"]]
+    if not want:
+        return [], None, None
+    store = st.Store()
+    tics = sorted({int(vet[k]["TIC"]) for k in want})
+    stars, man = star_rows(tics), manifest_rows(tics)
+    code, env = vs.code_hash(kind), tri_store.env_hash("fold")
+    known = vs.known_hash() if kind == "vet" else None
+    nonstellar = ticfield.by_star(ticfield.NONSTELLAR)
+    out = []
+    for k in sorted(want):
+        v = vet[k]
+        vj = json.load(open(os.path.join(store.path("vet", v["vet_store"]), "vetting.json")))
+        tic = int(v["TIC"])
+        s = dict(key=k[1], tic=tic, rank=int(vj["rank"]), period=repr(float(vj["period"])), t0=repr(float(vj["t0"])),
+                 duration_h=repr(float(vj["duration_h"])), depth_ppm=repr(float(vj["depth_ppm"])))
+        x = sig.get(k, {})
+        for c in ("rho", "masked_tois", "events"):
+            if x.get(c) not in (None, ""):
+                s[c] = x[c]
+        if kind == "vet":
+            lcs = [[int(r.sector), str(r.prov), float(r.exptime), str(r.uri)] for r in man[man.tic == tic].itertuples()]
+            star = star_hash(stars[stars.ID == tic].iloc[0].to_dict())
+            req = vs.vet_request(k[0], s, lcs, star, known, code, env)
+        else:
+            ps = [(int(p["sector"]), p["depth_ppm"] / p["err_ppm"]) for p in vj.get("per_sector") or [] if p["err_ppm"] > 0]
+            top = max((snr for _, snr in ps), default=0)
+            secs = [sec for _, _, sec in sorted((followup.cutout_mb(sec), -snr, sec) for sec, snr in ps if snr >= 0.6 * top)]
+            secs = secs[:vs.PIXEL_SECTORS]
+            row = stars[stars.ID == tic].iloc[0]
+            s.update(sectors=secs, not_sources=nonstellar.get(tic, []))
+            req = vs.pixel_request(k[0], s, secs, (row["ra"], row["dec"]), s["not_sources"], code, env)
+        out.append(dict(item=dict(s, table=k[0]), request=req, row_P_d=v["P_d"], vet_store=v["vet_store"]))
+    return out, stars, man
+
+
 def fit_items(keys=None):
     """The fits of a batch: rows held in tier C for want of a fit and rows whose fit is stale (made from light curves
     that have changed: redo.csv), or the named keys; with their requests and the snapshots (stars, light-curve list) the
@@ -373,13 +435,21 @@ def fit_items(keys=None):
 
 
 def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids=False, rerun_legacy=False, parts=1,
-         fits=False, molusc_sample=0):
+         fits=False, molusc_sample=0, vet=False, pixel=False):
     """A batch: TRICERATOPS signals, or (centroids) per-sector centroid measurements; with parts > 1, that many
     batches (one instance each). Writes plan.json for each."""
     if git("status", "--porcelain", "--", "pipeline", "requirements.txt", "requirements-triceratops.txt"):
         raise SystemExit("pipeline/ or a lock file has uncommitted changes: the kit ships a commit, so commit first")
     commit = git("rev-parse", "HEAD")
     out, cs_out, stars, gaia, man, extra = [], [], None, None, None, {}
+    if vet or pixel:
+        kind = "vet" if vet else "pixel"
+        v_out, stars, man = vet_items(kind, keys)
+        if not v_out:
+            print(f"nothing to {'vet' if vet else 'follow up'}: every row with a folder has a current result")
+            return None
+        return _write_plan("b" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S"), commit, itype, runs, [], [], stars,
+                           None, man, {kind: v_out})
     if fits:
         fit_out, stars, man = fit_items(keys)
         if not fit_out:
@@ -415,7 +485,7 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids
 def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, fit_out=()):
     d = os.path.join(BATCHES, bid)
     os.makedirs(d)
-    if out or fit_out:
+    if out or fit_out or extra.get("vet") or extra.get("pixel"):
         stars.to_parquet(os.path.join(d, "stars.parquet"))
         man.to_parquet(os.path.join(d, "manifest.parquet"))
     if gaia is not None:
@@ -426,18 +496,21 @@ def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, 
     # a signal with a result in use that it may keep runs only if its new target setup differs (assumed for 1 in 10)
     variants = sum((0.1 if x.get("prior") else 1) * (int(x["base_runs"]) + len(x["cc"])) for x in out)
     # a fit: 3,000 steps of 32 walkers, ~2-5 min on one core
-    hours = (15 + variants * 2 * runs * 0.4 / max(1, vc - 1) + len(cs_out) * 2.0 / 6 + len(fit_out) * 5.0 / max(1, vc - 1)) / 60
+    # a vetting ~1-2 min on one core, a pixel follow-up ~3-5 min (difference images of two sectors)
+    n_vet, n_pix = len(extra.get("vet", [])), len(extra.get("pixel", []))
+    hours = (15 + variants * 2 * runs * 0.4 / max(1, vc - 1) + len(cs_out) * 2.0 / 6 + len(fit_out) * 5.0 / max(1, vc - 1)
+             + n_vet * 2.0 / max(1, vc - 1) + n_pix * 5.0 / max(1, min(16, vc - 1))) / 60
     est = dict(instance=itype, spot_usd_per_h=price, hours=round(hours, 2), usd=round(price * hours, 2) if price else None,
                limit_hours=round(max(1.0, 3 * hours), 1))
     p = dict(id=bid, commit=commit, created=datetime.now(timezone.utc).isoformat(timespec="seconds"), runs=runs,
              code=extra.get("code", {}), env=extra.get("env", {}), items=out, centroids=cs_out, fits=list(fit_out),
              fit_env=tri_store.env_hash("fold"),
              centroid_env=tri_store.env_hash("fold"), reuse={k: extra.get(k, []) for k in ("fold", "molusc")}, estimate=est,
-             molusc_sample=extra.get("molusc_sample", 0))
+             molusc_sample=extra.get("molusc_sample", 0), vet=extra.get("vet", []), pixel=extra.get("pixel", []))
     with open(os.path.join(d, "plan.json"), "w") as fh:
         json.dump(p, fh, indent=1)
     print(f"batch {bid}: {len(out)} TRICERATOPS signals, {len(cs_out)} centroid measurements, {len(fit_out)} fits, "
-          f"commit {commit[:7]}")
+          f"{n_vet} vettings, {n_pix} pixel follow-ups, commit {commit[:7]}")
     for x in list(fit_out)[:10]:
         print(f"  fit {x['item']['key']}: from P {x['item']['period']} d, T14 {x['item']['duration_h']} h")
     for x in out[:10]:
@@ -473,11 +546,15 @@ def kit(p, d, s3, hours):
                     for x in p.get("centroids", [])},
                 fit={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}fit/{x['item']['key']}.tgz", hours)
                      for x in p.get("fits", [])},
+                vet={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}vet/{x['item']['key']}.tgz", hours)
+                     for x in p.get("vet", [])},
+                pixel={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}pixel/{x['item']['key']}.tgz", hours)
+                       for x in p.get("pixel", [])},
                 heartbeat=_presign(s3, "put_object", f"{prefix}heartbeat.json", hours),
                 done=_presign(s3, "put_object", f"{prefix}done.json", hours),
                 logs={n: _presign(s3, "put_object", f"{prefix}logs/{n}", hours)
                       for n in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log",
-                                "fits.log")})
+                                "fits.log", "vet.log", "pixel.log")})
     k = os.path.join(d, "kit")
     shutil.rmtree(k, ignore_errors=True)
     os.makedirs(os.path.join(k, "batch", "reuse", "folds"))
@@ -495,7 +572,19 @@ def kit(p, d, s3, hours):
     with open(os.path.join(b, "urls.json"), "w") as fh:
         json.dump(urls, fh)
     with open(os.path.join(b, "tics.txt"), "w") as fh:
-        fh.write("\n".join(sorted({str(x["item"]["tic"]) for x in p["items"] + p.get("fits", [])})) + "\n")
+        fh.write("\n".join(sorted({str(x["item"]["tic"]) for x in p["items"] + p.get("fits", []) + p.get("vet", [])})) + "\n")
+    if p.get("vet"):                                # the known-object catalogs vet.py matches against
+        os.makedirs(os.path.join(b, "known"))
+        import vet_store as vs
+        for n in vs.KNOWN:
+            shutil.copyfile(os.path.join(ROOT, "data", "known", n), os.path.join(b, "known", n))
+    if p.get("pixel"):                              # the vetting each follow-up chooses its sectors from
+        os.makedirs(os.path.join(b, "vet_dir"))
+        s_ = st.Store()
+        for x in p["pixel"]:
+            it = x["item"]
+            shutil.copyfile(os.path.join(s_.path("vet", x["vet_store"]), "vetting.json"),
+                            os.path.join(b, "vet_dir", f"tic{it['tic']}_{it['rank']}.json"))
     shutil.copytree(MOLUSC_CODE, os.path.join(b, "molusc_code"))
     os.makedirs(os.path.join(b, "cc"), exist_ok=True)
     for x in p["items"]:
@@ -619,20 +708,22 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
     by_key = {x["item"]["key"]: x for x in p["items"]}
     by_cs = {x["item"]["key"]: x for x in p.get("centroids", [])}
     by_fit = {x["item"]["key"]: x for x in p.get("fits", [])}
+    by_vet = {x["item"]["key"]: x for x in p.get("vet", [])}
+    by_pix = {x["item"]["key"]: x for x in p.get("pixel", [])}
     store = st.Store(store_root)
     pages = s3.get_paginator("list_objects_v2")     # a listing holds at most 1,000 keys
-    objs = [o for sub in ("items/", "cs/", "fit/") for page in pages.paginate(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/{sub}")
-            for o in page.get("Contents", [])]
+    objs = [o for sub in ("items/", "cs/", "fit/", "vet/", "pixel/") for page in pages.paginate(
+            Bucket=AWS["bucket"], Prefix=f"batches/{bid}/{sub}") for o in page.get("Contents", [])]
     for o in objs:
         if o["Key"].endswith(".big.tgz"):           # the large files stay in the bucket
             continue
-        kind = "cs" if "/cs/" in o["Key"] else "fit" if "/fit/" in o["Key"] else "tri"
+        kind = next((k for k in ("cs", "fit", "vet", "pixel") if f"/{k}/" in o["Key"]), "tri")
         key = os.path.basename(o["Key"])[:-4]
         rec = key if kind == "tri" else f"{kind}:{key}"
-        if rec in done or key not in {"cs": by_cs, "fit": by_fit, "tri": by_key}[kind]:
+        if rec in done or key not in {"cs": by_cs, "fit": by_fit, "vet": by_vet, "pixel": by_pix, "tri": by_key}[kind]:
             continue
         cs = kind == "cs"
-        idir = os.path.join(d, {"cs": "cs", "fit": "fits", "tri": "items"}[kind], key)
+        idir = os.path.join(d, {"cs": "cs", "fit": "fits", "vet": "vet", "pixel": "pixel", "tri": "items"}[kind], key)
         shutil.rmtree(idir, ignore_errors=True)
         os.makedirs(idir)
         arc = idir + ".tgz"
@@ -643,6 +734,10 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
             if kind == "fit":
                 item = dict(by_fit[key], env=p["fit_env"], commit=p["commit"])
                 tkey, problems = fit_store.ingest_item(store, idir, item, bid, int(time.time()))
+            elif kind in ("vet", "pixel"):
+                import vet_store
+                item = dict((by_vet if kind == "vet" else by_pix)[key], env=p["fit_env"], commit=p["commit"])
+                tkey, problems = vet_store.ingest_item(store, idir, item, kind, bid, int(time.time()))
             elif cs:
                 item = dict(by_cs[key], env=p["centroid_env"], commit=p["commit"])
                 tkey, problems = centroid_store.ingest_item(store, idir, item, bid, int(time.time()))
@@ -691,7 +786,8 @@ def follow(bid, store_root=st.ROOT, limit_h=None):
     pt = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%H:%M %Z")
     print(f"batch {bid}: following {iid} ({inst['type']}) from {pt}; limit {limit_h} h", flush=True)
     keys = ({x["item"]["key"] for x in p["items"]} | {f"cs:{x['item']['key']}" for x in p.get("centroids", [])}
-            | {f"fit:{x['item']['key']}" for x in p.get("fits", [])})
+            | {f"fit:{x['item']['key']}" for x in p.get("fits", [])} | {f"vet:{x['item']['key']}" for x in p.get("vet", [])}
+            | {f"pixel:{x['item']['key']}" for x in p.get("pixel", [])})
     last_beat, status = t0, "running"
     try:
         while True:
@@ -760,6 +856,8 @@ def main():
     ap.add_argument("--rerun-legacy", action="store_true", help="every legacy result in use, computed again")
     ap.add_argument("--parts", type=int, default=1, help="split into this many batches (one instance each)")
     ap.add_argument("--fits", action="store_true", help="a batch of transit fits")
+    ap.add_argument("--vet", action="store_true", help="a batch of vettings (vet.py) of rows with out-of-date ones")
+    ap.add_argument("--pixel", action="store_true", help="a batch of pixel follow-ups (followup.py)")
     ap.add_argument("--molusc-sample", type=int, default=0,
                     help="k > 0: the runs with MOLUSC sample k instead of the catalog's (molusc_sample.py); run such a batch "
                          "into a store of its own (--store)")
@@ -769,7 +867,7 @@ def main():
     a = ap.parse_args()
     if a.cmd == "plan":
         plan([k for k in a.keys.split(",") if k] or None, a.type, a.runs, a.cc, not a.no_base, a.centroids, a.rerun_legacy,
-             a.parts, a.fits, a.molusc_sample)
+             a.parts, a.fits, a.molusc_sample, a.vet, a.pixel)
     elif a.cmd == "run":
         if not a.approve:
             p = json.load(open(os.path.join(BATCHES, a.id, "plan.json")))

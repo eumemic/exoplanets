@@ -336,6 +336,91 @@ def run_fits(plan, B, R, info, urls, procs):
         list(ex.map(one, plan["fits"]))
 
 
+def _upload_dir(d, url):
+    arc = d + ".tgz"
+    with tarfile.open(arc, "w:gz") as tf:
+        tf.add(d, arcname=".")
+    return put(url, open(arc, "rb").read())
+
+
+def run_vet(plan, B, R, info, urls, procs):
+    """The batch's vettings (vet.vet_one, its plot always drawn), each uploaded when the pool returns it."""
+    known = os.path.join(EXO, "data", "known")          # vet.py matches against data/known: the kit's snapshot
+    os.makedirs(known, exist_ok=True)
+    for f in glob.glob(os.path.join(B, "known", "*")):
+        shutil.copyfile(f, os.path.join(known, os.path.basename(f)))
+    out = os.path.join(R, "vet_out")
+    os.makedirs(out, exist_ok=True)
+    jobs = os.path.join(R, "vet_jobs.json")
+    with open(jobs, "w") as fh:
+        json.dump([x["item"] for x in plan["vet"]], fh)
+    script = ("import json, sys; sys.path.insert(0, %r)\n"
+              "from multiprocessing import Pool\n"
+              "import pandas as pd, vet\n"
+              "stars = pd.read_parquet(sys.argv[2]).drop_duplicates('ID').set_index('ID')\n"
+              "jobs = [(dict(s), stars.loc[int(s['tic'])].to_dict(), sys.argv[3]) for s in json.load(open(sys.argv[1]))]\n"
+              "with Pool(int(sys.argv[4]), initializer=vet._set_plot_max_fails, initargs=(-1,)) as pool:\n"
+              "    for i in pool.imap_unordered(vet.vet_one, jobs):\n"
+              "        print(i.get('tic'), i.get('rank'), i.get('error', 'ok'), flush=True)\n") % PIPE
+    with open(os.path.join(HOME, "vet.log"), "a") as lg:
+        subprocess.run([os.path.join(EXO, ".venv", "bin", "python"), "-c", script, jobs, os.path.join(B, "stars.parquet"),
+                        out, str(max(1, procs))], cwd=PIPE, env=ENV, stdout=lg, stderr=subprocess.STDOUT)
+    for x in plan["vet"]:
+        it = x["item"]
+        key, src = it["key"], os.path.join(out, f"tic{it['tic']}_{it['rank']}")
+        if not os.path.exists(src + ".json"):
+            STATE["failed"].append(f"vet:{key}")
+            log(f"vet {key}: no result")
+            continue
+        d = os.path.join(R, "vet_items", key)
+        os.makedirs(d, exist_ok=True)
+        shutil.copyfile(src + ".json", os.path.join(d, "vetting.json"))
+        if os.path.exists(src + ".png"):
+            shutil.copyfile(src + ".png", os.path.join(d, "vetting.png"))
+        json.dump(dict(info, key=key), open(os.path.join(d, "item.json"), "w"))
+        ok = _upload_dir(d, urls["vet"][key])
+        (STATE["uploaded"] if ok else STATE["failed"]).append(f"vet:{key}")
+        log(f"vet {key}: {'uploaded' if ok else 'UPLOAD FAILED'}")
+
+
+def run_pixel(plan, B, R, info, urls, procs):
+    """The batch's pixel follow-ups (followup.one: TIC neighbours bright enough to cause the dip, galaxies and their cores
+    left out, and difference-image centroids in the sectors the vetting in use ranks best)."""
+    out = os.path.join(R, "pixel_out")
+    os.makedirs(out, exist_ok=True)
+    jobs = os.path.join(R, "pixel_jobs.json")
+    with open(jobs, "w") as fh:
+        json.dump([x["item"] for x in plan["pixel"]], fh)
+    script = ("import json, sys; sys.path.insert(0, %r)\n"
+              "from multiprocessing import Pool\n"
+              "import pandas as pd, followup\n"
+              "followup.PIX.mkdir(parents=True, exist_ok=True)\n"
+              "stars = pd.read_parquet(sys.argv[2]).drop_duplicates('ID').set_index('ID')\n"
+              "jobs = [(dict(s), stars.loc[int(s['tic'])].to_dict(), len(s['sectors']) or 2, sys.argv[5], sys.argv[3])\n"
+              "        for s in json.load(open(sys.argv[1]))]\n"
+              "with Pool(int(sys.argv[4])) as pool:\n"
+              "    for r in pool.imap_unordered(followup.one, jobs):\n"
+              "        print(r.get('tic'), r.get('rank'), r.get('flags'), flush=True)\n") % PIPE
+    with open(os.path.join(HOME, "pixel.log"), "a") as lg:
+        subprocess.run([os.path.join(EXO, ".venv", "bin", "python"), "-c", script, jobs, os.path.join(B, "stars.parquet"),
+                        out, str(max(1, min(8, procs))), os.path.join(B, "vet_dir")], cwd=PIPE, env=ENV, stdout=lg,
+                       stderr=subprocess.STDOUT)
+    for x in plan["pixel"]:
+        it = x["item"]
+        key, src = it["key"], os.path.join(out, f"tic{it['tic']}_{it['rank']}.json")
+        if not os.path.exists(src):
+            STATE["failed"].append(f"pixel:{key}")
+            log(f"pixel {key}: no result")
+            continue
+        d = os.path.join(R, "pixel_items", key)
+        os.makedirs(d, exist_ok=True)
+        shutil.copyfile(src, os.path.join(d, "followup.json"))
+        json.dump(dict(info, key=key), open(os.path.join(d, "item.json"), "w"))
+        ok = _upload_dir(d, urls["pixel"][key])
+        (STATE["uploaded"] if ok else STATE["failed"]).append(f"pixel:{key}")
+        log(f"pixel {key}: {'uploaded' if ok else 'UPLOAD FAILED'}")
+
+
 def return_after_centroids(proc, plan, R, info, urls):
     """Waits for the centroid measurements and uploads each signal's file."""
     if proc is None:
@@ -395,13 +480,19 @@ def main():
         for f in glob.glob(os.path.join(B, "reuse", "molusc", "*")):
             shutil.copyfile(f, os.path.join(R, "molusc", os.path.basename(f)))
         nproc = max(1, (os.cpu_count() or 2) - (7 if cs_proc else 1))
-        if items or plan.get("fits"):
+        if items or plan.get("fits") or plan.get("vet"):
             STATE["stage"] = "download"
             run(["download.py", os.path.join(B, "tics.txt"), "--manifest", os.path.join(B, "manifest.parquet"), "--workers",
                  "32"], "download.log")
         if plan.get("fits"):
             STATE["stage"] = "fits"
             run_fits(plan, B, R, info, urls, nproc)
+        if plan.get("vet"):
+            STATE["stage"] = "vetting"
+            run_vet(plan, B, R, info, urls, nproc)
+        if plan.get("pixel"):
+            STATE["stage"] = "pixel follow-up"
+            run_pixel(plan, B, R, info, urls, nproc)
         if not items:
             STATE["stage"] = "centroids"
             return_after_centroids(cs_proc, plan, R, info, urls)
@@ -482,7 +573,8 @@ def main():
         log(f"ERROR {ex!r}")
     finally:
         stop.set()
-        for name in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log", "fits.log"):
+        for name in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log", "fits.log", "vet.log",
+                     "pixel.log"):
             p = os.path.join(HOME, name)
             if os.path.exists(p) and name in urls.get("logs", {}):
                 put(urls["logs"][name], open(p, "rb").read()[-2_000_000:])

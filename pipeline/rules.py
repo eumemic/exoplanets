@@ -14,6 +14,7 @@ import lcindex as lc
 import predict
 import stage_code as sc
 import ticfield
+import vet_store as vs
 import tri_plan as tp
 import triceratops_table as tt
 from dag import check, rule
@@ -100,9 +101,24 @@ def fit_table(ctx):
     fit_store.table(ctx.root / STORE, rows, ctx.output("results_public/products/fits.csv"))
 
 
+@rule(inputs=[f"{STORE}/vet/*/*/request.json", f"{STORE}/vet/*/*/result.json", f"{STORE}/vet/*/*/check.json",
+              f"{STORE}/vet/*/*/vetting.json", f"{STORE}/pixel/*/*/request.json", f"{STORE}/pixel/*/*/result.json",
+              f"{STORE}/pixel/*/*/check.json", f"{STORE}/pixel/*/*/followup.json",
+              "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv",
+              "results_public/products/tic_nonstellar.csv"],
+      outputs=["results_public/products/vetting.csv"])
+def vetting_table(ctx):
+    """The vetting and pixel follow-up each catalog row uses, from the store (vet_store.py)."""
+    rows = [(t, r["TIC"], r["P_d"], r["candidate_id"]) for t, f in (("candidates_allsky", "measurements_allsky.csv"),
+                                                                    ("tiers_earlier_candidates", "measurements_earlier.csv"))
+            for r in cat.read_rows(ctx.input(f"results_public/products/{f}"))]
+    vs.table(ctx.root / STORE, rows, ticfield.by_star(ctx.input("results_public/products/tic_nonstellar.csv")),
+             ctx.output("results_public/products/vetting.csv"))
+
+
 @rule(inputs=["results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv",
               "results_public/products/triceratops.csv", "results_public/products/centroids.csv",
-              "results_public/products/fits.csv", "results_public/overrides.csv"],
+              "results_public/products/fits.csv", "results_public/products/vetting.csv", "results_public/overrides.csv"],
       outputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv"],
       params=["catalog.counted_allsky", "tiers.*", "flags.*"])
 def catalog(ctx):
@@ -112,7 +128,8 @@ def catalog(ctx):
               ctx.input("results_public/products/triceratops.csv"), ctx.input("results_public/overrides.csv"),
               ctx.output("results_public/candidates_allsky.csv"), ctx.output("results_public/tiers_earlier_candidates.csv"), P,
               centroids_csv=ctx.input("results_public/products/centroids.csv"),
-              fits_csv=ctx.input("results_public/products/fits.csv"))
+              fits_csv=ctx.input("results_public/products/fits.csv"),
+              vetting_csv=ctx.input("results_public/products/vetting.csv"))
 
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", "candidates/ephemerides.csv",
@@ -303,7 +320,8 @@ def markdown_tables(ctx):
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_cloud/glue/build/folder_sources.csv",
               "results_public/products/triceratops.csv", f"{STORE}/tri/*/*/fpp.json", "results_public/products/fits.csv",
-              f"{STORE}/fit/*/*/transit_fit.json"],
+              f"{STORE}/fit/*/*/transit_fit.json", "results_public/products/vetting.csv", f"{STORE}/vet/*/*/vetting.json",
+              f"{STORE}/vet/*/*/vetting.png", f"{STORE}/pixel/*/*/followup.json"],
       outputs=["candidates/allsky"], params=["catalog.folder_tiers_allsky"], inplace={"candidates/allsky": "ledger"},
       allow_reads=["results_cloud"])
 def folders(ctx):
@@ -311,7 +329,8 @@ def folders(ctx):
     n = fo.build(ctx.root, ctx.input("results_public/candidates_allsky.csv"),
                  ctx.input("results_cloud/glue/build/folder_sources.csv"),
                  ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE,
-                 ctx.param("catalog.folder_tiers_allsky"), fits_csv=ctx.input("results_public/products/fits.csv"))
+                 ctx.param("catalog.folder_tiers_allsky"), fits_csv=ctx.input("results_public/products/fits.csv"),
+                 vetting_csv=ctx.input("results_public/products/vetting.csv"))
     print(f"folders: {n}")
 
 
@@ -333,14 +352,33 @@ def folders_complete(ctx):
 
 
 @rule(inputs=["results_public/tiers_earlier_candidates.csv", "results_public/products/triceratops.csv",
-              f"{STORE}/tri/*/*/fpp.json", "results_public/products/fits.csv", f"{STORE}/fit/*/*/transit_fit.json"],
+              f"{STORE}/tri/*/*/fpp.json", "results_public/products/fits.csv", f"{STORE}/fit/*/*/transit_fit.json",
+              "results_public/products/vetting.csv", f"{STORE}/vet/*/*/vetting.json", f"{STORE}/vet/*/*/vetting.png",
+              f"{STORE}/pixel/*/*/followup.json"],
       outputs=["candidates/TIC*_P*"], inplace={"candidates/TIC*_P*": "ledger"})
 def earlier_folders(ctx):
     """The earlier searches' candidate folders (folders.py): every row has one, with the catalog's TRICERATOPS result."""
     n = fo.build_earlier(ctx.root, ctx.input("results_public/tiers_earlier_candidates.csv"),
                          ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE,
-                         fits_csv=ctx.input("results_public/products/fits.csv"))
+                         fits_csv=ctx.input("results_public/products/fits.csv"),
+                         vetting_csv=ctx.input("results_public/products/vetting.csv"))
     print(f"earlier folders: {n}")
+
+
+@check(inputs=["results_public/products/vetting.csv", "results_public/products/lightcurves_searched.csv",
+               "results_public/products/lightcurves.csv", "results_public/products/stage_code.json",
+               "results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv"],
+       params=["catalog.folder_tiers_allsky"])
+def vetting_current(ctx):
+    tiers = ctx.param("catalog.folder_tiers_allsky")
+    folders = {r["candidate_id"] for r in cat.read_rows(ctx.input("results_public/candidates_allsky.csv")) if r["tier"] in tiers}
+    folders |= {r["candidate_id"] for r in cat.read_rows(ctx.input("results_public/tiers_earlier_candidates.csv"))}
+    rows = vs.stale(ctx.input("results_public/products/vetting.csv"), ctx.input("results_public/products/lightcurves_searched.csv"),
+                    ctx.input("results_public/products/lightcurves.csv"), ctx.input("results_public/products/stage_code.json"),
+                    folders)
+    assert not rows, (f"{len(rows)} rows with folders have vetting or pixel follow-up made from light curves that have "
+                      "changed, or by other code (cloud.py plan --vet / --pixel computes them again):\n"
+                      + "\n".join(f"{t} TIC {tic} P {p}: {why}" for t, tic, p, why in rows[:40]))
 
 
 @check(inputs=["candidates/TIC*_P*", "results_public/tiers_earlier_candidates.csv", "results_public/products/triceratops.csv"])

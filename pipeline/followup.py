@@ -83,7 +83,7 @@ def one(args):
         return json.load(open(path))
     res = dict(tic=tic, rank=rank, period=float(sig["period"]), depth_ppm=float(sig["depth_ppm"]))
     try:
-        _, nb = capable_neighbours(tic, float(sig["depth_ppm"]))
+        _, nb = capable_neighbours(tic, float(sig["depth_ppm"]), not_sources=sig.get("not_sources") or ())
         cap = nb[nb["capable"]]
         res["n_capable_2.5arcmin"] = int(len(cap))
         res["nearest_capable_arcsec"] = float(cap["sep_arcsec"].min()) if len(cap) else None

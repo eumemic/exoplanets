@@ -8,6 +8,9 @@ Inputs:
 - results_public/products/triceratops.csv: the TRICERATOPS result of each signal (triceratops_table.py).
 - results_public/products/centroids.csv: per-sector centroid results measured since the copy of the measured columns
   (centroid_table.py); where a row has one, it replaces the row's centroid columns.
+- results_public/products/vetting.csv: the pixel follow-up each row uses (vet_store.py). A row is in the neighbour set
+  (neighbour<15") for a TIC entry within 15" bright enough to cause the dip; where the follow-up found such entries,
+  fitted a difference image, and every entry it found is a galaxy or a galaxy's core (ticfield.py), the row is not.
 - results_public/overrides.csv: decisions made by hand, each with its reason.
 Outputs: the same rows with the TRICERATOPS columns, tier, c_reason and flags derived. Columns copied from the inputs
 are written exactly as they are there.
@@ -246,6 +249,15 @@ def overrides_for(over, table, rows, decisions):
 FIT_COLUMNS = {"candidates_allsky": ("P_err", "T0_BJD", "T14_h", "Rp_Re", "b"), "tiers_earlier_candidates": ("Rp_Re", "b")}
 
 
+def neighbour_set_into(rows, table, vetting):
+    """A row in the neighbour set because of TIC entries within 15" that are all galaxies or their cores (vetting.csv:
+    close_capable without close_stellar), with a fitted difference image, is a SNR >= 9 row."""
+    for r in rows:
+        v = vetting.get((table, r["TIC"], r["P_d"]))
+        if r["set"] == NB and v and v["image"] == "yes" and v["close_capable"] and not v["close_stellar"]:
+            r["set"] = "SNR>=9"
+
+
 def fits_into(rows, table, fits):
     """The fitted columns of each row from the fit it uses (fits.csv); the period after every lookup by (TIC, P_d)."""
     for r in rows:
@@ -258,7 +270,7 @@ def fits_into(rows, table, fits):
 
 
 def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_csv, out_allsky, out_earlier, P,
-          centroids_csv=None, fits_csv=None):
+          centroids_csv=None, fits_csv=None, vetting_csv=None):
     """The TRICERATOPS, centroid and fit tables name, for each catalog row (table, TIC, P_d of the measurement table),
     the result it uses. A row's published period is its fit's; the measurement table's period stays its key."""
     results = {}
@@ -267,6 +279,7 @@ def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_
         results[(r["table"], r["TIC"], r["P_d"])] = r
     centroids = {(r["table"], r["TIC"], r["P_d"]): r for r in read_rows(centroids_csv)} if centroids_csv else {}
     fits = {(r["table"], r["TIC"], r["P_d"]): r for r in read_rows(fits_csv)} if fits_csv else {}
+    vetting = {(r["table"], r["TIC"], r["P_d"]): r for r in read_rows(vetting_csv)} if vetting_csv else {}
     over = read_rows(overrides_csv)
 
     def result_for(r, table):
@@ -275,6 +288,7 @@ def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_
     a = read_rows(measurements_allsky)
     centroids_into(a, "candidates_allsky", centroids)
     fits_into(a, "candidates_allsky", fits)
+    neighbour_set_into(a, "candidates_allsky", vetting)
     for r in a:
         r["reported_as"] = ""
     overrides_for(over, "candidates_allsky", a, decisions=False)

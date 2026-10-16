@@ -40,12 +40,13 @@ def _same(a, b):
     return os.path.exists(b) and os.path.getsize(a) == os.path.getsize(b) and _sha(a) == _sha(b)
 
 
-def build(root, catalog_csv, sources_csv, triceratops_csv, store_root, folder_tiers, fits_csv=None):
+def build(root, catalog_csv, sources_csv, triceratops_csv, store_root, folder_tiers, fits_csv=None, vetting_csv=None):
     base = os.path.join(root, "candidates", "allsky")
     existing = set(os.listdir(base))
     sources = {r["candidate_id"]: r for r in _rows(sources_csv)}
     tri = {(r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv) if r["table"] == "candidates_allsky"}
     fits = _fits(fits_csv, "candidates_allsky")
+    vet = _vetting(vetting_csv, "candidates_allsky")
     n = dict(created=0, updated=0, removed=0)
     for r in _rows(catalog_csv):
         cid = r["candidate_id"]
@@ -64,7 +65,27 @@ def build(root, catalog_csv, sources_csv, triceratops_csv, store_root, folder_ti
             n["created"] += 1
         _sync(d, tri.get((r["TIC"], r["P_d"])), store_root, n)
         _sync_fit(d, fits.get(r["candidate_id"]), store_root, n)
+        _sync_vet(d, vet.get(r["candidate_id"]), store_root, n)
     return n
+
+
+def _vetting(vetting_csv, table):
+    """{candidate_id: vetting.csv row} of a table's rows."""
+    return {r["candidate_id"]: r for r in _rows(vetting_csv) if r["table"] == table} if vetting_csv else {}
+
+
+def _sync_vet(d, v, store_root, n):
+    """vetting.json and vetting.png are the vetting result the catalog uses, followup.json its pixel follow-up (the
+    entries vetting.csv names; the legacy ones are the files the folders were made with)."""
+    if v is None:
+        return
+    for kind, key, names in (("vet", v["vet_store"], ("vetting.json", "vetting.png")), ("pixel", v["pixel_store"], ("followup.json",))):
+        for name in names if key else ():
+            src = os.path.join(store_root, kind, key[:2], key, name)
+            target = os.path.join(d, name)
+            if os.path.exists(src) and not _same(src, target):
+                shutil.copyfile(src, target)
+                n["updated"] += 1
 
 
 def _fits(fits_csv, table):
@@ -103,10 +124,11 @@ def _sync(d, t, store_root, n):
             n["removed"] += 1
 
 
-def build_earlier(root, catalog_csv, triceratops_csv, store_root, fits_csv=None):
+def build_earlier(root, catalog_csv, triceratops_csv, store_root, fits_csv=None, vetting_csv=None):
     base = os.path.join(root, "candidates")
     tri = {(r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv) if r["table"] == "tiers_earlier_candidates"}
     fits = _fits(fits_csv, "tiers_earlier_candidates")
+    vet = _vetting(vetting_csv, "tiers_earlier_candidates")
     n = dict(created=0, updated=0, removed=0)
     for r in _rows(catalog_csv):
         d = os.path.join(base, r["candidate_id"])
@@ -115,4 +137,5 @@ def build_earlier(root, catalog_csv, triceratops_csv, store_root, fits_csv=None)
                              "package_candidates.py, and a new row needs one before the build can keep it")
         _sync(d, tri.get((r["TIC"], r["P_d"])), store_root, n)
         _sync_fit(d, fits.get(r["candidate_id"]), store_root, n)
+        _sync_vet(d, vet.get(r["candidate_id"]), store_root, n)
     return n
