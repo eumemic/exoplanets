@@ -19,3 +19,6 @@ results_cloud/
 
 # local site build (site/build.sh)
 _site/
+
+# build system's hash cache (pipeline/dag)
+.dag-cache/

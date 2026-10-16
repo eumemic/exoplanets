@@ -1,0 +1,85 @@
+{
+ "rules": {
+  "allsky_figure": {
+   "code": {
+    "effects": {
+     "allsky_figure": "733d5cf0ccce17a9a55dfab176dbc6ae1fc4d6e80b90bcbe6cd9049acfbd12b4",
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {
+      "contourpy": {
+       "version": "1.4.0"
+      },
+      "cycler": {
+       "version": "0.12.1"
+      },
+      "fonttools": {
+       "version": "4.66.1"
+      },
+      "kiwisolver": {
+       "version": "1.5.1"
+      },
+      "matplotlib": {
+       "version": "3.11.2"
+      },
+      "numpy": {
+       "version": "2.5.3"
+      },
+      "packaging": {
+       "version": "26.3"
+      },
+      "pandas": {
+       "version": "2.3.3"
+      },
+      "pillow": {
+       "version": "12.3.0"
+      },
+      "pyparsing": {
+       "version": "3.3.3"
+      },
+      "python-dateutil": {
+       "version": "2.9.0.post0"
+      },
+      "pytz": {
+       "version": "2026.5"
+      },
+      "six": {
+       "version": "1.17.0"
+      },
+      "tzdata": {
+       "version": "2026.5"
+      }
+     },
+     "python": "3.12.13"
+    },
+    "parts": {
+     "allsky_figure.TIERS": "cbbaa8b902347a48fa3f26cfa9b9f663bb233a76b862eb26339613a1353d4d7d",
+     "allsky_figure.draw": "3c732680c51a668ed07beb6fa6d2f6eb0ec04a63e41d58002d208ec8013b966d",
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "5442ee6c2a3ce1386078d60838ec6cc9b8a2261536faf0e1ef2607e78bbf0018",
+     "dag.context.covers": "c5a41fd8db921eb20ee52190f46188a55573d305ba993a91a878e57125ab1e34",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "rules.allsky_figure": "de8571fcb77b945a0020cdf336580d0b8b8cc95a06799fe50cbd24f12e4cd7c2"
+    }
+   },
+   "inputs": {
+    "results_public/candidates_allsky.csv": "d387fdf4ed6dd7ddd2bd86eec25708dff7d02b73531774c9c6355ef6657c15e4"
+   },
+   "outputs": {
+    "figures/allsky.png": "c88b3c6f0591621d366fc82f475f6a3b7a904c796b47b9b4ce825f6b6e3ab2b5"
+   },
+   "params": {
+    "catalog.counted_allsky": [
+     "A",
+     "B",
+     "N",
+     "L1"
+    ]
+   },
+   "stamp": "da8972baa41995afcc1056b6601c90419e031abbbfc61a66db75277bcf7b304e"
+  }
+ },
+ "version": 1
+}

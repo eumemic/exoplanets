@@ -1,0 +1,8 @@
+# Thresholds and settings the build's rules read (pipeline/rules.py), by dotted key, e.g. "catalog.counted_allsky".
+# A rule declares the keys it uses, and only a change to those keys reruns it. Keys are added here as the rules that
+# use them are written; the scripts that are not yet rules still define their own values.
+
+[catalog]
+# tiers counted as candidates
+counted_allsky = ["A", "B", "N", "L1"]
+counted_earlier = ["A", "B"]

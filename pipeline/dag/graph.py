@@ -1,0 +1,359 @@
+"""Rules, the dependency graph between them, and the runner.
+
+A rule is a Python function declared with @rule(inputs=..., outputs=..., params=...). Its stamp is the hash of
+- the code it depends on (codehash.CodeIndex: the functions it reaches, the third-party distributions they import),
+- the values of the parameters it declares (params.toml),
+- the contents of its inputs (files, directories, and the files matched by glob patterns).
+Rule B depends on rule A when one of B's inputs is one of A's outputs. A rule is up to date when its stamp equals the
+one in the lock and its outputs still have the hashes the lock recorded. Because the stamp uses the contents of the
+inputs, an upstream rule that reruns but writes identical files leaves everything after it up to date.
+A check is a rule without outputs whose function raises if the data are wrong; the lock records whether it passed.
+"""
+import importlib.util
+import os
+import sys
+import time
+import traceback
+from pathlib import Path
+
+from . import params as P
+from .audit import Watch
+from .codehash import CodeIndex, Environment
+from .context import RunContext, covers, is_glob
+from .hashing import FileHasher, sha256_json
+from .lock import Lock
+
+_REGISTRY = None
+# the decorators that declare rules: they register a function but do not change what it computes, so they are left
+# out of rules' code hashes (their arguments, the declared inputs, outputs and parameters, are part of the hash)
+REGISTRATION = ("dag.rule", "dag.check", "dag.graph.rule", "dag.graph.check")
+
+
+class Rule:
+    def __init__(self, func, name, inputs, outputs, params, is_check, allow_reads):
+        self.func, self.name = func, name
+        self.inputs, self.outputs, self.params = list(inputs), list(outputs), list(params)
+        self.is_check, self.allow_reads = is_check, list(allow_reads)
+        for p in self.inputs + self.outputs:
+            if os.path.isabs(p) or ".." in Path(p).parts:
+                raise ValueError(f"rule {name}: paths are relative to the repository root, without '..': {p}")
+        for o in self.outputs:
+            if is_glob(o):
+                raise ValueError(f"rule {name}: an output cannot be a pattern: {o}")
+        self.module = None          # set by Project: the module name as the code index knows it
+
+
+def _register(func, name, inputs, outputs, params, is_check, allow_reads):
+    r = Rule(func, name or func.__name__, inputs, outputs, params, is_check, allow_reads)
+    if _REGISTRY is not None:
+        _REGISTRY.append(r)
+    func.dag_rule = r
+    return func
+
+
+def rule(*, inputs=(), outputs=(), params=(), name=None, allow_reads=()):
+    if not outputs:
+        raise ValueError("a rule needs outputs; use @check for a rule that only tests")
+    return lambda f: _register(f, name, inputs, outputs, params, False, allow_reads)
+
+
+def check(*, inputs=(), params=(), name=None, allow_reads=()):
+    return lambda f: _register(f, name, inputs, (), params, True, allow_reads)
+
+
+class Status:
+    def __init__(self, state, reasons=()):
+        self.state, self.reasons = state, list(reasons)
+
+    @property
+    def ok(self):
+        return self.state == "ok"
+
+
+class BuildError(Exception):
+    pass
+
+
+class Project:
+    def __init__(self, root, rules=("pipeline/rules.py",), code_paths=("pipeline",), params="pipeline/params.toml",
+                 lock="dag.lock.json", cache=".dag-cache"):
+        self.root = Path(root).resolve()
+        self.code_paths = [self.root / c for c in code_paths]
+        self.code = CodeIndex(self.code_paths)
+        self.hasher = FileHasher(self.root / cache / "hashes.json")
+        self.env = Environment(self.hasher)
+        pp = self.root / params
+        self.params = P.load(pp) if pp.exists() else {}
+        self.lock = Lock(self.root / lock)
+        self.rules = {}
+        for rf in rules:
+            self._load(self.root / rf)
+        self._index()
+        self._stamps = {}
+
+    # loading ---------------------------------------------------------------------------------------------------
+    def _module_name(self, path):
+        for c in self.code_paths:
+            try:
+                rel = Path(path).resolve().relative_to(c)
+            except ValueError:
+                continue
+            parts = list(rel.with_suffix("").parts)
+            return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
+        raise BuildError(f"{path} is not under the code paths {self.code_paths}")
+
+    def _load(self, path):
+        global _REGISTRY
+        for c in reversed(self.code_paths):
+            if str(c) not in sys.path:
+                sys.path.insert(0, str(c))
+        # the project's own modules are loaded fresh, so a changed file is never served from an earlier import
+        for name in list(sys.modules):
+            if name == "dag" or name.startswith("dag."):
+                continue
+            f = getattr(sys.modules[name], "__file__", None)
+            if name in self.code.paths or (f and any(Path(f).resolve().is_relative_to(c) for c in self.code_paths)):
+                del sys.modules[name]
+        modname = self._module_name(path)
+        spec = importlib.util.spec_from_file_location(modname, path)
+        mod = importlib.util.module_from_spec(spec)
+        sys.modules[modname] = mod
+        prev, _REGISTRY = _REGISTRY, []
+        try:
+            spec.loader.exec_module(mod)
+            found = _REGISTRY
+        finally:
+            _REGISTRY = prev
+        for r in found:
+            if r.name in self.rules:
+                raise BuildError(f"two rules are named {r.name}")
+            r.module = self._module_name(r.func.__code__.co_filename)
+            self.rules[r.name] = r
+
+    def _index(self):
+        self.owner = {}
+        for r in self.rules.values():
+            for o in r.outputs:
+                if o in self.owner:
+                    raise BuildError(f"{o} is an output of both {self.owner[o]} and {r.name}")
+                self.owner[o] = r.name
+        self.deps = {}
+        for r in self.rules.values():
+            d = set()
+            for pat in r.inputs:
+                for o, owner in self.owner.items():
+                    if covers(pat, o) and owner != r.name:
+                        d.add(owner)
+            self.deps[r.name] = d
+        self.order, state = [], {}
+
+        def visit(n, path):
+            if state.get(n) == 1:
+                raise BuildError("dependency cycle: " + " -> ".join(path + [n]))
+            if state.get(n) == 2:
+                return
+            state[n] = 1
+            for m in sorted(self.deps[n]):
+                visit(m, path + [n])
+            state[n] = 2
+            self.order.append(n)
+
+        for n in sorted(self.rules):
+            visit(n, [])
+
+    # stamps ----------------------------------------------------------------------------------------------------
+    def input_hashes(self, r):
+        out = {}
+        for pat in r.inputs:
+            if is_glob(pat):
+                hits = sorted(self.root.glob(pat))
+                if not hits:
+                    out[pat] = None
+                for h in hits:
+                    out[h.relative_to(self.root).as_posix()] = self.hasher.path(h)
+            else:
+                out[pat] = self.hasher.path(self.root / pat)
+        return out
+
+    def code_info(self, r, with_env=True):
+        parts, effects, external = self.code.closure(r.module, r.func.__name__, ignore=REGISTRATION)
+        cparts, ceffects, cext = self.code.closure("dag.context", "RunContext")
+        parts.update(cparts)
+        effects.update(ceffects)
+        if not with_env:
+            return {"parts": parts, "effects": effects}
+        return {"parts": parts, "effects": effects, "env": self.env.describe(sorted(set(external) | set(cext)))}
+
+    def stamp(self, r):
+        info = {"code": self.code_info(r), "params": P.select(self.params, r.params), "inputs": self.input_hashes(r)}
+        return sha256_json(info), info
+
+    def output_hashes(self, r):
+        return {o: self.hasher.path(self.root / o) for o in r.outputs}
+
+    # status ----------------------------------------------------------------------------------------------------
+    def status(self, name, _memo=None):
+        memo = {} if _memo is None else _memo
+        if name in memo:
+            return memo[name]
+        r = self.rules[name]
+        entry = self.lock.get(name)
+        st, info = self.stamp(r)
+        outs = self.output_hashes(r)
+        reasons = []
+        edited = [o for o, h in outs.items() if entry and h is not None and entry["outputs"].get(o) not in (None, h)]
+        missing = [o for o, h in outs.items() if h is None]
+        waiting = [d for d in sorted(self.deps[name]) if not self.status(d, memo).ok]
+        if edited:
+            s = Status("edited", [f"{o} differs from what the build wrote; it was changed outside the build" for o in edited])
+        elif entry is None:
+            s = Status("new", ["never built"])
+        elif st != entry["stamp"]:
+            s = Status("stale", explain_change(entry, info))
+        elif missing:
+            s = Status("missing", [f"{o} does not exist" for o in missing])
+        elif r.is_check and entry.get("result") != "passed":
+            s = Status("failed", [entry.get("message", "failed")])
+        else:
+            s = Status("ok")
+        if waiting and s.ok:
+            s = Status("waiting", [])
+        if waiting:
+            s.reasons.append("after " + ", ".join(waiting) + " (not up to date)")
+        if r.is_check is False and s.state == "new" and any(h is not None for h in outs.values()):
+            s.reasons.append("outputs exist and will be overwritten")
+        memo[name] = s
+        return s
+
+    def check_lock(self, name):
+        """Problems with a rule's lock entry that can be seen on any machine: outputs that differ from what the build
+        wrote, and inputs, parameters or code that changed since. The installed packages are not compared, since they
+        differ between machines; inputs that are not present here (private data) are listed as not checked."""
+        r, entry = self.rules[name], self.lock.get(name)
+        if entry is None:
+            return ["never built"], []
+        problems, unchecked = [], []
+        for o, h in self.output_hashes(r).items():
+            if h != entry["outputs"].get(o):
+                problems.append(f"{o} differs from what the build wrote" if h else f"{o} does not exist")
+        now = self.input_hashes(r)
+        for k in sorted(set(entry["inputs"]) | set(now)):
+            if k not in entry["inputs"]:
+                problems.append(f"new input {k}")
+            elif now.get(k) is None and entry["inputs"][k] is not None:
+                unchecked.append(k)
+            elif now.get(k) != entry["inputs"][k]:
+                problems.append(f"input {k} changed")
+        if P.select(self.params, r.params) != entry["params"]:
+            problems.append("parameters changed")
+        code = self.code_info(r, with_env=False)
+        if code["parts"] != entry["code"]["parts"] or code["effects"] != entry["code"]["effects"]:
+            problems.append("code changed: " + ", ".join(k for k in sorted(set(code["parts"]) | set(entry["code"]["parts"]))
+                                                          if code["parts"].get(k) != entry["code"]["parts"].get(k)))
+        if r.is_check and entry.get("result") != "passed":
+            problems.append(entry.get("message", "check failed"))
+        return problems, unchecked
+
+    # running ---------------------------------------------------------------------------------------------------
+    def select(self, targets=None):
+        if not targets:
+            return list(self.order)
+        want, stack = set(), list(targets)
+        while stack:
+            n = stack.pop()
+            if n not in self.rules:
+                raise BuildError(f"no rule named {n}")
+            if n not in want:
+                want.add(n)
+                stack += self.deps[n]
+        return [n for n in self.order if n in want]
+
+    def run(self, targets=None, discard_edits=False, dry_run=False, log=print):
+        ran, failed_checks = [], []
+        for name in self.select(targets):
+            s = self.status(name)
+            if s.ok or s.state == "waiting":
+                continue
+            if s.state == "edited" and not discard_edits:
+                raise BuildError(f"{name}: " + "; ".join(s.reasons) + ". Restore the file, or rerun with --discard-edits "
+                                 "to overwrite it.")
+            if dry_run:
+                log(f"would run {name}: " + "; ".join(s.reasons))
+                continue
+            log(f"running {name}: " + "; ".join(s.reasons))
+            ok = self.execute(self.rules[name], log)
+            ran.append(name)
+            if not ok:
+                failed_checks.append(name)
+        self.hasher.save()
+        return ran, failed_checks
+
+    def execute(self, r, log=print):
+        st0, info = self.stamp(r)
+        ctx = RunContext(self.root, r, P.select(self.params, r.params))
+        result, message = "passed", ""
+        t0 = time.time()
+        with Watch(self.root, r, r.inputs, [self.root / o for o in r.outputs]) as w:
+            try:
+                r.func(ctx)
+            except Exception as ex:
+                if not r.is_check:
+                    raise BuildError(f"rule {r.name} failed:\n{traceback.format_exc()}") from ex
+                result, message = "failed", f"{type(ex).__name__}: {ex}"
+        if w.violations:
+            listed = "\n".join(f"  {k} {p}" for k, p in sorted(set(w.violations))[:40])
+            raise BuildError(f"rule {r.name} used files it does not declare:\n{listed}")
+        st1, _ = self.stamp(r)
+        if st1 != st0:
+            raise BuildError(f"rule {r.name}: its inputs or code changed while it ran; run it again")
+        outs = self.output_hashes(r)
+        missing = [o for o, h in outs.items() if h is None]
+        if missing:
+            raise BuildError(f"rule {r.name} did not write its declared outputs: {', '.join(missing)}")
+        entry = {"stamp": st0, "code": info["code"], "params": info["params"], "inputs": info["inputs"], "outputs": outs}
+        if r.is_check:
+            entry["result"] = result
+            if message:
+                entry["message"] = message[:2000]
+        self.lock.set(r.name, entry)
+        self.lock.save()
+        self.hasher.save()
+        log(f"  {r.name}: {result if r.is_check else 'done'} in {time.time() - t0:.1f} s" + (f" ({message})" if message else ""))
+        return result == "passed"
+
+
+def explain_change(old, new):
+    """Why a stamp changed, in words: which inputs, parameters, functions or distributions differ from the lock."""
+    out = []
+    oi, ni = old.get("inputs", {}), new["inputs"]
+    for k in sorted(set(oi) | set(ni)):
+        if k not in oi:
+            out.append(f"new input {k}")
+        elif k not in ni:
+            out.append(f"input {k} no longer matched")
+        elif oi[k] != ni[k]:
+            out.append(f"input {k} changed" if ni[k] is not None else f"input {k} is missing")
+    op, np_ = old.get("params", {}), new["params"]
+    for k in sorted(set(op) | set(np_)):
+        if op.get(k) != np_.get(k):
+            out.append(f"parameter {k}: {op.get(k)!r} -> {np_.get(k)!r}")
+    oc, nc = old.get("code", {}), new["code"]
+    opart, npart = oc.get("parts", {}), nc["parts"]
+    for k in sorted(set(opart) | set(npart)):
+        if opart.get(k) != npart.get(k):
+            out.append(f"code {k} " + ("added" if k not in opart else "removed" if k not in npart else "changed"))
+    oeff, neff = oc.get("effects", {}), nc["effects"]
+    for k in sorted(set(oeff) | set(neff)):
+        if oeff.get(k) != neff.get(k):
+            out.append(f"module {k} " + ("now used" if k not in oeff else "no longer used" if k not in neff
+                                         else "changed its module-level statements"))
+    oe, ne = oc.get("env", {}), nc["env"]
+    if oe.get("python") != ne.get("python"):
+        out.append(f"Python {oe.get('python')} -> {ne.get('python')}")
+    od, nd = oe.get("dists", {}), ne.get("dists", {})
+    for k in sorted(set(od) | set(nd)):
+        if od.get(k) != nd.get(k):
+            a, b = od.get(k), nd.get(k)
+            out.append(f"package {k}: " + (f"{a['version']} -> {b['version']}" if a and b and a["version"] != b["version"]
+                                            else "added" if not a else "removed" if not b else "installed files changed"))
+    return out or ["stamp changed"]

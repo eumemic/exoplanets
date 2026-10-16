@@ -28,3 +28,7 @@ jobs:
           uv pip install --python .venv/bin/python -r requirements.txt pytest
       - name: Run tests
         run: .venv/bin/pytest -q
+      # Every file the build makes must match dag.lock.json: an output edited by hand, or an input, parameter or function
+      # changed without rebuilding what depends on it, fails here.
+      - name: Check built files against the build's lock
+        run: cd pipeline && ../.venv/bin/python -m dag check --ci
