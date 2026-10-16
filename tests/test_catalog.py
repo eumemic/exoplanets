@@ -278,6 +278,34 @@ class TriceratopsTableTests(unittest.TestCase):
         self.assertEqual([(r["batch"], r["store"]) for r in rej], [("bX", key)])
         self.assertIn("TIC 9 as the target, not TIC 5", rej[0]["problems"])
 
+    def test_a_result_kept_for_an_unchanged_setup(self):
+        root = Path(tempfile.mkdtemp())
+        self.run_build(root, [self.batch(root, "b1")])
+        s = store.Store(root / "store")
+        d, plan_item = self.cloud_item(root)
+        first, problems = tri_store.ingest_item(s, d, plan_item, "bX", 10 ** 9)
+        self.assertEqual(problems, [])
+        kept = root / "kept"                                          # the setup's code changed; its digest did not
+        kept.mkdir()
+        (kept / "item.json").write_text(json.dumps(dict(
+            commit="abc", sectors="1,2", reused=first, setup_digest="D1", prior_digest="D1", remote=True,
+            setup_files={"state.pkl": dict(sha256="x", size=1)},
+            env={"requirements.txt": "E1", "requirements-triceratops.txt": "E2"})))
+        later = dict(plan_item, code=dict(plan_item["code"], tri_setup="c2"), prior=dict(tri=first, setup=""))
+        key, problems = tri_store.ingest_item(s, kept, later, "bY", 10 ** 9 + 1, remote_archive="s3://b/k.big.tgz")
+        self.assertEqual(problems, [])
+        req, res, chk = s.get("tri", key)
+        old = s.get("tri", first)
+        self.assertEqual((req["setup"], res["reused_from"], res["content"]), ("D1", first, old[1]["content"]))
+        self.assertEqual(s.get("tri_setup", res["setup_key"])[0]["code"], "c2")
+        self.assertTrue(chk["passed"])
+        rows = tt.build(root / "store", [("candidates_allsky", "5", "3.0")], root / "out.csv")
+        self.assertEqual((rows[0]["batch"], rows[0]["store"]), ("bY", key))
+        (kept / "item.json").write_text((kept / "item.json").read_text().replace('"prior_digest": "D1"', '"prior_digest": "D2"'))
+        _, problems = tri_store.ingest_item(s, kept, dict(later, code=dict(later["code"], tri_setup="c3")), "bZ", 10 ** 9 + 2,
+                                            remote_archive="s3://b/k.big.tgz")
+        self.assertIn("the new target setup differs from the one the result ran on", problems)
+
     def test_contrast_curve_runs_are_stored_as_their_own_kind(self):
         root = Path(tempfile.mkdtemp())
         d, plan_item = self.cloud_item(root)

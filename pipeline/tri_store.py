@@ -181,13 +181,17 @@ def molusc_request(tic, gaia_row, mass, molusc_code, code, env, draws=200000):
                 draws=draws, seed=molusc_batch.molusc_seed(tic), molusc=molusc_code, code=code, env=env)
 
 
-def setup_request(tic, sectors, depth_ppm, star, code, env):
+def setup_request(tic, sectors, depth_ppm, star, code, env, not_hosts=None):
     """The target setup of a star, its sectors (the fold's three most informative with cutouts) and the signal's depth:
-    star is the hash of its TIC row in the batch's snapshot. TRICERATOPS queries the TIC around the star and the
-    field-star population when it is set up, and the cutouts are cut from the TESS cubes, so all three are outputs,
-    stored with the entry; a later batch can reuse the entry instead of querying again."""
-    return dict(kind="tri_setup", tic=int(tic), sectors=str(sectors), depth_ppm=str(depth_ppm), nearby_max_arcsec=30,
-                star=star, code=code, env=env)
+    star is the hash of its TIC row in the batch's snapshot; not_hosts the galaxies and cores near it that host no
+    scenario (ticfield.py). TRICERATOPS queries the TIC around the star and the field-star population when it is set up,
+    and the cutouts are cut from the TESS cubes, so all three are outputs, stored with the entry; a later batch can reuse
+    the entry instead of querying again. The entry's content is fpp_core.setup_digest, the hash of what the runs read."""
+    req = dict(kind="tri_setup", tic=int(tic), sectors=str(sectors), depth_ppm=str(depth_ppm), nearby_max_arcsec=30,
+               star=star, code=code, env=env)
+    if not_hosts is not None:
+        req["not_hosts"] = sorted(int(x) for x in not_hosts)
+    return req
 
 
 def tri_request(item, fold, setup, molusc, runs, draws, code, env):
@@ -206,6 +210,40 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def _ingest_reused(store, info, plan_item, batch, seq, n_runs, problems, remote_archive):
+    """An item whose new target setup is the one its result in use ran on (the same setup digest), with the same fold,
+    MOLUSC file, runs and code: the runs are not repeated (they would come out bit for bit the same, being seeded), and
+    the result is stored again under the new request, citing the one it was taken from. Returns (key, problems)."""
+    it, prior = plan_item["item"], plan_item["prior"]
+    pres = store.get("tri", prior["tri"])
+    if pres is None:
+        return None, problems + [f"the result to reuse ({prior['tri'][:12]}) is not in this store"]
+    preq, pr, pchk = pres
+    fold = store.get("fold", st.key_of(plan_item["fold_request"]))
+    mreq = plan_item.get("molusc_request")
+    molusc = store.get("molusc", st.key_of(mreq)) if mreq else None
+    if fold is None or (mreq and molusc is None):
+        return None, problems + ["the fold or MOLUSC file of the result to reuse is not in this store"]
+    sreq = setup_request(it["tic"], info["sectors"], it["depth_ppm"], plan_item.get("star"), plan_item["code"]["tri_setup"],
+                         plan_item["env"]["tri_setup"], plan_item.get("not_hosts"))
+    setup_key = put_setup(store, sreq, dict(content=info["setup_digest"], population="population.csv" in info["setup_files"],
+                                            remote=dict(archive=remote_archive, files=info["setup_files"])))
+    req = tri_request(it, fold[1]["content"], info["setup_digest"], molusc[1]["content"] if molusc else None, n_runs,
+                      preq.get("draws"), plan_item["code"]["tri"], plan_item["env"]["tri"])
+    for f in ("fold", "molusc", "runs", "draws", "code", "env", "depth_ppm", "drop"):
+        if f != "fold" and preq.get(f) != req.get(f):
+            problems.append(f"the result to reuse differs in {f}")
+    if preq.get("fold") != req["fold"]:
+        problems.append("the result to reuse ran on another fold")
+    if info["setup_digest"] != info.get("prior_digest"):
+        problems.append("the new target setup differs from the one the result ran on")
+    res = dict(pr, seq=seq, batch=batch, setup_key=setup_key, reused_from=prior["tri"], runs_batch=pr.get("runs_batch") or pr["batch"])
+    key = store.put("tri", req, res, check=dict(passed=not problems and bool((pchk or {}).get("passed", True)),
+                                                problems=problems, reused_from=prior["tri"]),
+                    files={"fpp.json": os.path.join(store.path("tri", prior["tri"]), "fpp.json")})
+    return key, problems
 
 
 def put_setup(store, req, res, files=None):
@@ -239,6 +277,8 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
             problems.append(f"{kind}: the instance's packages do not match {LOCKS[kind]}")
     if info.get("commit") != plan_item["commit"]:
         problems.append(f"code: the instance ran commit {info.get('commit')}, the plan {plan_item['commit']}")
+    if info.get("reused"):
+        return _ingest_reused(store, info, plan_item, batch, seq, n_runs, problems, remote_archive)
     first = os.path.join(d, "fpp.json") if os.path.exists(os.path.join(d, "fpp.json")) else \
         os.path.join(d, "cc", info["cc"][0], "fpp.json")          # the fold's details are in every variant's result
     with open(first) as fh:
@@ -250,10 +290,10 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
                 sectors=j.get("sectors"), sectors_ranked=ranked)
     fold_key = store.put("fold", plan_item["fold_request"], fres, files={"fold.npz": fold_npz})
     sreq = setup_request(it["tic"], info["sectors"], it["depth_ppm"], plan_item.get("star"), plan_item["code"]["tri_setup"],
-                         plan_item["env"]["tri_setup"])
+                         plan_item["env"]["tri_setup"], plan_item.get("not_hosts"))
     remote = info.get("remote") and remote_archive
     if remote:                                      # the large files stayed in the bucket; the instance hashed them
-        scontent = info["setup_content"]
+        scontent = info.get("setup_digest") or info["setup_content"]
         setup_key = put_setup(store, sreq, dict(content=scontent, population="population.csv" in info["setup_files"],
                                                 remote=dict(archive=remote_archive, files=info["setup_files"])))
     else:

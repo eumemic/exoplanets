@@ -205,7 +205,7 @@ def centroid_rows(keys=None):
             os.path.join(ROOT, "results_public", "products", "centroids.csv"),
             os.path.join(ROOT, "results_public", "products", "measurements_allsky.csv"), tol, code_now)}
         need = a.tier.isin(P["catalog.counted_allsky"]) & a.cs_sectors.isna()
-        sel = a[need | [(t, f"{p}") in stale for t, p in zip(a.TIC, a.P_d)]]
+        sel = a[need | pd.Series([(t, f"{p}") in stale for t, p in zip(a.TIC, a.P_d)], index=a.index)]
     stars = star_rows(sorted(set(sel.TIC))).set_index("ID")
     rows = []
     for r in sel.itertuples():
@@ -225,7 +225,7 @@ def star_hash(row):
     return st.sha256_json({k: (v.item() if hasattr(v, "item") else v) for k, v in row.items()})
 
 
-def tri_items(keys, cc, base, rerun_legacy=False):
+def tri_items(keys, cc, base, rerun_legacy=False, runs=10):
     """The TRICERATOPS signals of a batch with the requests of their fold and MOLUSC stages, and the snapshots the
     instance reads: (items, stars, gaia, manifest, reuse)."""
     rows = list(pd.read_csv(PLAN_CSV, dtype=str, keep_default_na=False).to_dict("records"))
@@ -260,6 +260,9 @@ def tri_items(keys, cc, base, rerun_legacy=False):
     s = st.Store()
     out, reuse = [], {"fold": [], "molusc": []}
     gaia_by = gaia.set_index("source_id")
+    import ticfield
+    nonhost = ticfield.by_star(ticfield.NONSTELLAR, ticfield.NEARBY_ARCSEC)
+    in_use = tri_store.latest(s)
     for it in items:
         tic = int(it["tic"])
         lcs = [[int(r.sector), str(r.prov), float(r.exptime), str(r.uri)] for r in man[man.tic == tic].itertuples()]
@@ -277,9 +280,30 @@ def tri_items(keys, cc, base, rerun_legacy=False):
         cs = curves(tic) if cc else []
         if not base and not cs:
             raise SystemExit(f"{it['key']}: --no-base, and no contrast curve for TIC {tic}")
-        out.append(dict(item=it, fold_request=freq, molusc_request=mreq, base_runs=base, cc=cs,
-                        star=star_hash(star.drop(labels=["GAIA_DR3"]).to_dict())))
+        x = dict(item=it, fold_request=freq, molusc_request=mreq, base_runs=base, cc=cs,
+                 star=star_hash(star.drop(labels=["GAIA_DR3"]).to_dict()), not_hosts=nonhost.get(tic, []))
+        x["prior"] = prior_result(s, in_use.get(it["key"]), x, code, env, runs)
+        out.append(x)
     return out, stars, gaia, man, dict(reuse, code=code, env=env)
+
+
+def prior_result(s, used, x, code, env, runs):
+    """The result in use that the instance may keep (cloud_worker.py): one whose fold, MOLUSC file, runs, code of the runs
+    and packages are those the new request would have, so that only its target setup can differ; the instance keeps it
+    if the new setup's digest equals that of the setup it ran on (fpp_core.setup_digest). None if there is none."""
+    if used is None or x["cc"] or not x["base_runs"]:
+        return None
+    key, req, res = used
+    if req.get("legacy") or not res.get("setup_key") or not res.get("fold_key"):
+        return None
+    mk = st.key_of(x["molusc_request"]) if x["molusc_request"] else None
+    same = (res["fold_key"] == st.key_of(x["fold_request"]) and res.get("molusc_key") == mk and req.get("runs") == runs
+            and req.get("code") == code["tri"] and req.get("env") == env["tri"]
+            and str(req.get("depth_ppm")) == str(x["item"]["depth_ppm"]) and str(req.get("drop") or "") == str(x["item"]["drop"] or ""))
+    sent = s.get("tri_setup", res["setup_key"])
+    if not same or sent is None or not sent[1].get("remote"):
+        return None
+    return dict(tri=key, setup=res["setup_key"])
 
 
 def split(out, parts):
@@ -366,7 +390,7 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids
             print("nothing to measure: every counted candidate has a current per-sector centroid measurement")
             return None
     else:
-        out, stars, gaia, man, extra = tri_items(keys, cc, base, rerun_legacy)
+        out, stars, gaia, man, extra = tri_items(keys, cc, base, rerun_legacy, runs)
         if not out:
             print("nothing to run: no row of triceratops_plan.csv is pending or stale")
             return None
@@ -395,7 +419,8 @@ def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, 
     price, vc = spot_price(itype), VCPUS.get(itype, 16)
     # measured: 270 signals (5,400 runs) took 34 min on 64 vCPUs on 15 October (about 0.4 core-minutes a run, with
     # MOLUSC and the setups alongside); a centroid measurement ~1-3 min per signal on one core (12 in ~4 min with 6)
-    variants = sum(int(x["base_runs"]) + len(x["cc"]) for x in out)
+    # a signal with a result in use that it may keep runs only if its new target setup differs (assumed for 1 in 10)
+    variants = sum((0.1 if x.get("prior") else 1) * (int(x["base_runs"]) + len(x["cc"])) for x in out)
     # a fit: 3,000 steps of 32 walkers, ~2-5 min on one core
     hours = (15 + variants * 2 * runs * 0.4 / max(1, vc - 1) + len(cs_out) * 2.0 / 6 + len(fit_out) * 5.0 / max(1, vc - 1)) / 60
     est = dict(instance=itype, spot_usd_per_h=price, hours=round(hours, 2), usd=round(price * hours, 2) if price else None,
@@ -421,7 +446,8 @@ def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, 
         r = x["item"]
         print(f"  {r['key']} (tier {r['tier']}): centroids in sectors {r['sectors']}")
     if out:
-        print(f"reused from the store: {len(p['reuse']['fold'])} folds, {len(p['reuse']['molusc'])} MOLUSC files")
+        print(f"reused from the store: {len(p['reuse']['fold'])} folds, {len(p['reuse']['molusc'])} MOLUSC files; "
+              f"{sum(bool(x.get('prior')) for x in out)} signals keep their result if their target setup comes out the same")
     print(f"estimate: {itype} spot at ${price}/h, about {est['hours']} h, about ${est['usd']}; limit {est['limit_hours']} h")
     print(f"launch with: python cloud.py run {bid} --approve")
     return p
@@ -484,16 +510,27 @@ def kit(p, d, s3, hours):
             ranked = s.get("fold", fk)[1].get("sectors_ranked") or []
             secs = ",".join(str(v) for v in sorted(ranked[:3]))
             sk = st.key_of(tri_store.setup_request(tic, secs, x["item"]["depth_ppm"], x.get("star"), p["code"]["tri_setup"],
-                                                   p["env"]["tri_setup"]))
+                                                   p["env"]["tri_setup"], x.get("not_hosts")))
             ent = s.get("tri_setup", sk) if ranked else None
             if ent and ent[1].get("remote"):
                 files = ent[1]["remote"]["files"]
-                dest = {"state.pkl": f"t2/states/{tic}_{secs.replace(',', '-')}.pkl"}
+                dest = {"state.pkl": f"t2/states/{tic}_{secs.replace(',', '-')}_d{float(x['item']['depth_ppm']):g}.pkl"}
                 if "population.csv" in files:
                     dest["population.csv"] = f"t2/cache/{tic}/population.csv"
                 dest.update({f"cuts/{n[4:]}": f"t2/cuts/tic{tic}/{n[4:]}" for n in files if n.startswith("cut_")})
                 remote.append(dict(url=_presign(s3, "get_object", ent[1]["remote"]["archive"].split("/", 3)[3], hours),
-                                   members=dest, state=dest["state.pkl"], population=dest.get("population.csv")))
+                                   members=dest, state=dest["state.pkl"], population=dest.get("population.csv"),
+                                   digest=ent[1]["content"]))
+        prior = x.get("prior")
+        pent = s.get("tri_setup", prior["setup"]) if prior else None
+        if pent and pent[1].get("remote"):          # the setup the result in use ran on: its digest, cutouts and population
+            files = pent[1]["remote"]["files"]
+            dest = {"state.pkl": f"prior/{key}/state.pkl"}
+            if "population.csv" in files:
+                dest["population.csv"] = f"prior/{key}/population.csv"
+            dest.update({f"cuts/{n[4:]}": f"t2/cuts/tic{tic}/{n[4:]}" for n in files if n.startswith("cut_")})
+            remote.append(dict(url=_presign(s3, "get_object", pent[1]["remote"]["archive"].split("/", 3)[3], hours),
+                               members=dest, prior=key, tic=tic))
         mk = st.key_of(x["molusc_request"]) if x["molusc_request"] else None
         if mk and s.has("molusc", mk):
             res = s.get("molusc", mk)[1]

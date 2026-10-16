@@ -13,6 +13,7 @@ import folders as fo
 import lcindex as lc
 import predict
 import stage_code as sc
+import ticfield
 import tri_plan as tp
 import triceratops_table as tt
 from dag import check, rule
@@ -53,7 +54,8 @@ def triceratops_table(ctx):
 
 
 @rule(inputs=[f"{STORE}/centroid/*/*/request.json", f"{STORE}/centroid/*/*/result.json", f"{STORE}/centroid/*/*/*.json",
-              "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
+              "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv",
+              "results_public/products/tic_nonstellar.csv"],
       outputs=["results_public/products/centroids.csv"], params=["triceratops.match_period_rel"])
 def centroid_table(ctx):
     """The per-sector centroid measurement each catalog row uses, from the store (centroid_table.py, centroid_store.py)."""
@@ -61,7 +63,28 @@ def centroid_table(ctx):
                                                  ("tiers_earlier_candidates", "measurements_earlier.csv"))
             for r in cat.read_rows(ctx.input(f"results_public/products/{f}"))]
     ct.build(ctx.root / STORE, rows, ctx.output("results_public/products/centroids.csv"),
-             match_rel=ctx.param("triceratops.match_period_rel"))
+             match_rel=ctx.param("triceratops.match_period_rel"),
+             not_sources=ticfield.by_star(ctx.input("results_public/products/tic_nonstellar.csv")))
+
+
+@check(inputs=["results_public/products/tic_fields.csv", "results_public/candidates_allsky.csv",
+               "results_public/tiers_earlier_candidates.csv"])
+def tic_fields_complete(ctx):
+    missing = ticfield.problems(ctx.input("results_public/products/tic_fields.csv"),
+                                ctx.input("results_public/candidates_allsky.csv"),
+                                ctx.input("results_public/tiers_earlier_candidates.csv"))
+    assert not missing, (f"{len(missing)} catalog stars have no checked TIC field (`ticfield.py refresh --missing` "
+                         "checks them): " + ", ".join(map(str, missing[:40])))
+
+
+@check(inputs=["results_public/products/tic_nonstellar.csv", "results_public/candidates_allsky.csv",
+               "results_public/tiers_earlier_candidates.csv"])
+def centroid_neighbours_stellar(ctx):
+    bad = ticfield.galaxy_neighbours(ctx.input("results_public/products/tic_nonstellar.csv"),
+                                     [ctx.input("results_public/candidates_allsky.csv"),
+                                      ctx.input("results_public/tiers_earlier_candidates.csv")])
+    assert not bad, (f"{len(bad)} rows' per-sector centroids name a galaxy or a galaxy's core as the neighbour that fits "
+                     "(measure them again: cloud.py plan --centroids --keys):\n" + "\n".join(bad[:40]))
 
 
 @rule(inputs=[f"{STORE}/fit/*/*/request.json", f"{STORE}/fit/*/*/result.json", f"{STORE}/fit/*/*/check.json",

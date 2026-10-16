@@ -132,8 +132,9 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
     os.makedirs(d)
     os.makedirs(os.path.join(big, "cuts"))
     shutil.copyfile(os.path.join(t2, "folds", f"{key}.npz"), os.path.join(d, "fold.npz"))
-    shutil.copyfile(os.path.join(t2, "states", f"{tic}_{job['sectors'].replace(',', '-')}.pkl"), os.path.join(big, "state.pkl"))
-    pops = sorted(glob.glob(os.path.join(t2, "cache", str(tic), "*gaia_background.csv")))
+    state = _state(t2, job)
+    shutil.copyfile(state, os.path.join(big, "state.pkl"))
+    pops = _population(t2, tic)
     if pops:
         shutil.copyfile(pops[0], os.path.join(big, "population.csv"))
     for c in sorted(glob.glob(os.path.join(t2, "cuts", f"tic{tic}", "*.fits"))):
@@ -165,7 +166,8 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
         checks[lab or "base"] = _gate(os.path.join(out, "fpp.json"), runs, os.path.join(d, "fold.npz"), item["duration_h"])
     json.dump(dict(info, key=key, tic=tic, sectors=job["sectors"], base=any(lab == "" for lab, _ in done),
                    cc=[lab for lab, _ in done if lab], check=checks, setup_files=files, setup_content=setup_content,
-                   molusc_content=molusc, remote=True), open(os.path.join(d, "item.json"), "w"))
+                   setup_digest=_read(state + ".digest"), molusc_content=molusc, remote=True),
+              open(os.path.join(d, "item.json"), "w"))
     ok = True
     for src, url in ((big, urls["big"][key]), (d, urls["items"][key])):      # the large archive first
         arc = src + ".tgz"
@@ -176,6 +178,78 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
     log(f"{key}: {'uploaded' if ok else 'UPLOAD FAILED'} ({', '.join(lab or 'base' for lab, _ in done)})"
         + (f"; checks: {bad}" if bad else ""))
     return ok
+
+
+def _state(t2, job):
+    """The target state of a job: its own depth's (fpp_pool.depth_state_path)."""
+    return os.path.join(t2, "states", f"{int(job['tic'])}_{job['sectors'].replace(',', '-')}_d{float(job['depth_ppm']):g}.pkl")
+
+
+def _population(t2, tic):
+    """The field-star population file of a star's setups: as TRICERATOPS wrote it, or as a reused setup brought it."""
+    c = os.path.join(t2, "cache", str(tic))
+    return sorted(glob.glob(os.path.join(c, "*gaia_background.csv"))) or sorted(glob.glob(os.path.join(c, "population.csv")))
+
+
+def _read(path):
+    return open(path).read().strip() if os.path.exists(path) else None
+
+
+def pack_reused(x, R, jobs, info, urls):
+    """Upload an item whose new target setup has the digest of the setup its result in use ran on: the runs are not
+    repeated; the new setup's files go up (a later batch can reuse them) with item.json naming the result kept."""
+    it = x["item"]
+    key, tic, job = it["key"], int(it["tic"]), jobs[it["key"]]
+    t2 = os.path.join(R, "t2")
+    d, big = os.path.join(R, "items", key), os.path.join(R, "items", key + ".big")
+    for y in (d, big):
+        shutil.rmtree(y, ignore_errors=True)
+    os.makedirs(d)
+    os.makedirs(os.path.join(big, "cuts"))
+    state = _state(t2, job)
+    shutil.copyfile(state, os.path.join(big, "state.pkl"))
+    sfiles = {"state.pkl": os.path.join(big, "state.pkl")}
+    pops = _population(t2, tic)
+    if pops:
+        shutil.copyfile(pops[0], os.path.join(big, "population.csv"))
+        sfiles["population.csv"] = os.path.join(big, "population.csv")
+    for c in sorted(glob.glob(os.path.join(t2, "cuts", f"tic{tic}", "*.fits"))):
+        shutil.copyfile(c, os.path.join(big, "cuts", os.path.basename(c)))
+        sfiles[f"cut_{os.path.basename(c)}"] = os.path.join(big, "cuts", os.path.basename(c))
+    files = {n: dict(sha256=_sha(q), size=os.path.getsize(q)) for n, q in sfiles.items()}
+    json.dump(dict(info, key=key, tic=tic, sectors=job["sectors"], reused=x["prior"]["tri"], setup_files=files,
+                   setup_digest=_read(state + ".digest"), prior_digest=_read(os.path.join(R, "prior", key, "digest")),
+                   remote=True), open(os.path.join(d, "item.json"), "w"))
+    ok = True
+    for src, url in ((big, urls["big"][key]), (d, urls["items"][key])):
+        arc = src + ".tgz"
+        with tarfile.open(arc, "w:gz") as tf:
+            tf.add(src, arcname=".")
+        ok = put(url, open(arc, "rb").read()) and ok
+    log(f"{key}: {'kept' if ok else 'UPLOAD FAILED'} (target setup unchanged; result {x['prior']['tri'][:12]} kept)")
+    return ok
+
+
+def prior_digests(R, priors):
+    """The digests of the setups the results in use ran on (fetched by fetch_reused into R/prior/<key>/), written to
+    R/prior/<key>/digest; their population files also go where this machine's new setups find them."""
+    todo = []
+    for key, tic in priors:
+        pd_ = os.path.join(R, "prior", key)
+        pop = os.path.join(pd_, "population.csv")
+        cache = os.path.join(R, "t2", "cache", str(tic))
+        if os.path.exists(pop) and not _population(os.path.join(R, "t2"), tic):
+            os.makedirs(cache, exist_ok=True)
+            shutil.copyfile(pop, os.path.join(cache, f"{tic}_gaia_background.csv"))
+        if os.path.exists(os.path.join(pd_, "state.pkl")):
+            todo.append([os.path.join(pd_, "state.pkl"), pop if os.path.exists(pop) else "", os.path.join(pd_, "digest")])
+    if todo:
+        script = ("import json, sys; sys.path.insert(0, %r); import fpp_core as fc\n"
+                  "for st, pop, out in json.loads(sys.argv[1]):\n"
+                  "    t = fc.load_state(st); t.trilegal_fname = pop or None\n"
+                  "    open(out, 'w').write(fc.setup_digest(t))\n") % PIPE
+        subprocess.run([os.path.join(EXO, ".venv-trice", "bin", "python"), "-c", script, json.dumps(todo)], check=True, env=ENV)
+    log(f"digests of {len(todo)} setups that results in use ran on")
 
 
 def fetch_reused(B, R):
@@ -196,12 +270,16 @@ def fetch_reused(B, R):
                     shutil.copyfileobj(f, out)
         if x.get("state"):
             fix.append([os.path.join(R, x["state"]), os.path.join(R, x["population"]) if x.get("population") else ""])
+            if x.get("digest"):
+                with open(os.path.join(R, x["state"]) + ".digest", "w") as fh:
+                    fh.write(x["digest"])
     if fix:
         script = ("import json, sys; sys.path.insert(0, %r); import fpp_core as fc\n"
                   "for st, pop in json.loads(sys.argv[1]):\n"
                   "    t = fc.load_state(st); t.trilegal_fname = pop or None; fc.save_state(t, st)\n") % PIPE
         subprocess.run([os.path.join(EXO, ".venv-trice", "bin", "python"), "-c", script, json.dumps(fix)], check=True, env=ENV)
     log(f"reused from the bucket: {len(items)} archives ({len(fix)} target setups)")
+    prior_digests(R, [(x["prior"], int(x["tic"])) for x in items if x.get("prior")])
 
 
 def run_fits(plan, B, R, info, urls, procs):
@@ -283,8 +361,8 @@ def main():
                                        cwd=PIPE, env=ENV, stdout=open(os.path.join(HOME, "centroids.log"), "a"),
                                        stderr=subprocess.STDOUT)
         import csv
-        items = [p["item"] for p in plan["items"]]
-        cols = ["key", "tic", "period", "t0", "duration_h", "depth_ppm", "masks", "drop"]
+        items = [dict(p["item"], not_hosts=",".join(str(v) for v in p.get("not_hosts") or [])) for p in plan["items"]]
+        cols = ["key", "tic", "period", "t0", "duration_h", "depth_ppm", "masks", "drop", "not_hosts"]
         with open(os.path.join(R, "list.csv"), "w", newline="") as fh:
             w = csv.DictWriter(fh, cols, extrasaction="ignore")
             w.writeheader()
@@ -318,12 +396,38 @@ def main():
         mol.wait()
         log(f"fleet prep exit {rc}; MOLUSC exit {mol.returncode}")
         jobs = {r["key"]: r for r in csv.DictReader(open(os.path.join(R, "t2", "jobs.csv")))}
+        STATE["stage"] = "results kept"
+        todo = []
+        for x in plan["items"]:
+            key = x["item"]["key"]
+            if key not in jobs:
+                continue
+            new = _read(_state(os.path.join(R, "t2"), jobs[key]) + ".digest")
+            if x.get("prior") and new and new == _read(os.path.join(R, "prior", key, "digest")):
+                (STATE["uploaded"] if pack_reused(x, R, jobs, info, urls) else STATE["failed"]).append(key)
+            else:
+                todo.append(x)
         STATE["stage"] = "runs"
-        # several signals per fpp_pool call (about three runs per process), each uploaded when its call ends
+        # several signals per fpp_pool call (about three runs per process), each uploaded when its call ends; fpp_pool
+        # run reads a star's target from one file per star and sectors, so a call holds one depth of each
         per = max(1, (3 * nproc) // (2 * plan["runs"]))
-        todo = [x for x in plan["items"] if x["item"]["key"] in jobs]
-        for i in range(0, len(todo), per):
-            chunk, rows = todo[i:i + per], []
+        chunks, cur, seen = [], [], {}
+        for x in todo:
+            j = jobs[x["item"]["key"]]
+            sk = (j["tic"], j["sectors"])
+            if len(cur) >= per or (sk in seen and seen[sk] != j["depth_ppm"]):
+                chunks.append(cur)
+                cur, seen = [], {}
+            cur.append(x)
+            seen[sk] = j["depth_ppm"]
+        chunks += [cur] if cur else []
+        for i, chunk in enumerate(chunks):
+            rows = []
+            for x in chunk:
+                j = jobs[x["item"]["key"]]
+                plain = os.path.join(R, "t2", "states", f"{int(j['tic'])}_{j['sectors'].replace(',', '-')}.pkl")
+                if os.path.exists(_state(os.path.join(R, "t2"), j)):
+                    shutil.copyfile(_state(os.path.join(R, "t2"), j), plain)
             for x in chunk:
                 key, base, cc = x["item"]["key"], x.get("base_runs", True), x.get("cc") or []
                 rows += ([dict(jobs[key], cc="", cc_filt="")] if base else []) + [

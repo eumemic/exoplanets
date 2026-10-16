@@ -11,7 +11,8 @@ values empty. A result that fails the checks is not used: the signal's latest re
 none does: tri_plan.py then lists the row as pending), and the rejected ones are listed in triceratops_rejected.csv. Column store is the entry's key, batch the batch that computed it, legacy is yes for a result
 imported from a batch that did not keep all of its inputs, and lightcurves the hash of the light-curve list its fold was
 made from (lcindex.list_hash; empty for a fold that did not record it, made from the searched list), and code the hashes
-of the code and packages of its stages (stage_code.py; empty for a legacy result).
+of the code and packages of its stages (stage_code.py; empty for a legacy result). A result kept for a new request, because its target setup
+came out the same (cloud_worker.py, tri_store.py), names in runs_batch the batch that ran its runs.
 """
 import collections
 import csv
@@ -28,7 +29,7 @@ import tri_store
 
 COLUMNS = ["table", "TIC", "P_d", "key", "batch", "period", "t0_btjd", "duration_h", "depth_ppm", "masks", "drop", "exptime_min",
            "n_points", "sectors", "n_scenarios", "runs", "FPP_mean", "NFPP_mean", "NFPP_max", "runs_g", "FPP_g_mean",
-           "NFPP_g_mean", "NFPP_g_max", "molusc_survivors", "degenerate", "store", "legacy", "lightcurves", "code"]
+           "NFPP_g_mean", "NFPP_g_max", "molusc_survivors", "degenerate", "store", "legacy", "lightcurves", "code", "runs_batch"]
 
 
 def _request(store, kind, key):
@@ -103,7 +104,8 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
             molusc_survivors=int(j["molusc_survivors"]) if gaia else "", degenerate="yes" if deg else "", store=skey,
             legacy="yes" if req.get("legacy") else "",
             lightcurves=lcindex.list_hash(fold_req["lightcurves"]) if fold_req.get("lightcurves") else "",
-            code="" if req.get("legacy") else stage_code.of_requests(dict(stages, tri=req))))
+            code="" if req.get("legacy") else stage_code.of_requests(dict(stages, tri=req)),
+            runs_batch=res.get("runs_batch") or batch))
     with open(out_csv, "w", newline="") as fh:
         w = csv.DictWriter(fh, COLUMNS, lineterminator="\n")
         w.writeheader()

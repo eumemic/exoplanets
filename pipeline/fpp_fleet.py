@@ -82,7 +82,7 @@ def main():
     a = ap.parse_args()
     a.out = os.path.abspath(a.out)
     os.makedirs(os.path.join(a.out, "folds"), exist_ok=True)
-    lst = pd.read_csv(a.list, dtype={"masks": str, "drop": str}, keep_default_na=False)
+    lst = pd.read_csv(a.list, dtype={"masks": str, "drop": str, "not_hosts": str}, keep_default_na=False)
     stars = pd.read_parquet(a.stars).set_index("ID")
     t0 = time.time()
     with ThreadPoolExecutor(a.procs) as ex:
@@ -109,7 +109,7 @@ def main():
         jobs.append(dict(key=r.key, tic=int(r.tic), fold=os.path.join(a.out, "folds", f"{r.key}.npz"), depth_ppm=r.depth_ppm,
                          sectors=",".join(map(str, sorted(secs))), cutouts=os.path.join(a.out, "cuts", f"tic{int(r.tic)}"),
                          molusc=os.path.join(os.path.abspath(a.molusc), f"tic{int(r.tic)}_kept.csv.gz") if a.molusc else "",
-                         drop=r.drop))
+                         drop=r.drop, not_hosts=str(getattr(r, "not_hosts", "") or "")))
     pd.DataFrame(jobs).to_csv(os.path.join(a.out, "jobs.csv"), index=False)
     print(f"{len(jobs)} jobs", flush=True)
     subprocess.run([TRICE_PY, "fpp_pool.py", "setup", os.path.join(a.out, "jobs.csv"), "--out", a.out, "--procs", str(a.procs)],

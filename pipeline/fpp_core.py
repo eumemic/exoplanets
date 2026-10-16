@@ -11,6 +11,7 @@ import glob
 import math
 import os
 import pickle
+import random
 import re
 import time
 import types
@@ -83,8 +84,10 @@ def use_molusc_reader():
     ml.read_csv = _read_molusc            # its only runtime use is the MOLUSC file
 
 
-def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_arcsec=None, verbose=True):
-    """Build the TRICERATOPS target. The Gaia field-star query result is cached in cache_dir and reused."""
+def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_arcsec=None, not_hosts=(), verbose=True):
+    """Build the TRICERATOPS target. The Gaia field-star query result is cached in cache_dir and reused. not_hosts: TIC
+    entries near the star that cannot host a signal although their light is real (galaxies and the point sources the TIC
+    lists at a galaxy's position without a parallax: ticfield.py); they keep their light but host no scenario."""
     import triceratops.triceratops as tr
     if cutouts:
         _CUT_DIR[0] = os.path.abspath(cutouts)
@@ -92,7 +95,7 @@ def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_ar
     cache_dir = os.path.abspath(cache_dir)
     gaia_csv = os.path.join(cache_dir, f"{tic}_gaia_background.csv")
     target = None
-    for attempt in range(4):
+    for attempt in range(7):
         try:
             # TRICERATOPS writes the Gaia query result to the working directory
             with contextlib.chdir(cache_dir):
@@ -100,7 +103,9 @@ def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_ar
             if len(target.pix_coords) == len(sectors):
                 break
         except Exception as ex:
+            # MAST answers many simultaneous TIC queries with 429 (too many requests): wait longer each time
             print("retrying target setup:", ex)
+            time.sleep(min(300, 15 * 2 ** attempt) * (0.5 + random.random()))
     assert target is not None and len(target.pix_coords) == len(sectors), "TESScut downloads incomplete"
     if isinstance(target.trilegal_fname, str):
         target.trilegal_fname = os.path.join(cache_dir, target.trilegal_fname)
@@ -118,6 +123,17 @@ def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_ar
         target.trilegal_fname = os.path.join(cache_dir, fname) if isinstance(fname, str) else None
     if not has_population(target):
         raise RuntimeError("no field-star population: the Gaia background query failed")
+    # TRICERATOPS takes the first star of its TIC query as the target. Where the TIC has a duplicate entry at the star's
+    # position the query can list that first; put the star itself first (at the same position, so the separations,
+    # position angles and field-star population TRICERATOPS took from the first star do not change).
+    ids = target.stars["ID"].astype(int).to_numpy()
+    if ids[0] != int(tic):
+        i = np.flatnonzero(ids == int(tic))
+        if not len(i) or float(target.stars["sep (arcsec)"].iloc[i[0]]) > 1.0:
+            raise RuntimeError(f"TRICERATOPS's first star is TIC {ids[0]}; TIC {tic} is not at its position")
+        order = np.r_[i[0], np.delete(np.arange(len(ids)), i[0])]
+        target.stars = target.stars.iloc[order].reset_index(drop=True)
+        target.pix_coords = [pc[order] for pc in target.pix_coords]
     # TIC entries flagged ARTIFACT (spurious 2MASS sources) or DUPLICATE are not stars and should be ignored (Paegert et al.
     # 2021); SPLIT entries are real. Drop them, with their pixel positions (TRICERATOPS's remove_star keeps the positions,
     # which misaligns them), before the aperture fluxes are computed.
@@ -141,9 +157,44 @@ def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_ar
         if verbose:
             print(f"{int((far & (target.stars['tdepth'] > 0)).sum())} capable neighbours beyond {nearby_max_arcsec}\" dropped")
         target.stars.loc[far, "tdepth"] = 0.0
+    if len(not_hosts):
+        nh = target.stars["ID"].astype(int).isin([int(x) for x in not_hosts]).to_numpy()
+        nh[0] = False
+        if verbose and nh.any():
+            print("no scenarios on galaxies and their cores:", ", ".join(target.stars["ID"][nh].astype(str)))
+        target.stars.loc[nh, "tdepth"] = 0.0
     if verbose:
         print(target.stars[["ID", "Tmag", "sep (arcsec)", "fluxratio", "tdepth"]].head(8).to_string())
     return target
+
+
+def setup_digest(target):
+    """Hash of what calc_probs reads from a target setup: the mission, the stars (in order, every column: the TIC values,
+    separations, flux ratios and transit depths) and the content of the field-star population file. File paths and the
+    pickle's layout are left out, so a setup made again from the same inputs, on any machine, has the same digest; a
+    stored result is reused for a new setup with its setup's digest (cloud_worker.py, tri_store.py)."""
+    import hashlib
+    import json
+    st = target.stars.reset_index(drop=True)
+    cols = sorted(map(str, st.columns))
+
+    def val(v):
+        if hasattr(v, "item"):
+            v = v.item()
+        if v is None or (isinstance(v, float) and math.isnan(v)):
+            return None
+        if isinstance(v, float) and math.isinf(v):
+            return repr(v)
+        return v if isinstance(v, (int, float, str, bool)) else str(v)
+    stars = [[val(v) for v in st[c].tolist()] for c in cols]
+    f = getattr(target, "trilegal_fname", None)
+    pop = None
+    if isinstance(f, str) and os.path.isfile(f):
+        with open(f, "rb") as fh:
+            pop = hashlib.sha256(fh.read()).hexdigest()
+    blob = json.dumps(dict(mission=str(getattr(target, "mission", "")), cols=cols, stars=stars, population=pop),
+                      sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(blob.encode()).hexdigest()
 
 
 # The state files are written by setup_target() on the same machine that reads them back; they are a cache of our

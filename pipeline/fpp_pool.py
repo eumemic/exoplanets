@@ -8,7 +8,11 @@ JOBS columns: key, tic, fold (npz from export_fold.py), depth_ppm, sectors (fiel
 (directory of tess-sSSSS-*.fits), molusc (MOLUSC survivors, may be empty), drop (scenarios to drop in the MOLUSC runs),
 and optionally cc and cc_filt: a contrast curve (CSV of separation in arcsec, delta-magnitude) and its band (TESS, Vis,
 J, H, K), which limit unresolved companions in every run of that job.
-setup writes DIR/states/<tic>_<sectors>.pkl (fpp_core.save_state). run evaluates `runs` default-prior runs per signal,
+setup writes each job's target to DIR/states/<tic>_<sectors>_d<depth_ppm>.pkl (fpp_core.save_state; a target depends
+on the signal's depth, which sets the eclipse depth each neighbour would need), with its fpp_core.setup_digest in
+<state>.digest, and copies it to DIR/states/<tic>_<sectors>.pkl, which run reads, where the jobs give that star and
+sectors one depth (otherwise the caller copies each job's state there before running it: cloud_worker.py). An optional
+column not_hosts lists TIC entries ("id,id") that keep their light but host no scenario. run evaluates `runs` default-prior runs per signal,
 and as many with the MOLUSC companions where a survivors file is given; each finished run is appended to DIR/runs.jsonl
 (so an interrupted run resumes), and at the end DIR/<key>_fpp.json is written in fpp.py's format with the mean scenario
 probabilities added. Workers are spawned, not forked: PyTransit's kernels use GNU OpenMP, which terminates a forked
@@ -20,6 +24,7 @@ import hashlib
 import json
 import multiprocessing as mp
 import os
+import shutil
 import sys
 import time
 import traceback
@@ -34,21 +39,28 @@ def state_path(out, tic, sectors):
     return os.path.join(out, "states", f"{int(tic)}_{sectors.replace(',', '-')}.pkl")
 
 
+def depth_state_path(out, tic, sectors, depth_ppm):
+    return os.path.join(out, "states", f"{int(tic)}_{sectors.replace(',', '-')}_d{float(depth_ppm):g}.pkl")
+
+
 def _setup_one(args):
-    tic, sectors, cutouts, depth_ppm, out, nearby = args
-    p = state_path(out, tic, sectors)
-    if os.path.exists(p):
-        return tic, sectors, "cached", 0.0
+    tic, sectors, cutouts, depth_ppm, out, nearby, not_hosts = args
+    p = depth_state_path(out, tic, sectors, depth_ppm)
+    if os.path.exists(p) and os.path.exists(p + ".digest"):
+        return tic, sectors, depth_ppm, "cached", 0.0
     t0 = time.time()
     cache = os.path.join(out, "cache", str(int(tic)))
     os.makedirs(cache, exist_ok=True)
     try:
         target = fc.setup_target(int(tic), [int(s) for s in sectors.split(",")], cache, float(depth_ppm), cutouts=cutouts,
-                                 nearby_max_arcsec=nearby, verbose=False)
+                                 nearby_max_arcsec=nearby, not_hosts=[int(x) for x in not_hosts.split(",") if x],
+                                 verbose=False)
         fc.save_state(target, p)
-        return tic, sectors, "ok", time.time() - t0
+        with open(p + ".digest", "w") as fh:
+            fh.write(fc.setup_digest(target))
+        return tic, sectors, depth_ppm, "ok", time.time() - t0
     except Exception as ex:
-        return tic, sectors, f"failed: {ex!r}"[:300], time.time() - t0
+        return tic, sectors, depth_ppm, f"failed: {ex!r}"[:300], time.time() - t0
 
 
 def _init_setup():
@@ -101,16 +113,25 @@ def _run_one(task):
 
 def setup(a, jobs):
     os.makedirs(os.path.join(a.out, "states"), exist_ok=True)
-    todo = sorted({(int(r.tic), r.sectors, r.cutouts, float(r.depth_ppm)) for r in jobs.itertuples()})
-    args = [(t, s, c, dp, a.out, a.nearby_max_arcsec) for t, s, c, dp in todo]
+    nh = jobs["not_hosts"] if "not_hosts" in jobs else pd.Series([""] * len(jobs), index=jobs.index)
+    todo = sorted({(int(r.tic), r.sectors, r.cutouts, float(r.depth_ppm), str(h or "")) for r, h in zip(jobs.itertuples(), nh)})
+    args = [(t, s, c, dp, a.out, a.nearby_max_arcsec, h) for t, s, c, dp, h in todo]
     n_ok = 0
     with mp.get_context("spawn").Pool(a.procs, initializer=_init_setup) as pool:
-        for i, (tic, sectors, status, sec) in enumerate(pool.imap_unordered(_setup_one, args), 1):
+        for i, (tic, sectors, depth, status, sec) in enumerate(pool.imap_unordered(_setup_one, args), 1):
             n_ok += status in ("ok", "cached")
             if status not in ("ok", "cached"):
                 print(f"setup {tic} [{sectors}] {status}", flush=True)
             if i % 50 == 0 or i == len(args):
                 print(f"setup {i}/{len(args)} targets, {n_ok} ready", flush=True)
+    depths = {}
+    for t, s, _, dp, _ in todo:
+        depths.setdefault((t, s), set()).add(dp)
+    for (t, s), ds in depths.items():               # the state run reads, where it is unambiguous
+        src = depth_state_path(a.out, t, s, next(iter(ds)))
+        if len(ds) == 1 and os.path.exists(src):
+            for ext in ("", ".digest"):
+                shutil.copyfile(src + ext, state_path(a.out, t, s) + ext)
     print("SETUP_DONE", flush=True)
 
 

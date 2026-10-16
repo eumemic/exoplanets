@@ -32,7 +32,8 @@ def _r1(x):
     return "" if pd.isna(x) else repr(round(float(x), 1))
 
 
-def build(store_root, catalog_rows, out_csv, match_rel=0.002):
+def build(store_root, catalog_rows, out_csv, match_rel=0.002, not_sources=None):
+    """not_sources: {tic: [galaxies and cores near it]} (ticfield.by_star), which the test does not take as sources."""
     store = st.Store(store_root)
     latest = centroid_store.latest(store)            # key -> (store key, request, result)
     by_tic = collections.defaultdict(list)
@@ -58,7 +59,7 @@ def build(store_root, catalog_rows, out_csv, match_rel=0.002):
         if len(stars):
             stars = stars.drop(columns=[c for c in ("disposition",) if c in stars]).merge(
                 disp[["key", "tic", "disposition"]], on=["key", "tic"], how="left")
-        res_t = centroid_test.analyse(L, per, stars).set_index("key")
+        res_t = centroid_test.analyse(L, per, stars, not_sources=not_sources).set_index("key")
         r = L.iloc[0]
         x = res_t.loc[key] if key in res_t.index else None
         row = owner[key]

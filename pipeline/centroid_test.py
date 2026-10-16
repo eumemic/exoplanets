@@ -78,7 +78,9 @@ def add_dispositions(L, stars):
     return stars
 
 
-def analyse(L, per, stars, floor=FLOOR):
+def analyse(L, per, stars, floor=FLOOR, not_sources=None):
+    """not_sources: {tic: [TIC entries near it that cannot be a signal's source: galaxies and their cores]}
+    (ticfield.py)."""
     rows = []
     P = {k: g for k, g in per.groupby("key")}
     S = {k: g for k, g in stars.groupby("key")}
@@ -92,6 +94,8 @@ def analyse(L, per, stars, floor=FLOOR):
         st = S.get(r.key, pd.DataFrame(columns=["tic", "east", "north", "sep", "Tmag"]))
         if "disposition" in st:                  # TIC artifacts and duplicates are not stars (Paegert et al. 2021)
             st = st[~st["disposition"].isin(PHANTOM)]
+        if not_sources:                          # nor can a galaxy be a periodic signal's source
+            st = st[~st.tic.isin(not_sources.get(int(r.tic), []))]
         tgt = st[st.tic == r.tic]
         t_mag = float(tgt.Tmag.iloc[0]) if len(tgt) else np.nan
         cap = st[(st.tic != r.tic) & (10 ** (-0.4 * (st.Tmag - t_mag)) >= r.depth_ppm * 1e-6)]
