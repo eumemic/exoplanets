@@ -15,6 +15,30 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
+- **TRICERATOPS corrections (15 October 2026): 644 candidates.** Checks of the single-cadence rerun's outputs, made
+  after its release, found runs that had gone wrong without an error, and rows the rerun had not covered. On the machine
+  that ran out of memory and was restarted, the field-star population query failed for 353 targets, so TRICERATOPS left
+  out its six diluted and background-star scenarios. A full disk or the restart had cut MOLUSC's files of simulated
+  companions short for 63 signals (about 6,000–11,000 survivors, against 88,000–166,000 when the same stars were run
+  again), which lowered their Gaia-limited FPPs. For 39 targets the TIC gives no parallax; TRICERATOPS then stops before computing anything and returns equal
+  probabilities for every scenario, which the catalog had published as results (none of the 39 was counted, and their
+  TRICERATOPS columns are now empty). Two 10-minute folds had not been binned in phase as described. And 1,068 rows with
+  TRICERATOPS values but no Gaia-limited runs, among them 820 likely nearby false positives, were still on the
+  mixed-cadence input. Every signal with TRICERATOPS values was rerun on single-cadence light curves, ten runs with the
+  default priors and ten with the Gaia limits, and each result was checked (`pipeline/fpp_check.py`). Neighbour signals
+  that now pass the TRICERATOPS bar were fitted and tested in every sector, as the tier N candidates were, and rows
+  whose fitted ephemeris differed from the one TRICERATOPS had used were rerun with it. 19 signals change tier: 11 likely
+  nearby false positives become tier N (3 of them larger than 8 R⊕), 3 tier C signals of 17–19 R⊕ become tier B, 3 tier
+  B candidates move to tier C, TIC 410449566 of the earlier searches returns to tier A, and TIC 201310621 moves from tier
+  C to likely nearby false positive (it now passes TRICERATOPS, but its per-sector centroids reject the target and fit a
+  neighbour 18″ away). The three that leave are
+  TIC 160420269 of issue #1 (17 R⊕, `FPP_gc` 0.59), TIC 311646629 (17 R⊕, 0.50) and TIC 370244729 (no Gaia-limited
+  runs, `FPP_c` 0.50). For signals this deep the ten runs scatter widely (TIC 160420269: 0.02 to 0.98), so their tiers
+  are uncertain. 252 counted candidates (224 full-sky and 28 from the earlier searches) meet the validation thresholds
+  apart from high-resolution imaging, against 267; 13 of the 20 that drop below them had runs without the background
+  scenarios or with a cut-off MOLUSC file. The flag columns now follow their stated rules, and each candidate folder
+  holds the current TRICERATOPS result. 586 full-sky candidates and 58 from the earlier searches
+  ([details](validation/triceratops_single_cadence.md#corrections-15-october-2026-evening)).
 - **TRICERATOPS with single-cadence light curves (15 October 2026): 632 candidates.** TRICERATOPS models one exposure
   time, but each signal's TRICERATOPS input had combined every sector (30-minute, 10-minute, 200-second and 2-minute
   data), binned to 5 minutes and modelled with a 10-minute exposure. For some deep signals this made the FPP far too
@@ -578,21 +602,22 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) | TRICERATOPS corrections (15 October) |
+|---|---|---|---|---|---|---|---|---|---|---|---|------|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 | 22 |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 | 292 |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 | 160 |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 | 112 |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 | 529 |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 | 72 |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 | 1,803 |
 
 All 2,990 signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
 SNR 7.5–9, or neighbour within 15″; column `search`: the full-sky search or the QLP re-search; column `reported_as`: where a
 signal labelled reported was reported); tiers A, B, C, N, L1 and L have folders in
-[`candidates/allsky/`](candidates/allsky/). Since 13 October the `set` column follows the pixel checks without TIC artifacts
+[`candidates/allsky/`](candidates/allsky/), and signals that have since left those tiers keep theirs; each folder holds the
+current TRICERATOPS result, where there is one, as `triceratops_gaia.json`. Since 13 October the `set` column follows the pixel checks without TIC artifacts
 (733 SNR ≥ 9 and 1,311 neighbour rows from the first pass, against 726 and 1,294 + 24 in the table above, since 7
 signals have no capable neighbour without them), plus the QLP re-search's 122, 262 and 180. Two classifier scores: `fa_score`,
 the out-of-fold score, and `fa_score_h`, the hold-out score that tier L1 is selected on (≥ 0.8; added 13 October),
@@ -606,13 +631,15 @@ the predictions have it too, so all four join on it.
 ### Predicted transit times
 
 [`candidates/ephemerides.csv`](candidates/ephemerides.csv) gives the ephemeris of each registered
-candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 724:
+candidate, with coordinates, the next transit, and the TESS sectors planned for the star. There are 738:
 the 543 counted on 10 October, 10 registered on 12 October, 13 on 13 October, 146 on 14 October (145 from the QLP
-re-search and the L1 re-selection, and TIC 206609457), and 12 on 15 October, tier C signals counted after the
-TRICERATOPS rerun with single-cadence light curves (UTC dates, column `registered`). 632 are counted now. The
+re-search and the L1 re-selection, and TIC 206609457), 12 on 15 October, tier C signals counted after the
+TRICERATOPS rerun with single-cadence light curves, and 14 on 16 October, counted during the TRICERATOPS corrections
+(UTC dates, column `registered`; 3 of the 14 left the counted tiers again before the corrections were released).
+644 are counted now. The
 files are append-only. Candidates that leave the counted tiers keep their rows, with their current tier.
 [`candidates/predictions.csv`](candidates/predictions.csv)
-lists all 47,412 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
+lists all 50,200 predicted transits from the registration date through June 2027, with the 1σ uncertainty,
 the UTC time at Earth's centre, and the TESS sector when the transit falls inside a published TESS
 orbit window and the star is on a detector. The median 1σ uncertainty of the next transit is 11 min.
 Of the 543 registered on 10 October, 62 have 656 transits in the published windows of Sectors 109–111 (through 3 December

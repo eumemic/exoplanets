@@ -8,7 +8,7 @@ something went wrong, so each final result (with several directories, later ones
   - MOLUSC survivors not far below the usual range (a run cut off part way leaves a short file);
   - at most one point per phase bin in the fold (export_fold.py --single-cadence: 2-minute and 200-second data binned to
     their cadence, longer cadences to --phase-bin-min), which needs the signal list for the durations.
-Usage: python fpp_check.py DIR [DIR ...] --list LIST.csv [--list ...] [--expect KEYS.txt] [--runs 10] [--phase-bin-min 2]
+Usage: python fpp_check.py DIR [DIR ...] --list LIST.csv [--list ...] [--expect KEYS.txt] [--only KEYS.txt] [--runs 10]
 Exits with status 1 if any check fails.
 """
 import argparse
@@ -29,6 +29,7 @@ def main():
     ap.add_argument("dirs", nargs="+")
     ap.add_argument("--list", action="append", required=True, help="signal list with key and duration_h columns")
     ap.add_argument("--expect", help="file of keys that must have a result")
+    ap.add_argument("--only", help="file of keys to check (others, e.g. superseded results, are ignored)")
     ap.add_argument("--runs", type=int, default=10)
     ap.add_argument("--phase-bin-min", type=float, default=2.0)
     ap.add_argument("--min-survivors", type=int, default=20000,
@@ -39,6 +40,9 @@ def main():
     for d in a.dirs:
         for f in glob.glob(os.path.join(d, "*_fpp.json")):
             src[os.path.basename(f)[:-9]] = d
+    if a.only:
+        keep = set(open(a.only).read().split())
+        src = {k: d for k, d in src.items() if k in keep}
     runs = collections.defaultdict(collections.Counter)
     blended, degenerate = collections.Counter(), set()
     for d in a.dirs:

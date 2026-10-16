@@ -1,11 +1,11 @@
 # Why earlier searches missed these signals
 
 When could the counted full-sky candidates have been found, and why did the TESS pipelines not report them? The
-numbers cover the 463 full-sky candidates in tiers A, B and N (the SNR ≥ 9 search), 387 from the first pass and 76
+numbers cover the 474 full-sky candidates in tiers A, B and N (the SNR ≥ 9 search), 398 from the first pass and 76
 from the QLP re-search; the tier L1 candidates are weaker still. (First written on 12 October 2026 for the 438
 candidates of that day; updated on 13 October after the QLP re-search and the CTOI correction, on 14 and 15 October for the four and three candidates that
 left tiers A, B and N, [details](fpp_combination.md) and [here](catalog_crossmatch.md), and on 15 October for the
-TRICERATOPS rerun with single-cadence light curves, [details](triceratops_single_cadence.md).) Each candidate's
+TRICERATOPS rerun with single-cadence light curves and its corrections, [details](triceratops_single_cadence.md).) Each candidate's
 transits come from the pass that found it. Files:
 - [`findability_transits.csv.gz`](findability_transits.csv.gz): the search's per-transit depths, one row per transit,
   with the sector and that sector's light-curve source (SPOC 2-minute, TESS-SPOC or QLP);
@@ -21,21 +21,21 @@ over its error). This ignores how fewer sectors would change the detrending and 
 
 | Data through | Observed by | Candidates at SNR ≥ 9 |
 |---|---|---|
-| Sector 26, end of the prime mission | July 2020 | 52 (11%) |
-| Sector 55, end of the first extended mission | September 2022 | 188 (41%) |
-| Sector 69 | September 2023 | 276 (60%) |
-| Sector 83 | September 2024 | 331 (71%) |
-| Sector 96, end of the second extended mission | September 2025 | 402 (87%) |
+| Sector 26, end of the prime mission | July 2020 | 54 (11%) |
+| Sector 55, end of the first extended mission | September 2022 | 192 (41%) |
+| Sector 69 | September 2023 | 283 (60%) |
+| Sector 83 | September 2024 | 340 (72%) |
+| Sector 96, end of the second extended mission | September 2025 | 413 (87%) |
 
 51 needed Sectors 97–104: 29 of the 76 from the QLP re-search, whose added QLP light curves are mostly from Sectors
-94–104, and 22 of the 387 from the first pass (93% of which reach SNR 9 with the data through Sector 96). Another 10
+94–104, and 22 of the 398 from the first pass (93% of which reach SNR 9 with the data through Sector 96). Another 10
 come out just below SNR 9 (8.8 to 9.0) by this measure even with every sector; the search's threshold used the SNR of
 its period search, which is slightly higher.
 
 ## The signals are weak in any one sector
 
-The median candidate has transits in 5 sectors (10–90%: 2–18), and its best sector reaches SNR 6.6. 263 candidates
-(57%) never reach 7.1, SPOC's detection threshold, in any single sector, and 349 (75%) never reach 9. 374 (81%) are on
+The median candidate has transits in 5 sectors (10–90%: 2–17), and its best sector reaches SNR 6.7. 264 candidates
+(56%) never reach 7.1, SPOC's detection threshold, in any single sector, and 354 (75%) never reach 9. 385 (81%) are on
 stars observed only in full-frame images in the sectors with transits, which SPOC's multi-sector searches of 2-minute
 targets do not include.
 
