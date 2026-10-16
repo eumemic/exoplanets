@@ -953,7 +953,11 @@ candidate folders, the transit registry, the findability tables, `figures/allsky
 from which it fills the numbers in this file, `results_public/README.md` and `validation/findability.md`; its checks
 test that every TRICERATOPS and centroid result ran on the current ephemeris, that every counted candidate has
 per-sector centroids and every candidate with 2-minute data a SPOC re-measurement, that the folders hold the catalog's
-results, and that every table renders on GitHub.
+results, and that every table renders on GitHub. The expensive per-signal results (TRICERATOPS, by stage: fold, target
+setup, MOLUSC, runs; per-sector centroids) are kept, outside the repository, under the hash of everything that
+determines them; [`results_public/products/triceratops_plan.csv`](results_public/products/triceratops_plan.csv) lists
+the rows that need a TRICERATOPS result and whether the one in use is current, and the results computed before this
+store are marked `legacy` in `triceratops.csv`.
 
 ## Layout
 
