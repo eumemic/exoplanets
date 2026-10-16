@@ -317,6 +317,13 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
         molusc = _gz_content(kept)
         molusc_key = store.put("molusc", plan_item["molusc_request"], dict(content=molusc, survivors=minfo.get("survivors"),
                                                                           info=minfo), files={"molusc.csv.gz": kept})
+    molusc_keys = [molusc_key] if molusc_key else []
+    contents = info.get("molusc_contents") or []
+    if plan_item.get("molusc_samples") and remote and len(contents) == len(plan_item["molusc_samples"]) + 1:
+        for i, sreq in enumerate(plan_item["molusc_samples"], start=1):          # the star's further MOLUSC samples
+            molusc_keys.append(store.put("molusc", sreq, dict(content=contents[i], remote=dict(
+                archive=remote_archive, member=f"molusc_s{i}.csv.gz"))))
+        molusc = contents                           # the runs cite every sample (run k used sample k mod n)
     signal = dict(period=str(it["period"]), t0_btjd=str(it["t0"]), duration_h=str(it["duration_h"]),
                   depth_ppm=str(it["depth_ppm"]), masks=str(it.get("masks") or ""), drop=str(it.get("drop") or ""))
     variants = [("", d)] if os.path.exists(os.path.join(d, "fpp.json")) else []
@@ -339,7 +346,8 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
             c = curves.get(lab, {})
             req = dict(req, kind="tri_cc", cc_label=lab, cc=c.get("content"), cc_filt=c.get("filt"))
             kind = "tri_cc"
-        res = dict(seq=seq, batch=batch, signal=signal, fold_key=fold_key, setup_key=setup_key, molusc_key=molusc_key, fpp=jv,
+        res = dict(seq=seq, batch=batch, signal=signal, fold_key=fold_key, setup_key=setup_key, molusc_key=molusc_key,
+                   molusc_keys=molusc_keys, fpp=jv,
                    runs=runs, degenerate=deg, content=st.sha256_json([{k: v for k, v in r.items() if k != "sec"} for r in runs]),
                    **({"cc_label": lab, "cc_file": curves.get(lab, {}).get("file")} if lab else {}))
         keys.append(store.put(kind, req, res, check=dict(passed=not (problems + found), problems=problems + found,

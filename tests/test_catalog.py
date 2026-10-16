@@ -321,6 +321,23 @@ class TriceratopsTableTests(unittest.TestCase):
         self.assertEqual(stage_code.changed(rows[0]["code"], dict(now, **{k: v for k, v in (
             x.split("=") for x in rows[0]["code"].split()) if k != "tri_setup"})), [])
 
+    def test_a_result_with_several_molusc_samples_cites_them_all(self):
+        root = Path(tempfile.mkdtemp())
+        self.run_build(root, [self.batch(root, "b1")])
+        s = store.Store(root / "store")
+        d, plan_item = self.cloud_item(root)
+        info = json.loads((d / "item.json").read_text())
+        info.update(remote=True, setup_content="S", setup_digest="D", setup_files={"state.pkl": dict(sha256="x", size=1)},
+                    molusc_content="m0", molusc_contents=["m0", "m1", "m2", "m3", "m4"])
+        (d / "item.json").write_text(json.dumps(info))
+        samples = [dict(plan_item["molusc_request"], sample=k, seed=k) for k in range(1, 5)]
+        key, problems = tri_store.ingest_item(s, d, dict(plan_item, molusc_samples=samples), "bX", 10 ** 9,
+                                              remote_archive="s3://b/k.big.tgz")
+        req, res, _ = s.get("tri", key)
+        self.assertEqual(req["molusc"], ["m0", "m1", "m2", "m3", "m4"])
+        self.assertEqual(len(res["molusc_keys"]), 5)
+        self.assertEqual(s.get("molusc", res["molusc_keys"][3])[1]["remote"]["member"], "molusc_s3.csv.gz")
+
     def test_contrast_curve_runs_are_stored_as_their_own_kind(self):
         root = Path(tempfile.mkdtemp())
         d, plan_item = self.cloud_item(root)

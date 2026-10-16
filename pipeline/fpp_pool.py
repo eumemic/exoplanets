@@ -5,7 +5,8 @@ Usage:
   python fpp_pool.py setup JOBS.csv --out DIR [--procs 63] [--nearby-max-arcsec 30]
   python fpp_pool.py run   JOBS.csv --out DIR [--procs 63] [--runs 10] [--draws 200000]
 JOBS columns: key, tic, fold (npz from export_fold.py), depth_ppm, sectors (field geometry, "s1,s2,..."), cutouts
-(directory of tess-sSSSS-*.fits), molusc (MOLUSC survivors, may be empty), drop (scenarios to drop in the MOLUSC runs),
+(directory of tess-sSSSS-*.fits), molusc (MOLUSC survivors, may be empty; several samples as "a;b;...", run k of the
+Gaia-limited runs using sample k mod n), drop (scenarios to drop in the MOLUSC runs),
 and optionally cc and cc_filt: a contrast curve (CSV of separation in arcsec, delta-magnitude) and its band (TESS, Vis,
 J, H, K), which limit unresolved companions in every run of that job.
 setup writes each job's target to DIR/states/<tic>_<sectors>_d<depth_ppm>.pkl (fpp_core.save_state; a target depends
@@ -97,7 +98,10 @@ def _run_one(task):
             sys.modules["fast_trice"].disable()
         target = _target(sp)
         d = np.load(fold)
-        f, n = fc.run_once(target, d, N=draws, molusc_file=molusc if mode == "m" else None,
+        # the Gaia-limited runs of a star with several MOLUSC samples ("a;b;..."): run k uses sample k mod n, so the
+        # runs' scatter includes the samples' and their mean averages over them
+        files = [x for x in (molusc or "").split(";") if x]
+        f, n = fc.run_once(target, d, N=draws, molusc_file=files[k % len(files)] if mode == "m" and files else None,
                            drop=[x for x in drop.split(",") if x] if mode == "m" else (), cc=cc or None, cc_filt=cc_filt or "TESS")
         pr = target.probs[["ID", "scenario", "prob"]]
         out = dict(key=key, mode=mode, k=k, FPP=f, NFPP=n, sec=time.time() - t0, seed=seed,
@@ -154,7 +158,8 @@ def run(a, jobs):
         d = np.load(r.fold)
         ex = fc.fold_exptime(d)
         cost = fc.n_scenarios(target) * (len(d["time"]) * fc.auto_nsamples(ex) + 200)
-        molusc = r.molusc if isinstance(r.molusc, str) and r.molusc and os.path.exists(r.molusc) else ""
+        molusc = r.molusc if isinstance(r.molusc, str) and r.molusc and all(
+            os.path.exists(x) for x in r.molusc.split(";")) else ""
         drop = r.drop if isinstance(r.drop, str) else ""
         meta[r.key] = dict(tic=int(r.tic), exptime_min=ex * 1440, nsamples=fc.auto_nsamples(ex), n_points=int(len(d["time"])),
                            sectors=r.sectors, n_scenarios=fc.n_scenarios(target), molusc=molusc, drop=drop)
@@ -284,11 +289,13 @@ def merge(a, meta, tag=""):
             res.update(cc=m["cc"], cc_filt=m["cc_filt"])
         mm = [by.get((key, "m"), {})[k] for k in sorted(by.get((key, "m"), {}))]
         if mm:
-            kept = pd.read_csv(m["molusc"])
+            kept = [pd.read_csv(x) for x in m["molusc"].split(";")]
+            used = [int((k_["semi-major axis(AU)"] * (1 - k_["eccentricity"]) > 10).sum()) for k_ in kept]
             fm, nm = [r["FPP"] for r in mm], [r["NFPP"] for r in mm]
             res.update(FPP_m_mean=float(np.mean(fm)), FPP_m_sem=float(np.std(fm, ddof=1) / np.sqrt(len(fm))) if len(fm) > 1 else None,
-                       FPP_m=fm, NFPP_m=nm, NFPP_m_mean=float(np.mean(nm)), NFPP_m_max=float(np.max(nm)), molusc_survivors=len(kept),
-                       molusc_used=int((kept["semi-major axis(AU)"] * (1 - kept["eccentricity"]) > 10).sum()),
+                       FPP_m=fm, NFPP_m=nm, NFPP_m_mean=float(np.mean(nm)), NFPP_m_max=float(np.max(nm)),
+                       molusc_survivors=min(len(k_) for k_ in kept), molusc_used=min(used), molusc_samples=len(kept),
+                       molusc_survivors_each=[len(k_) for k_ in kept],
                        drop=[x for x in m["drop"].split(",") if x], cpu_m_s=float(sum(r["sec"] for r in mm)), probs_m_mean=mean_probs(mm))
         with open(os.path.join(a.out, f"{key}_fpp{tag}.json"), "w") as fh:
             json.dump(res, fh)

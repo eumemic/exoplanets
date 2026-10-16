@@ -96,6 +96,8 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
         gaia = "FPP_m_mean" in j
         stages = {k: _request(store, k, res.get(f)) for k, f in (("fold", "fold_key"), ("tri_setup", "setup_key"),
                                                                   ("molusc", "molusc_key")) if res.get(f)}
+        if len(res.get("molusc_keys") or []) > 1:     # the further MOLUSC samples' code (molusc_sample.py)
+            stages["molusc_sample"] = _request(store, "molusc", res["molusc_keys"][1])
         now = [r for r in setups.get(req.get("setup"), []) if r.get("code") and code_now
                and stage_code.short(r["code"], r["env"]) == code_now.get("tri_setup")]
         if now and not req.get("legacy"):

@@ -263,20 +263,25 @@ def tri_items(keys, cc, base, rerun_legacy=False, runs=10, molusc_sample=0):
     import ticfield
     nonhost = ticfield.by_star(ticfield.NONSTELLAR, ticfield.NEARBY_ARCSEC)
     in_use = tri_store.latest(s)
+    import dag.params as params_
+    n_samples = int(params_.load(os.path.join(PIPE, "params.toml"))["triceratops.molusc_samples"])
     for it in items:
         tic = int(it["tic"])
         lcs = [[int(r.sector), str(r.prov), float(r.exptime), str(r.uri)] for r in man[man.tic == tic].itertuples()]
         freq = tri_store.fold_request(it, lcs, code["fold"], env["fold"])
         star = stars[stars.ID == tic].iloc[0]
-        mreq = None
+        mreq, more = None, []
         if star.GAIA_DR3 in gaia_by.index and float(star["mass"]) > 0:
             row = {k: (v.item() if hasattr(v, "item") else v) for k, v in gaia_by.loc[star.GAIA_DR3].to_dict().items()}
             mreq = tri_store.molusc_request(tic, dict(row, source_id=int(star.GAIA_DR3)), float(star["mass"]), mcode,
                                            code["molusc"], env["molusc"])
+            import molusc_sample as ms
             if molusc_sample:                       # another sample of simulated companions (molusc_sample.py)
-                import molusc_sample as ms
                 mreq = dict(mreq, sample=int(molusc_sample), seed=ms.sample_seed(tic, molusc_sample),
                             code=code["molusc_sample"], env=env["molusc_sample"])
+            else:                                   # the catalog's further samples (triceratops.molusc_samples)
+                more = [dict(mreq, sample=k, seed=ms.sample_seed(tic, k), code=code["molusc_sample"], env=env["molusc_sample"])
+                        for k in range(1, n_samples)]
         if s.has("fold", st.key_of(freq)):
             reuse["fold"].append(it["key"])
         if mreq and s.has("molusc", st.key_of(mreq)):
@@ -284,11 +289,12 @@ def tri_items(keys, cc, base, rerun_legacy=False, runs=10, molusc_sample=0):
         cs = curves(tic) if cc else []
         if not base and not cs:
             raise SystemExit(f"{it['key']}: --no-base, and no contrast curve for TIC {tic}")
-        x = dict(item=it, fold_request=freq, molusc_request=mreq, base_runs=base, cc=cs,
+        x = dict(item=it, fold_request=freq, molusc_request=mreq, molusc_samples=more, base_runs=base, cc=cs,
                  star=star_hash(star.drop(labels=["GAIA_DR3"]).to_dict()), not_hosts=nonhost.get(tic, []))
         x["prior"] = None if molusc_sample else prior_result(s, in_use.get(it["key"]), x, code, env, runs)
         out.append(x)
-    return out, stars, gaia, man, dict(reuse, code=code, env=env, molusc_sample=int(molusc_sample))
+    return out, stars, gaia, man, dict(reuse, code=code, env=env, molusc_sample=int(molusc_sample),
+                                       molusc_samples=1 if molusc_sample else n_samples)
 
 
 def prior_result(s, used, x, code, env, runs):
@@ -506,7 +512,8 @@ def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, 
              code=extra.get("code", {}), env=extra.get("env", {}), items=out, centroids=cs_out, fits=list(fit_out),
              fit_env=tri_store.env_hash("fold"),
              centroid_env=tri_store.env_hash("fold"), reuse={k: extra.get(k, []) for k in ("fold", "molusc")}, estimate=est,
-             molusc_sample=extra.get("molusc_sample", 0), vet=extra.get("vet", []), pixel=extra.get("pixel", []))
+             molusc_sample=extra.get("molusc_sample", 0), molusc_samples=extra.get("molusc_samples", 1),
+             vet=extra.get("vet", []), pixel=extra.get("pixel", []))
     with open(os.path.join(d, "plan.json"), "w") as fh:
         json.dump(p, fh, indent=1)
     print(f"batch {bid}: {len(out)} TRICERATOPS signals, {len(cs_out)} centroid measurements, {len(fit_out)} fits, "
@@ -633,9 +640,21 @@ def kit(p, d, s3, hours):
                                 os.path.join(b, "reuse", "molusc", f"tic{tic}_kept.csv.gz"))
             elif res.get("remote"):
                 remote.append(dict(url=_presign(s3, "get_object", res["remote"]["archive"].split("/", 3)[3], hours),
-                                   members={"molusc.csv.gz": f"molusc/tic{tic}_kept.csv.gz"}))
+                                   members={res["remote"].get("member", "molusc.csv.gz"): f"molusc/tic{tic}_kept.csv.gz"}))
             with open(os.path.join(b, "reuse", "molusc", f"tic{tic}_molusc.json"), "w") as fh:
                 json.dump(res.get("info") or {}, fh)
+        for i, sreq in enumerate(x.get("molusc_samples") or [], start=1):     # the star's further MOLUSC samples
+            sk = st.key_of(sreq)
+            if not s.has("molusc", sk):
+                continue
+            res = s.get("molusc", sk)[1]
+            os.makedirs(os.path.join(b, "reuse", f"molusc_s{i}"), exist_ok=True)
+            if os.path.exists(os.path.join(s.path("molusc", sk), "molusc.csv.gz")):
+                shutil.copyfile(os.path.join(s.path("molusc", sk), "molusc.csv.gz"),
+                                os.path.join(b, "reuse", f"molusc_s{i}", f"tic{tic}_kept.csv.gz"))
+            elif res.get("remote"):
+                remote.append(dict(url=_presign(s3, "get_object", res["remote"]["archive"].split("/", 3)[3], hours),
+                                   members={res["remote"].get("member", "molusc.csv.gz"): f"molusc_s{i}/tic{tic}_kept.csv.gz"}))
     with open(os.path.join(b, "reuse", "remote.json"), "w") as fh:
         json.dump(remote, fh)
     tgz = os.path.join(d, "kit.tgz")
@@ -782,9 +801,8 @@ def follow(bid, store_root=st.ROOT, limit_h=None):
     limit_h = limit_h or p["estimate"]["limit_hours"]
     s3 = s3client()
     t0 = inst["launched"]
-    from zoneinfo import ZoneInfo
-    pt = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%H:%M %Z")
-    print(f"batch {bid}: following {iid} ({inst['type']}) from {pt}; limit {limit_h} h", flush=True)
+    now = datetime.now().astimezone().strftime("%H:%M %Z")     # the local time of the machine following
+    print(f"batch {bid}: following {iid} ({inst['type']}) from {now}; limit {limit_h} h", flush=True)
     keys = ({x["item"]["key"] for x in p["items"]} | {f"cs:{x['item']['key']}" for x in p.get("centroids", [])}
             | {f"fit:{x['item']['key']}" for x in p.get("fits", [])} | {f"vet:{x['item']['key']}" for x in p.get("vet", [])}
             | {f"pixel:{x['item']['key']}" for x in p.get("pixel", [])})

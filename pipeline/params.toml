@@ -44,6 +44,9 @@ desert_rp_max = 10.0
 # point per phase bin (phase_bin_min minutes for 10- and 30-minute data)
 runs = 10
 min_survivors = 20000
+# MOLUSC samples of simulated companions per star: run k of the Gaia-limited runs uses sample k mod n, so their
+# scatter includes the samples' and their mean averages over them (one sample left a spread as large as the runs')
+molusc_samples = 5
 phase_bin_min = 2.0
 # a result belongs to a catalog row with the same TIC and a period within this relative difference
 match_period_rel = 0.002

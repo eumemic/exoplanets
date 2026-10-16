@@ -145,6 +145,11 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
         molusc = _gz_sha(os.path.join(big, "molusc.csv.gz"))
     if os.path.exists(os.path.join(R, "molusc", f"tic{tic}_molusc.json")):
         shutil.copyfile(os.path.join(R, "molusc", f"tic{tic}_molusc.json"), os.path.join(d, "molusc.json"))
+    contents = [molusc]                                     # the star's further MOLUSC samples
+    for i in range(1, len([x for x in (job.get("molusc") or "").split(";") if x])):
+        src = os.path.join(R, f"molusc_s{i}", f"tic{tic}_kept.csv.gz")
+        shutil.copyfile(src, os.path.join(big, f"molusc_s{i}.csv.gz"))
+        contents.append(_gz_sha(os.path.join(big, f"molusc_s{i}.csv.gz")))
     # the setup's content: the hashes of its files by name, as tri_store.ingest_item defines it
     sfiles = {"state.pkl": os.path.join(big, "state.pkl")}
     if pops:
@@ -166,7 +171,7 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
         checks[lab or "base"] = _gate(os.path.join(out, "fpp.json"), runs, os.path.join(d, "fold.npz"), item["duration_h"])
     json.dump(dict(info, key=key, tic=tic, sectors=job["sectors"], base=any(lab == "" for lab, _ in done),
                    cc=[lab for lab, _ in done if lab], check=checks, setup_files=files, setup_content=setup_content,
-                   setup_digest=_read(state + ".digest"), molusc_content=molusc, remote=True),
+                   setup_digest=_read(state + ".digest"), molusc_content=molusc, molusc_contents=contents, remote=True),
               open(os.path.join(d, "item.json"), "w"))
     ok = True
     for src, url in ((big, urls["big"][key]), (d, urls["items"][key])):      # the large archive first
@@ -479,6 +484,11 @@ def main():
             shutil.copyfile(f, os.path.join(R, "t2", "folds", os.path.basename(f)))
         for f in glob.glob(os.path.join(B, "reuse", "molusc", "*")):
             shutil.copyfile(f, os.path.join(R, "molusc", os.path.basename(f)))
+        n_samples = int(plan.get("molusc_samples") or 1)    # the star's MOLUSC samples: R/molusc, then R/molusc_s<i>
+        for i in range(1, n_samples):
+            os.makedirs(os.path.join(R, f"molusc_s{i}"), exist_ok=True)
+            for f in glob.glob(os.path.join(B, "reuse", f"molusc_s{i}", "*")):
+                shutil.copyfile(f, os.path.join(R, f"molusc_s{i}", os.path.basename(f)))
         nproc = max(1, (os.cpu_count() or 2) - (7 if cs_proc else 1))
         if items or plan.get("fits") or plan.get("vet"):
             STATE["stage"] = "download"
@@ -500,17 +510,24 @@ def main():
             return
         STATE["stage"] = "folds, setups and MOLUSC"
         k = int(plan.get("molusc_sample") or 0)     # another sample of simulated companions than the catalog's
-        mol = subprocess.Popen([os.path.join(EXO, ".venv", "bin", "python"), "molusc_sample.py" if k else "molusc_batch.py",
-                                os.path.join(B, "stars.parquet"),
+
+        def molusc_all():
+            """The star's MOLUSC samples one after another: the first (the catalog's, or sample k of an experiment), then
+            the catalog's further samples 1, 2, ... (molusc_sample.py)."""
+            for i, (script, sample, out) in enumerate([("molusc_sample.py" if k else "molusc_batch.py", k, "molusc")]
+                                                      + [("molusc_sample.py", s_, f"molusc_s{s_}") for s_ in range(1, n_samples)]):
+                subprocess.run([os.path.join(EXO, ".venv", "bin", "python"), script, os.path.join(B, "stars.parquet"),
                                 "--gaia", os.path.join(B, "gaia.csv"), "--molusc", os.path.join(B, "molusc_code"),
-                                "--out", os.path.join(R, "molusc"), "--n", "200000", "--procs",
+                                "--out", os.path.join(R, out), "--n", "200000", "--procs",
                                 str(min(40, max(2, len({it["tic"] for it in items}))))],
-                               cwd=PIPE, env=dict(ENV, EXO_MOLUSC_SAMPLE=str(k)), stdout=open(os.path.join(HOME, "molusc.log"), "a"),
-                               stderr=subprocess.STDOUT)
+                               cwd=PIPE, env=dict(ENV, EXO_MOLUSC_SAMPLE=str(sample)),
+                               stdout=open(os.path.join(HOME, "molusc.log"), "a"), stderr=subprocess.STDOUT)
+        mol = threading.Thread(target=molusc_all)
+        mol.start()
         rc = run(["fpp_fleet.py", os.path.join(R, "list.csv"), "--stars", os.path.join(B, "stars.parquet"), "--out",
                   os.path.join(R, "t2"), "--procs", str(nproc), "--molusc", os.path.join(R, "molusc")], "fleet.log")
-        mol.wait()
-        log(f"fleet prep exit {rc}; MOLUSC exit {mol.returncode}")
+        mol.join()
+        log(f"fleet prep exit {rc}; MOLUSC done ({n_samples} sample{'s' if n_samples > 1 else ''})")
         jobs = {r["key"]: r for r in csv.DictReader(open(os.path.join(R, "t2", "jobs.csv")))}
         STATE["stage"] = "results kept"
         todo, keep = [], []
@@ -548,6 +565,14 @@ def main():
                     shutil.copyfile(_state(os.path.join(R, "t2"), j), plain)
             for x in chunk:
                 key, base, cc = x["item"]["key"], x.get("base_runs", True), x.get("cc") or []
+                if n_samples > 1 and jobs[key].get("molusc"):          # every sample, or no Gaia-limited runs at all
+                    tic = int(x["item"]["tic"])
+                    files = [os.path.join(R, "molusc", f"tic{tic}_kept.csv.gz")] + [
+                        os.path.join(R, f"molusc_s{i}", f"tic{tic}_kept.csv.gz") for i in range(1, n_samples)]
+                    if not all(os.path.exists(f) for f in files):
+                        log(f"{key}: {sum(map(os.path.exists, files))} of {n_samples} MOLUSC samples; not run")
+                        continue
+                    jobs[key] = dict(jobs[key], molusc=";".join(files))
                 rows += ([dict(jobs[key], cc="", cc_filt="")] if base else []) + [
                     dict(jobs[key], key=f"{key}__{c['label']}", cc=os.path.join(B, "cc", c["file"]), cc_filt=c["filt"])
                     for c in cc]
