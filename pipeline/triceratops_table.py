@@ -9,22 +9,33 @@ a refit) are not used. A used result must pass the checks of fpp_check.py; a res
 the target (every scenario equally likely, as for a target without a TIC parallax) is kept as degenerate, with its
 values empty. Column store is the entry's key, batch the batch that computed it, legacy is yes for a result
 imported from a batch that did not keep all of its inputs, and lightcurves the hash of the light-curve list its fold was
-made from (lcindex.list_hash; empty for a fold that did not record it, made from the searched list).
+made from (lcindex.list_hash; empty for a fold that did not record it, made from the searched list), and code the hashes
+of the code and packages of its stages (stage_code.py; empty for a legacy result).
 """
 import collections
 import csv
+import json
 import os
 
 import numpy as np
 
 import fpp_check
 import lcindex
+import stage_code
 import store as st
 import tri_store
 
 COLUMNS = ["table", "TIC", "P_d", "key", "batch", "period", "t0_btjd", "duration_h", "depth_ppm", "masks", "drop", "exptime_min",
            "n_points", "sectors", "n_scenarios", "runs", "FPP_mean", "NFPP_mean", "NFPP_max", "runs_g", "FPP_g_mean",
-           "NFPP_g_mean", "NFPP_g_max", "molusc_survivors", "degenerate", "store", "legacy", "lightcurves"]
+           "NFPP_g_mean", "NFPP_g_max", "molusc_survivors", "degenerate", "store", "legacy", "lightcurves", "code"]
+
+
+def _request(store, kind, key):
+    p = os.path.join(store.path(kind, key), "request.json")
+    if not os.path.exists(p):
+        return None
+    with open(p) as fh:
+        return json.load(fh)
 
 
 def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase_bin_min=2.0, match_rel=0.002):
@@ -60,7 +71,9 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
                                     phase_bin_min)
         problems += [f"{key} ({batch}): {x}" for x in found]
         gaia = "FPP_m_mean" in j
-        fold_req = store.get("fold", res["fold_key"])[0] or {}
+        stages = {k: _request(store, k, res.get(f)) for k, f in (("fold", "fold_key"), ("tri_setup", "setup_key"),
+                                                                  ("molusc", "molusc_key")) if res.get(f)}
+        fold_req = stages.get("fold") or {}
         rows.append(dict(
             table=row[0], TIC=row[1], P_d=row[2], key=key, batch=batch, period=sig["period"], t0_btjd=sig["t0_btjd"],
             duration_h=sig["duration_h"], depth_ppm=sig["depth_ppm"], masks=sig["masks"], drop=sig["drop"],
@@ -73,7 +86,8 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
             NFPP_g_max="" if deg or not gaia else repr(float(j["NFPP_m_max"])),
             molusc_survivors=int(j["molusc_survivors"]) if gaia else "", degenerate="yes" if deg else "", store=skey,
             legacy="yes" if req.get("legacy") else "",
-            lightcurves=lcindex.list_hash(fold_req["lightcurves"]) if fold_req.get("lightcurves") else ""))
+            lightcurves=lcindex.list_hash(fold_req["lightcurves"]) if fold_req.get("lightcurves") else "",
+            code="" if req.get("legacy") else stage_code.of_requests(dict(stages, tri=req))))
     if problems:
         raise ValueError(f"{len(problems)} TRICERATOPS results fail the checks:\n" + "\n".join(problems[:50]))
     with open(out_csv, "w", newline="") as fh:

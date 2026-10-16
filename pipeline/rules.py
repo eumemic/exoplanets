@@ -1,5 +1,7 @@
 """The build's rules: each published file, the inputs and parameters it is made from, and the function that makes it.
 Run from pipeline/ with `../.venv/bin/python -m dag status|run|check` (see dag/__main__.py)."""
+import json
+
 import allsky_figure as af
 import catalog as cat
 import catalog_checks as cc
@@ -10,6 +12,7 @@ import fit_store
 import folders as fo
 import lcindex as lc
 import predict
+import stage_code as sc
 import tri_plan as tp
 import triceratops_table as tt
 from dag import check, rule
@@ -24,8 +27,16 @@ def allsky_figure(ctx):
 STORE = "results_cloud/store"
 
 
+@rule(inputs=["pipeline/*.py", "pipeline/dag/*.py", "requirements.txt", "requirements-triceratops.txt"],
+      outputs=["results_public/products/stage_code.json"])
+def stage_code(ctx):
+    """The code and packages of each stored stage now (stage_code.py)."""
+    sc.write(ctx.output("results_public/products/stage_code.json"))
+
+
 @rule(inputs=[f"{STORE}/tri/*/*/request.json", f"{STORE}/tri/*/*/result.json", f"{STORE}/tri/*/*/check.json",
-              f"{STORE}/fold/*/*/fold.npz",
+              f"{STORE}/fold/*/*/fold.npz", f"{STORE}/fold/*/*/request.json", f"{STORE}/tri_setup/*/*/request.json",
+              f"{STORE}/molusc/*/*/request.json",
               "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
       outputs=["results_public/products/triceratops.csv"], params=["triceratops.*"])
 def triceratops_table(ctx):
@@ -78,7 +89,7 @@ def catalog(ctx):
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", "candidates/ephemerides.csv",
               "data/known/toi.csv", "results_public/products/triceratops.csv", "results_public/products/lightcurves_searched.csv",
-              "results_public/products/lightcurves.csv"],
+              "results_public/products/lightcurves.csv", "results_public/products/stage_code.json"],
       outputs=["results_public/products/triceratops_plan.csv"], params=["tiers.*", "freshness.*", "triceratops.match_period_rel"])
 def triceratops_plan(ctx):
     """The rows that need a TRICERATOPS result or show one, with the inputs a current result has (tri_plan.py)."""
@@ -88,7 +99,8 @@ def triceratops_plan(ctx):
     tp.build(ctx.input("results_public/candidates_allsky.csv"), ctx.input("results_public/tiers_earlier_candidates.csv"),
              ctx.input("candidates/ephemerides.csv"), ctx.input("data/known/toi.csv"),
              ctx.input("results_public/products/triceratops.csv"), ctx.output("results_public/products/triceratops_plan.csv"),
-             ctx.params(), tol, ctx.param("triceratops.match_period_rel"), lists=lists)
+             ctx.params(), tol, ctx.param("triceratops.match_period_rel"), lists=lists,
+             code_now=json.loads(ctx.input("results_public/products/stage_code.json").read_text()))
 
 
 @check(inputs=["results_public/products/triceratops_plan.csv"])
@@ -108,12 +120,15 @@ def counted_measured_centroids(ctx):
     assert not problems, f"{len(problems)} counted candidates have no per-sector centroid measurement:\n" + "\n".join(problems)
 
 
-@check(inputs=["results_public/products/centroids.csv", "results_public/products/measurements_allsky.csv"], params=["freshness.*"])
+@check(inputs=["results_public/products/centroids.csv", "results_public/products/measurements_allsky.csv",
+               "results_public/products/stage_code.json"], params=["freshness.*"])
 def centroid_inputs_current(ctx):
     tol = {k.split(".")[1]: v for k, v in ctx.params().items() if k.startswith("freshness.")}
     problems = cc.centroid_inputs_current(ctx.input("results_public/products/centroids.csv"),
-                                          ctx.input("results_public/products/measurements_allsky.csv"), tol)
-    assert not problems, f"{len(problems)} centroid measurements used an ephemeris that has changed since:\n" + "\n".join(problems)
+                                          ctx.input("results_public/products/measurements_allsky.csv"), tol,
+                                          json.loads(ctx.input("results_public/products/stage_code.json").read_text()))
+    assert not problems, (f"{len(problems)} centroid measurements used an ephemeris or code that has changed since "
+                          "(cloud.py plan --centroids measures them again):\n" + "\n".join(problems))
 
 
 LC = "results_public/products/lightcurves"
@@ -145,13 +160,13 @@ def redo(ctx):
             ctx.output("results_public/products/redo.csv"), ctx.param("catalog.folder_tiers_allsky"))
 
 
-@check(inputs=["results_public/products/redo.csv"])
+@check(inputs=["results_public/products/fits.csv", "results_public/products/redo.csv", "results_public/products/stage_code.json"])
 def fits_current(ctx):
-    rows = lc.stale_fits(ctx.input("results_public/products/redo.csv"))
-    assert not rows, (f"{len(rows)} fits were made from light curves that MAST has since redelivered or withdrawn "
-                      "(cloud.py plan --fits refits them):\n" + "\n".join(f"{r['table']} TIC {r['TIC']} P {r['P_d']}: "
-                                                                          f"redelivered {r['redelivered'] or '-'}, removed "
-                                                                          f"{r['removed'] or '-'}" for r in rows[:40]))
+    rows = fit_store.stale(ctx.input("results_public/products/fits.csv"), ctx.input("results_public/products/redo.csv"),
+                           ctx.input("results_public/products/stage_code.json"))
+    assert not rows, (f"{len(rows)} fits were made from light curves that MAST has since redelivered or withdrawn, or by "
+                      "code that has changed (cloud.py plan --fits refits them):\n"
+                      + "\n".join(f"{t} TIC {tic} P {p}: {why}" for t, tic, p, why in rows[:40]))
 
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv",

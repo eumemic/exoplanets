@@ -199,9 +199,11 @@ def centroid_rows(keys=None):
             raise SystemExit(f"not full-sky catalog keys: {sorted(set(keys) - set(sel.key))}")
     else:
         tol = {k.split(".")[1]: v for k, v in P.items() if k.startswith("freshness.")}
+        with open(os.path.join(ROOT, "results_public", "products", "stage_code.json")) as fh:
+            code_now = json.load(fh)
         stale = {(int(x.split()[1]), x.split()[3]) for x in cc.centroid_inputs_current(
             os.path.join(ROOT, "results_public", "products", "centroids.csv"),
-            os.path.join(ROOT, "results_public", "products", "measurements_allsky.csv"), tol)}
+            os.path.join(ROOT, "results_public", "products", "measurements_allsky.csv"), tol, code_now)}
         need = a.tier.isin(P["catalog.counted_allsky"]) & a.cs_sectors.isna()
         sel = a[need | [(t, f"{p}") in stale for t, p in zip(a.TIC, a.P_d)]]
     stars = star_rows(sorted(set(sel.TIC))).set_index("ID")
@@ -308,10 +310,10 @@ def fit_items(keys=None):
     if keys:
         want = set(keys)
     else:
-        import lcindex
         want = {f"tic{r['TIC']}_P{float(r['P_d']):.4f}" for r in rows["candidates_allsky"] if r["c_reason"] == catalog.NO_FIT}
-        want |= {f"tic{r['TIC']}_P{float(r['P_d']):.4f}" for r in
-                 lcindex.stale_fits(os.path.join(ROOT, "results_public", "products", "redo.csv"))}
+        prod = os.path.join(ROOT, "results_public", "products")
+        want |= {f"tic{t}_P{float(p):.4f}" for _, t, p, _ in fit_store.stale(
+            os.path.join(prod, "fits.csv"), os.path.join(prod, "redo.csv"), os.path.join(prod, "stage_code.json"))}
     items = tri_plan.items(want, *(os.path.join(ROOT, f) for f in (
         "results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", "candidates/ephemerides.csv",
         "data/known/toi.csv")), 0.002)

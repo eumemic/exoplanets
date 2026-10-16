@@ -12,7 +12,8 @@ The inputs of a signal, as every TRICERATOPS batch since 15 October has made the
 A result is current while its ephemeris, duration and depth match within the freshness tolerances and every other
 catalog signal of the star is masked at its current ephemeris (masks of TOIs are not compared: the TOI catalog is a
 dated snapshot, and a TOI's period is not ours to keep current), and its fold was made from the star's light-curve
-list now (lcindex.py: a result that did not record its list was made from the searched list). Status: current, legacy
+list now (lcindex.py: a result that did not record its list was made from the searched list), and the code and
+packages of its stages are those now (stage_code.py; a legacy result did not record them). Status: current, legacy
 (current, from a batch that did not keep all of its inputs), or pending with the reason.
 """
 import csv
@@ -78,9 +79,9 @@ def item(table, r, eph, signals, match_rel):
                 drop="EB,EBx2P" if r["rv_flag"] == RV_EXCLUDES_EB else "", _others=others)
 
 
-def status(it, used, tol, match_rel, lists=None):
+def status(it, used, tol, match_rel, lists=None, code_now=None):
     """(status, reason) of the result in use against the inputs the row needs now; lists: ({tic: hash of the searched
-    list}, {tic: hash of the list now}) (lcindex.star_hashes)."""
+    list}, {tic: hash of the list now}) (lcindex.star_hashes); code_now: {kind: hash} (stage_code.json)."""
     if used is None:
         return "pending", "no result"
     cur = dict(P=_f(it["period"]), T0=_f(it["t0"]) + 2457000, dur=_f(it["duration_h"]), depth=_f(it["depth_ppm"]))
@@ -103,12 +104,18 @@ def status(it, used, tol, match_rel, lists=None):
         tic = int(it["tic"])
         if (used.get("lightcurves") or lists[0].get(tic)) != lists[1].get(tic):
             diff.append("light curves: the star's list has changed since it ran (redo.csv)")
+    if code_now is not None:
+        import stage_code
+        ch = stage_code.changed(used.get("code"), code_now)
+        if ch:
+            diff.append(f"the code or packages of {', '.join(ch)} changed since it ran")
     if diff:
         return "pending", "; ".join(diff)
     return ("legacy" if used.get("legacy") == "yes" else "current"), ""
 
 
-def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, out_csv, P, tol, match_rel, lists=None):
+def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, out_csv, P, tol, match_rel, lists=None,
+          code_now=None):
     allsky, earlier = _rows(allsky_csv), _rows(earlier_csv)
     eph = {}
     for e in _rows(ephemerides_csv):
@@ -141,7 +148,7 @@ def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, ou
                 st, why = "pending", "not in the transit registry (no ephemeris)"
                 it = dict(key="", tic=r["TIC"], period="", t0="", duration_h="", depth_ppm="", masks="", drop="")
             else:
-                st, why = status(it, u, tol, match_rel, lists)
+                st, why = status(it, u, tol, match_rel, lists, code_now)
             if not need and st == "pending":
                 st = "stale"
             out.append(dict({k: v for k, v in it.items() if not k.startswith("_")}, table=table, TIC=r["TIC"], P_d=r["P_d"],

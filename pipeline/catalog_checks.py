@@ -56,7 +56,10 @@ def counted_measured_centroids(table_csv, counted):
             for r in _rows(table_csv) if r["tier"] in counted and not r["cs_sectors"]]
 
 
-def centroid_inputs_current(centroids_csv, measurements_allsky, tol):
+def centroid_inputs_current(centroids_csv, measurements_allsky, tol, code_now=None):
+    """Centroid measurements made on an ephemeris other than the row's now, or (code_now: stage_code.json) by other
+    code."""
+    import stage_code
     cat = {(r["TIC"], r["P_d"]): dict(P=_f(r["P_d"]), T0=_f(r["T0_BJD"]), dur=_f(r["T14_h"]))
            for r in _rows(measurements_allsky)}
     problems = []
@@ -65,6 +68,8 @@ def centroid_inputs_current(centroids_csv, measurements_allsky, tol):
             continue
         used = dict(P=_f(c["period"]), T0=_f(c["t0_btjd"]) + 2457000, dur=_f(c["duration_h"]))
         diff = same_ephemeris(used, cat[(c["TIC"], c["P_d"])], tol)
+        if code_now is not None and stage_code.changed(c.get("code"), code_now):
+            diff.append("the measurement code or its packages changed since it ran")
         if diff:
             problems.append(f"TIC {c['TIC']} P {c['P_d']} ({c['batch']}): " + "; ".join(diff))
     return problems

@@ -13,7 +13,8 @@ The columns a fit gives a row: P_d (the period median, 6 decimals), P_err (half 
 T0_BJD (the epoch median + 2457000, 5 decimals), T14_h, Rp_Re and b (medians, 2 decimals). Each signal key's
 entry with the highest seq is used, among those whose checks passed. Column lightcurves is the hash of the light-curve
 list the fit was made from (lcindex.list_hash; empty for a legacy fit, made from the searched list): a fit whose list is
-not the star's list now is stale (lcindex.py; check fits_current).
+not the star's list now is stale (lcindex.py; check fits_current), as is a fit whose code (column code: the hash of
+the fit code and packages, stage_code.py; empty for a legacy fit) is not the code now.
 
 Usage: python fit_store.py import
 """
@@ -25,11 +26,12 @@ import os
 import sys
 
 import lcindex
+import stage_code
 import store as st
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-COLUMNS = ["table", "TIC", "P_d", "candidate_id", "key", "batch", "store", "legacy", "lightcurves", "check", "P_fit", "P_err",
-           "T0_BJD", "T14_h", "Rp_Re", "b"]
+COLUMNS = ["table", "TIC", "P_d", "candidate_id", "key", "batch", "store", "legacy", "lightcurves", "code", "check", "P_fit",
+           "P_err", "T0_BJD", "T14_h", "Rp_Re", "b"]
 
 
 def _rows(path):
@@ -150,12 +152,25 @@ def table(store_root, rows, out_csv):
         out.append(dict(table=t, TIC=tic, P_d=p, candidate_id=cid, key=req["signal_key"], batch=res["batch"], store=k,
                         legacy="yes" if req.get("legacy") else "",
                         lightcurves=lcindex.list_hash(req["lightcurves"]) if req.get("lightcurves") else "",
+                        code=stage_code.of_requests({"fit": req}),
                         check="failed: " + "; ".join(bad) if bad else "passed",
                         **vals))
     with open(out_csv, "w", newline="") as fh:
         w = csv.DictWriter(fh, COLUMNS, lineterminator="\n")
         w.writeheader()
         w.writerows(out)
+    return out
+
+
+def stale(fits_csv, redo_csv, code_json):
+    """The fits in use that are out of date: made from a light-curve list other than the star's now (redo.csv) or by
+    other code (stage_code.json). [(table, TIC, P_d, reason)]"""
+    with open(code_json) as fh:
+        now = json.load(fh)
+    out = [(r["table"], r["TIC"], r["P_d"], f"light curves: redelivered {r['redelivered'] or '-'}, removed "
+                                            f"{r['removed'] or '-'}") for r in lcindex.stale_fits(redo_csv)]
+    out += [(r["table"], r["TIC"], r["P_d"], "the fit code or its packages changed since it ran") for r in _rows(fits_csv)
+            if stage_code.changed(r.get("code"), now)]
     return out
 
 

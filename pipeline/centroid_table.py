@@ -5,7 +5,8 @@ The measurements come from the store (centroid_store.py, kind centroid): each si
 signal list row it ran with, the centroid_sectors.py file and the TIC stars within 2' of the target with their TIC
 dispositions (so that artifacts and duplicates are not taken for stars). The test is centroid_test.py's. A catalog row
 (table, TIC, P_d) takes the measurement with the same TIC and the closest period within a relative difference of
-match_rel. Rows without one keep their published values. Column store is the entry's key, batch the batch that measured it.
+match_rel. Rows without one keep their published values. Column store is the entry's key, batch the batch that measured
+it, code the hash of the measurement's code and packages (stage_code.py; empty for a legacy entry).
 """
 import collections
 import csv
@@ -14,11 +15,12 @@ import pandas as pd
 
 import centroid_store
 import centroid_test
+import stage_code
 import store as st
 
 COLUMNS = ["table", "TIC", "P_d", "key", "batch", "period", "t0_btjd", "duration_h", "sectors_requested", "cs_sectors",
            "cs_offset_arcsec", "cs_pa_deg", "cs_p_target", "cs_neighbour", "cs_neighbour_sep_arcsec", "cs_p_neighbour", "n_failed",
-           "store"]
+           "store", "code"]
 
 
 def _g2(x):
@@ -47,7 +49,7 @@ def build(store_root, catalog_rows, out_csv, match_rel=0.002):
             use[row], owner[k] = k, row
     out = []
     for key in sorted(owner):
-        skey, _, res = latest[key]
+        skey, req, res = latest[key]
         L = pd.DataFrame([res["signal"]]).astype({"tic": int, "period": float, "t0": float, "duration_h": float,
                                                   "depth_ppm": float, "P_d": float})
         per, stars = centroid_test.load_json(L, store.path("centroid", skey))
@@ -68,7 +70,7 @@ def build(store_root, catalog_rows, out_csv, match_rel=0.002):
             cs_neighbour="" if x is None or pd.isna(x.get("best_neighbour")) else int(x.best_neighbour),
             cs_neighbour_sep_arcsec="" if x is None else _r1(x.get("best_neighbour_sep")),
             cs_p_neighbour="" if x is None else _g2(x.get("p_best_neighbour")),
-            n_failed="" if x is None else int(x.n_failed), store=skey))
+            n_failed="" if x is None else int(x.n_failed), store=skey, code=stage_code.of_requests({"centroid": req})))
     out.sort(key=lambda r: (r["table"], int(r["TIC"]), float(r["P_d"])))
     with open(out_csv, "w", newline="") as fh:
         w = csv.DictWriter(fh, COLUMNS, lineterminator="\n")
