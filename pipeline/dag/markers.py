@@ -7,6 +7,9 @@ A number that must follow the data is written between markers that GitHub does n
     <!--n:tiers.allsky.A|word-->two<!--/n-->       as a word (zero to twenty); |Word capitalises it
     <!--n:x.median|.3f-->0.013<!--/n-->           with a format specification
 
+In a table row the format's bar is written \\| (<!--n:counted.total\\|,-->644<!--/n-->): GitHub splits a table row at
+every bar that is not escaped, even inside a comment.
+
 A generated block (a table) is written between <!--block:NAME--> and <!--/block-->.
 
 fill() replaces what is between the markers and leaves the prose untouched. template() empties every marker, so the
@@ -14,7 +17,7 @@ build can tell an edit of the prose (a change of the template) from an edit of a
 """
 import re
 
-INLINE = re.compile(r"(<!--n:([A-Za-z0-9_.@-]+)(?:\|([^>]*?))?-->)(.*?)(<!--/n-->)", re.S)
+INLINE = re.compile(r"(<!--n:([A-Za-z0-9_.@-]+)(?:\\?\|([^>]*?))?-->)(.*?)(<!--/n-->)", re.S)
 BLOCK = re.compile(r"(<!--block:([A-Za-z0-9_.-]+)-->\n?)(.*?)(<!--/block-->)", re.S)
 WORDS = ("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen "
          "seventeen eighteen nineteen twenty").split()

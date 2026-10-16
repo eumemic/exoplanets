@@ -8,11 +8,11 @@ means, the entry says "not documented; appears to be" and gives the likeliest re
 
 | File | Rows | Covered in |
 |---|---|---|
-| `candidates_allsky.csv` | <!--n:catalog.rows.allsky|,-->2,990<!--/n--> | [Full-sky signals](#candidates_allskycsv) |
+| `candidates_allsky.csv` | <!--n:catalog.rows.allsky\|,-->2,990<!--/n--> | [Full-sky signals](#candidates_allskycsv) |
 | `tiers_earlier_candidates.csv` | <!--n:catalog.rows.earlier-->68<!--/n--> | [Earlier searches](#tiers_earlier_candidatescsv) |
 | `candidates.csv` | 12 | [Release tables](#release-tables) |
 | `candidates_2026-10-08.csv`, `candidates_2026-10-08b.csv`, `candidates_2026-10-08c.csv`, `candidates_2026-10-08d.csv` | 38, 8, 18, 12 | [Release tables](#release-tables) |
-| `../candidates/ephemerides.csv`, `../candidates/predictions.csv` | <!--n:registry.rows|,-->738<!--/n-->, <!--n:registry.predictions|,-->50,200<!--/n--> | [Ephemerides and predictions](#ephemerides-and-predictions) |
+| `../candidates/ephemerides.csv`, `../candidates/predictions.csv` | <!--n:registry.rows\|,-->738<!--/n-->, <!--n:registry.predictions\|,-->50,200<!--/n--> | [Ephemerides and predictions](#ephemerides-and-predictions) |
 | `all_signals*.csv.gz`, `vetted_signals*.csv.gz` | 7 files each | [Signal tables](#signal-tables) |
 | `followup_*.csv` | 7 files | [Follow-up tables](#follow-up-tables) |
 | `funnel_allsky.csv` | <!--n:funnel.rows-->154<!--/n--> | [Search stage counts](#funnel_allskycsv) |
@@ -73,7 +73,7 @@ of these labels, spelled exactly as shown. The rules that assign them are in `pi
 | `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, no TRICERATOPS result, no transit fit, or a centroid offset in all sectors; listed but not counted (reason in `c_reason`) | no | <!--n:catalog.tier.C-->547<!--/n--> |
 | `L` | SNR 7.5–9, MES ≥ 9, not selected as tier L1 | no | <!--n:catalog.tier.L-->72<!--/n--> |
 | `likely EB` | Likely binary: a binary catalog lists the target, a matching eclipsing binary is nearby, or the fitted radius exceeds 20 R⊕; the Gaia RV binaries also carry it | no | <!--n:catalog.tier.likely_EB-->315<!--/n--> |
-| `likely nearby FP` | Likely nearby false positive: there is evidence that the signal comes from a nearby star. Either the signal is in set `neighbour<15"` (a capable TIC star within 15″) and its TRICERATOPS result fails the bar (<!--n:catalog.lnfp.by_triceratops|,-->1,105<!--/n--> rows), or its per-sector centroids reject the target and fit a capable neighbour (<!--n:catalog.lnfp.by_centroids-->86<!--/n--> rows; <!--n:catalog.lnfp.by_both-->77<!--/n--> have both). A neighbour-set signal without a TRICERATOPS result is tier C, not this | no | <!--n:catalog.tier.likely_nearby_FP|,-->1,114<!--/n--> |
+| `likely nearby FP` | Likely nearby false positive: there is evidence that the signal comes from a nearby star. Either the signal is in set `neighbour<15"` (a capable TIC star within 15″) and its TRICERATOPS result fails the bar (<!--n:catalog.lnfp.by_triceratops\|,-->1,105<!--/n--> rows), or its per-sector centroids reject the target and fit a capable neighbour (<!--n:catalog.lnfp.by_centroids-->86<!--/n--> rows; <!--n:catalog.lnfp.by_both-->77<!--/n--> have both). A neighbour-set signal without a TRICERATOPS result is tier C, not this | no | <!--n:catalog.tier.likely_nearby_FP\|,-->1,114<!--/n--> |
 | `likely false alarm` | Set `SNR 7.5-9` with MES below 9 and not selected as tier L1 (<!--n:catalog.lfa.low_band-->342<!--/n--> rows), and TIC 141937667 (13.36 d), whose signal came from the QLP orbit-edge systematic (an override; [details](../validation/qlp_orbit_edges.md)). The false-alarm classifier note uses the label for signals that fall below its score cut | no | <!--n:catalog.lfa.total-->343<!--/n--> |
 | `reported` | A matching signal is already reported elsewhere: in the literature check, in a paper found through NASA ADS, or as a community TOI with a single transit or another period ([details](../validation/ctoi_matches.md)); `reported_as` says where | no | <!--n:catalog.tier.reported-->13<!--/n--> |
 
@@ -90,7 +90,7 @@ rows of candidates that later left the counted tiers, with their current tier, s
 |---|---|---|
 | `SNR>=9` | Search SNR ≥ 9, passed LEO-Vetter and the cuts, with no centroid offset or capable TIC neighbour within 15″ | <!--n:catalog.set.snr9-->855<!--/n--> |
 | `SNR 7.5-9` | The same for search SNR 7.5 to 9 | <!--n:catalog.set.low-->562<!--/n--> |
-| `neighbour<15"` | Signals rejected only by the close-neighbour check, or without a usable difference image, then assessed with TRICERATOPS and the centroid likelihood ratio | <!--n:catalog.set.nb|,-->1,573<!--/n--> |
+| `neighbour<15"` | Signals rejected only by the close-neighbour check, or without a usable difference image, then assessed with TRICERATOPS and the centroid likelihood ratio | <!--n:catalog.set.nb\|,-->1,573<!--/n--> |
 
 Of the 855 rows of `SNR>=9`, 733 come from the first pass: the 726 clean signals counted in the README's table of
 pixel-check outcomes plus the 7 signals that moved from tier N to tier B on 13 October when TIC artifacts were removed
@@ -157,10 +157,10 @@ default priors and ten with the Gaia limits), where there is one.
 |---|---|---|---|
 | `TIC` | TIC ID of the host star | integer | never empty |
 | `P_d` | Orbital period: the median of the transit-fit posterior, or the search period when there is no fit | days | never empty |
-| `P_err` | 1σ period uncertainty: half the 16th to 84th percentile range of the fit posterior | days | no transit fit (<!--n:catalog.nofit.total|,-->1,294<!--/n--> rows) |
+| `P_err` | 1σ period uncertainty: half the 16th to 84th percentile range of the fit posterior | days | no transit fit (<!--n:catalog.nofit.total\|,-->1,294<!--/n--> rows) |
 | `T0_BJD` | Reference transit time of the fit, or of the search when there is no fit. Usually the first transit in the data; it is not the reference epoch of the ephemerides (see [quirks](#known-quirks)) | BJD_TDB, days | never empty |
 | `Rp_Re` | Planet radius from the fitted Rp/R*, using the TIC stellar radius. Without a fit: √(`depth_ppm` × 10⁻⁶) × `Rstar`, converted to R⊕ | R⊕ | never empty |
-| `b` | Impact parameter, median of the fit posterior | dimensionless | no transit fit (<!--n:catalog.nofit.total|,-->1,294<!--/n--> rows) |
+| `b` | Impact parameter, median of the fit posterior | dimensionless | no transit fit (<!--n:catalog.nofit.total\|,-->1,294<!--/n--> rows) |
 | `T14_h` | Transit duration, first to fourth contact, median of the fit posterior. Without a fit: the box duration of the search | hours | never empty |
 | `depth_ppm` | Transit depth measured in the vetting step: a box over the transit-masked, re-detrended light curve. It is not the depth of the fitted model | ppm | never empty |
 | `MES` | LEO-Vetter multiple-event statistic | dimensionless | never empty |
@@ -201,7 +201,7 @@ examined for tier L1 and tier N, and all 564 signals of the QLP re-search. Measu
 
 | Column | Meaning | Units, timescale | Empty means |
 |---|---|---|---|
-| `cs_sectors` | Number of sectors with a usable centroid fit | count | not measured (<!--n:catalog.cs.empty|,-->1,863<!--/n--> rows) |
+| `cs_sectors` | Number of sectors with a usable centroid fit | count | not measured (<!--n:catalog.cs.empty\|,-->1,863<!--/n--> rows) |
 | `cs_offset_arcsec` | Length of the mean offset of the per-sector centroids from the target | arcsec | not measured |
 | `cs_pa_deg` | Direction of that mean offset, east of north | degrees | not measured |
 | `cs_p_target` | p-value of the test that the target is the source of the offsets. A small value means the offsets are inconsistent with the target | probability, 0–1 | not measured, or only one sector (<!--n:catalog.cs.p_empty_measured-->35<!--/n--> rows) |
@@ -216,7 +216,7 @@ examined for tier L1 and tier N, and all 564 signals of the QLP re-search. Measu
 |---|---|---|---|
 | `binary_at_target` | Catalog entries within 3″ of the target that explain the signal, as `catalog P=period`: `gaia_eb`, `gaia_sb1`, `gaia_sb2`, `gaia_eb_orbit`, `gaia_orbit` (Gaia DR3 binary and orbit tables), `tess_eb` (TESS eclipsing-binary catalog), `t10k` (TESS Ten Thousand eclipsing binaries, Kostov et al. 2025; matched by TIC ID since 15 October 2026), `vsx:type` (VSX eclipsing or ellipsoidal types only), `apogee_binary`. Also `Gaia DR3 RV variable (amplitude N km/s)` for the four `Gaia RV binary` rows of `rv_flag`. The period is omitted when the catalog has none | period in days | no catalog entry (2,935 rows) |
 | `eb_nearby_same_period` | Eclipsing binaries within 60″ of the target whose period matches the candidate's at ratios 1/3, 1/2, 2/3, 1, 3/2, 2 or 3 to within 0.5%, as `catalog separation" P=period` (`gaia_eb`, `tess_eb`, `vsx:type`) | separation in arcsec, period in days | no such binary (2,884 rows) |
-| `papers_with_period` | NASA ADS bibcodes of papers whose full text mentions the star (TIC ID or host TOI) and also the candidate's period quoted to two or three decimals | bibcodes | none found (<!--n:catalog.papers_empty|,-->2,988<!--/n--> rows) |
+| `papers_with_period` | NASA ADS bibcodes of papers whose full text mentions the star (TIC ID or host TOI) and also the candidate's period quoted to two or three decimals | bibcodes | none found (<!--n:catalog.papers_empty\|,-->2,988<!--/n--> rows) |
 | `zenodo_with_period` | Zenodo records, as `zenodo:id`, whose title or description mention the star and the period | record IDs | no Zenodo record matched (every row) |
 | `host_tois` | TOIs on the same star, as `TOI-number (disposition, period d)` | text | no TOI on the star: TOI hosts were searched separately, so every row is empty |
 
@@ -258,8 +258,8 @@ candidate has them; <!--n:catalog.fpp_g.missing_with_fpp-->4<!--/n--> uncounted 
 | `fa_score_h` | The hold-out score that tier L1 is selected on (cut 0.80), from models trained without the stars of the second inverted sample. Both scores come from the classifier retrained after the QLP re-search where the signal has a row in its table, and from the previous one otherwise | 0–1 | never empty |
 | `set` | Group the signal came from; values in [The `set` column](#the-set-column) | text | never empty |
 | `tier` | Reliability tier; values in [Tier labels](#tier-labels) | text | never empty |
-| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (<!--n:catalog.c_reason_empty|,-->2,443<!--/n--> rows) |
-| `reported_as` | Where a signal labelled `reported` was reported: a CTOI (with its period, or `single transit`), a K2 candidate, or an ADS bibcode | text | not tier `reported` (<!--n:catalog.reported_as_empty|,-->2,977<!--/n--> rows) |
+| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (<!--n:catalog.c_reason_empty\|,-->2,443<!--/n--> rows) |
+| `reported_as` | Where a signal labelled `reported` was reported: a CTOI (with its period, or `single transit`), a K2 candidate, or an ADS bibcode | text | not tier `reported` (<!--n:catalog.reported_as_empty\|,-->2,977<!--/n--> rows) |
 | `fa_flag` | Low classifier score; see [Flag columns](#flag-columns) | text | no flag |
 | `desert_flag` | Neptunian desert; see [Flag columns](#flag-columns) | text | no flag |
 | `search` | `full-sky search` (the first pass) or `QLP re-search` (the second pass of 13 October; [details](../validation/qlp_orbit_edges.md)) | text | never empty |
@@ -393,7 +393,7 @@ transit-timing variations would move transits away from these times.
 | `tc_UTC` | The same time as UTC at Earth's centre, to the minute | UTC | never empty |
 | `sigma_min` | 1σ uncertainty of the predicted time | minutes | never empty |
 | `duration_h` | Transit duration T14 of the fit | hours | never empty |
-| `tess_sector` | TESS sector in which the transit falls inside a published orbit window and the star is on a detector | sector number | not inside a published window, or the star is not on a detector (<!--n:registry.tess_sector_empty|,-->49,368<!--/n--> rows) |
+| `tess_sector` | TESS sector in which the transit falls inside a published orbit window and the star is on a detector | sector number | not inside a published window, or the star is not on a detector (<!--n:registry.tess_sector_empty\|,-->49,368<!--/n--> rows) |
 | `candidate_id` | As in the candidate tables | text | never empty |
 
 ## Signal tables

@@ -371,22 +371,26 @@
      "doc_numbers.compute": "b86c54d6ee8efdf22c60368b69bb820c24a5400445d4293aaa9b0b8835db3f98",
      "doc_numbers.slug": "132c277ea578e120dba6b91526c57dc3f01b04c8595d88c631635ca717a1e1b8",
      "doc_numbers.tier_values": "66897ca781634385cca38c8dd198469b64814ea89fb9aafe7c005a5ff0e5d405",
+     "doc_numbers.validation": "cc038494c58e11e554f641db66d4acc2a0739b51798ce6c5ad2ce8def8acb1da",
      "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
-     "rules.documents": "3a9a4bc05dd6d63af76dfb46aaa203e7838bde32da30828b01e94d7a7ceba8b0",
-     "rules.numbers": "f89052d98ec655d41a8ffa38ad0f0f1daa92484640602905865d78fd3a4e9bfb"
+     "rules.DOCS": "28ed58ccad880bdad135e4335621d30d80e28b9e92be8bee4585fd050972a916",
+     "rules.documents": "9da449ad4719b547e8307195aff6d92a275ee1ca1c3fd69f1ccff85fd71e6a8f",
+     "rules.numbers": "c8b15bc44287d68cebe47d2dd3b136086b4cc52bb2abce0c700dc1076e3fef89"
     }
    },
    "inputs": {
-    "README.md (template)": "a66c0b05292911707f319248cad71e8facc455bdc9610698b217b8d5a87e1fac",
-    "results_public/README.md (template)": "c459aa481111aad9924c27450d2df29dde0222d0535dbd34c2cd8bd359904c27",
-    "results_public/numbers.json": "e1d6f1f652236786fd0b41fa372c3031d962acb9392666a513bff8ae76dc17c8"
+    "README.md (template)": "04b8681cc3c938d3c83f9aa67eac3d41ca38d453a495ade6aa1ed37d3f4b6ef2",
+    "results_public/README.md (template)": "a1de7ffe7b059f0501d81b4d61c9457573d9cfbeaf9be8fe8757ab961c6631ff",
+    "results_public/numbers.json": "6e187fcfe94e9c29365e09d27a08f089e4e486f83bbff0480258ab7e083d7818",
+    "validation/findability.md (template)": "11fedfa455c2fe7f7ff81dad9604914e307c90528cc85d0a41f1aaef22af4cd4"
    },
    "outputs": {
-    "README.md": "066accf1c60b8300d0d6052690fc29f9071444e89be03b3542d5dc26ac1b1ff3",
-    "results_public/README.md": "73e2f8f7eda967bae04aeefc61c1c0db17b9c6a1a15ef67e801e25b253d12440"
+    "README.md": "9586f5484422106e712a6cd5e24dd0070385ac71b95597f022dcaa0c2adf3c6f",
+    "results_public/README.md": "b3c396e883f6fe8412ed10fea11e3668a11908f3f475676e1c529249210ddcf8",
+    "validation/findability.md": "73a02c3fea44e24b5cf03ee5a001bb1373d9a83e5bd7ef7faad7dabf53373dc4"
    },
    "params": {},
-   "stamp": "23afe6366839ff71255b69fbe704e43b3fe681eba7bb303fb9832d3ac65304ed"
+   "stamp": "062ae8ed298b00ead24b57b3bff4447172916a75b6e2b3190bd0b71ad3d2a180"
   },
   "earlier_folders": {
    "code": {
@@ -459,6 +463,126 @@
    "params": {},
    "result": "passed",
    "stamp": "8092a22b6b8a3d256ef5bdf1351c963996ae902c7be90af557706d23c83ca66f"
+  },
+  "findability": {
+   "code": {
+    "effects": {
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "doc_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "findability": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {
+      "numpy": {
+       "version": "2.5.3"
+      },
+      "pandas": {
+       "version": "2.3.3"
+      },
+      "python-dateutil": {
+       "version": "2.9.0.post0"
+      },
+      "pytz": {
+       "version": "2026.5"
+      },
+      "six": {
+       "version": "1.17.0"
+      },
+      "tzdata": {
+       "version": "2026.5"
+      }
+     },
+     "python": "3.12.13"
+    },
+    "parts": {
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
+     "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
+     "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
+     "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
+     "findability.CUTS": "f5b414711f09b2b597f761ef04a0832c6c87dfae319b1bbec432a0a4d99eb529",
+     "findability.numbers": "80848acd40d92e034d738e0cf152f69c244cb1c0aa0d0ce3fe0ec0c904ce1cab",
+     "findability.snr": "4059dff33fc658e56961115053b51f6e909eba4593dafeda820401a4fc76437f",
+     "findability.summary": "1aa3d829d3751aa5889d27efeffe657de404b2d88e502a263b66c71e073bcf1e",
+     "rules.findability": "736f9bbc2093a714e01eac4ce8fba7372b0fb3d882673764ff82244d976c83b8"
+    }
+   },
+   "inputs": {
+    "validation/findability_transits.csv.gz": "4e06f639721385098e3a607499b6cf13ea2fd1cb2467702d88802e6c0e93f062"
+   },
+   "outputs": {
+    "validation/findability.csv": "1c8b97cb19dc5dc6210b4b5c6299308fb3e276886a690a4a47b5be69390e1cdb",
+    "validation/findability.json": "70bf323774735aa9347d657c6fa55379b82fbd52d610f605c684cfaf35870b1a"
+   },
+   "params": {},
+   "stamp": "823064dcd5a39b513295bc7f32408955de01ba896393546e2e529a1b4753118a"
+  },
+  "findability_transits": {
+   "code": {
+    "effects": {
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "findability": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {
+      "numpy": {
+       "version": "2.5.3"
+      },
+      "pandas": {
+       "version": "2.3.3"
+      },
+      "python-dateutil": {
+       "version": "2.9.0.post0"
+      },
+      "pytz": {
+       "version": "2026.5"
+      },
+      "six": {
+       "version": "1.17.0"
+      },
+      "tzdata": {
+       "version": "2026.5"
+      }
+     },
+     "python": "3.12.13"
+    },
+    "parts": {
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
+     "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
+     "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
+     "findability.sector_of": "7d206a066acb1f229a75d902a875fe9f9043ff4d1baae751c0c831676232d9dc",
+     "findability.sector_windows": "b1ef3624cb0f485a578ae591baf0a8bc8237f5ca56c04a340950dc35e66137d1",
+     "findability.transits": "bd3645c4e9e01a015a2b42a1edaced37d2c868005af4c2a39c69d617e91d78d1",
+     "rules.findability_transits": "e1b4ed8c67fa7e2f3f3213026905a82d2f855cae1f9314f587512b13db98d21a"
+    }
+   },
+   "inputs": {
+    "candidates/allsky/*/vetting.json": "886d5d37505cb8e348808b857b0bae861faceaddcb02bbcd606775cd54caed96",
+    "data/tess_schedule/TESS_orbit_times.csv": "c5a919f01f4c18aade2daa8c086d7192d607ee50589dfd65470d9a5cec684055",
+    "results_cloud/as/cands_allsky.csv": "1e3955484f81238e151176db0121737f3cb5fd613aeb25610ad563a1c78154f6",
+    "results_cloud/qfull/exo-q*/results/cands_q*.csv": "83ca58a30ea30d4bc89c0aa8bcd39a5bc3fd407c3124c3d0b073c5a790007665",
+    "results_cloud/shard*/cands_allsky.csv": "468944f14b2a6af3e4fc40142f26a0bb8bfec25d6499613fadb3da5fd833e554",
+    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c"
+   },
+   "outputs": {
+    "validation/findability_transits.csv.gz": "4e06f639721385098e3a607499b6cf13ea2fd1cb2467702d88802e6c0e93f062"
+   },
+   "params": {
+    "findability.match_period_rel": 0.002,
+    "findability.tiers": [
+     "A",
+     "B",
+     "N"
+    ]
+   },
+   "stamp": "7b16d12e5e5c46e186df603e2cac9d2ac47db73bde4e1be1a340a70c1c64b0f2"
   },
   "folders": {
    "code": {
@@ -564,25 +688,28 @@
      "python": "3.12.13"
     },
     "parts": {
-     "catalog_checks.markdown_tables": "7d58feda5ebe31b38e8019d8b07bcabe98b2764519baba2ed878e676170eca10",
+     "catalog_checks._cells": "3e8a4274fe78a7d9739f75001b097b61dedfe6e0912806cf69fdc4b5479ff1f3",
+     "catalog_checks.markdown_tables": "d8c10b646e35a96a04c450032bdd191c48d70199c6c76369fd65299e09d198bf",
      "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
      "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
      "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
      "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
-     "rules.markdown_tables": "384d27c9382e467f2cabd4606d5175414eb4c0d6bb2bdf765e9c594d43ae62d8"
+     "rules.DOCS": "28ed58ccad880bdad135e4335621d30d80e28b9e92be8bee4585fd050972a916",
+     "rules.markdown_tables": "73b0e21a03e4e3bebb56dff4b3de2e31c4e896f19afc02a88cb3e8132ce9ca19"
     }
    },
    "inputs": {
-    "README.md": "066accf1c60b8300d0d6052690fc29f9071444e89be03b3542d5dc26ac1b1ff3",
-    "results_public/README.md": "73e2f8f7eda967bae04aeefc61c1c0db17b9c6a1a15ef67e801e25b253d12440",
-    "results_public/products/README.md": "f72044958773d0db1e23313f9bd7f5d00090c82b071d87474df7228ff5fa16d3"
+    "README.md": "9586f5484422106e712a6cd5e24dd0070385ac71b95597f022dcaa0c2adf3c6f",
+    "results_public/README.md": "b3c396e883f6fe8412ed10fea11e3668a11908f3f475676e1c529249210ddcf8",
+    "results_public/products/README.md": "3743ae93633e133e779aaabb4d0087a956a88c7ced563fdf451f84144d1f5357",
+    "validation/findability.md": "73a02c3fea44e24b5cf03ee5a001bb1373d9a83e5bd7ef7faad7dabf53373dc4"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "d0f371a62bbf92d6604f5ec221a1e5c6ab1aa8f6ebb3024d25379f5edb319735"
+   "stamp": "3865e4773250748e8affb6036f51edc7d5c2296203726f898f65fbd1622a5280"
   },
   "numbers": {
    "code": {
@@ -628,8 +755,9 @@
      "doc_numbers.compute": "b86c54d6ee8efdf22c60368b69bb820c24a5400445d4293aaa9b0b8835db3f98",
      "doc_numbers.slug": "132c277ea578e120dba6b91526c57dc3f01b04c8595d88c631635ca717a1e1b8",
      "doc_numbers.tier_values": "66897ca781634385cca38c8dd198469b64814ea89fb9aafe7c005a5ff0e5d405",
+     "doc_numbers.validation": "cc038494c58e11e554f641db66d4acc2a0739b51798ce6c5ad2ce8def8acb1da",
      "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
-     "rules.numbers": "f89052d98ec655d41a8ffa38ad0f0f1daa92484640602905865d78fd3a4e9bfb"
+     "rules.numbers": "c8b15bc44287d68cebe47d2dd3b136086b4cc52bb2abce0c700dc1076e3fef89"
     }
    },
    "inputs": {
@@ -638,10 +766,12 @@
     "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
     "results_public/funnel_allsky.csv": "77d8675aac765e237fd4301569308b3e7eaba5bd2650f01b6550b0a19bc95caa",
     "results_public/products/triceratops.csv": "e3eb390529f377e4fdf7601a7d38a25967b9d210fb531ad18a6e4f53581822f9",
-    "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
+    "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694",
+    "validation/findability.json": "70bf323774735aa9347d657c6fa55379b82fbd52d610f605c684cfaf35870b1a",
+    "validation/spoc_2min_recheck.csv": "dbf4a72f87ad41eaa2121093ef702a291b19fcf9ec09fcce1d0feb0181a20276"
    },
    "outputs": {
-    "results_public/numbers.json": "e1d6f1f652236786fd0b41fa372c3031d962acb9392666a513bff8ae76dc17c8"
+    "results_public/numbers.json": "6e187fcfe94e9c29365e09d27a08f089e4e486f83bbff0480258ab7e083d7818"
    },
    "params": {
     "catalog.counted_allsky": [
@@ -666,7 +796,66 @@
     "tiers.centroid_neighbour_p": 0.01,
     "tiers.centroid_reject_p": 0.001
    },
-   "stamp": "92d4b01cb9e7a28670f09af7daee85237ffe5d9f5b330ab3837a93877d044111"
+   "stamp": "2fe4fe2391e198bfea716bddb0468da12c45607a3727d7a833758bb18ea94c5a"
+  },
+  "prose_claims": {
+   "code": {
+    "effects": {
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "doc_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {
+      "numpy": {
+       "version": "2.5.3"
+      },
+      "pandas": {
+       "version": "2.3.3"
+      },
+      "python-dateutil": {
+       "version": "2.9.0.post0"
+      },
+      "pytz": {
+       "version": "2026.5"
+      },
+      "six": {
+       "version": "1.17.0"
+      },
+      "tzdata": {
+       "version": "2026.5"
+      }
+     },
+     "python": "3.12.13"
+    },
+    "parts": {
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
+     "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
+     "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
+     "doc_numbers.C_REASONS": "3438b8415677a75af9589c2605773346ee625fddd9af6990ea8292047e229219",
+     "doc_numbers.SETS": "03b2573a166a7ddcd805fff193beabb7e11b97f0bda5a6ca1249a5af2a079f38",
+     "doc_numbers.TIER_ORDER": "270ae88f8210d39f863ee0b67da473560369c1773e19589af6ddaf52fe3d1ab5",
+     "doc_numbers.by_tier": "b173d4728dec5502af13006de4266a8aaaffedeee66539c7d5af9bf0169f5768",
+     "doc_numbers.compute": "b86c54d6ee8efdf22c60368b69bb820c24a5400445d4293aaa9b0b8835db3f98",
+     "doc_numbers.slug": "132c277ea578e120dba6b91526c57dc3f01b04c8595d88c631635ca717a1e1b8",
+     "doc_numbers.tier_values": "66897ca781634385cca38c8dd198469b64814ea89fb9aafe7c005a5ff0e5d405",
+     "doc_numbers.validation": "cc038494c58e11e554f641db66d4acc2a0739b51798ce6c5ad2ce8def8acb1da",
+     "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
+     "rules.CLAIMS": "466e7b0819efe48fd9a21a198fda851310826ea326ceec18e679db3928e2301c",
+     "rules.numbers": "c8b15bc44287d68cebe47d2dd3b136086b4cc52bb2abce0c700dc1076e3fef89",
+     "rules.prose_claims": "401176753e153fae60ed34cbeca2258185af27fcc9145c4e3132f222b402c079"
+    }
+   },
+   "inputs": {
+    "results_public/numbers.json": "6e187fcfe94e9c29365e09d27a08f089e4e486f83bbff0480258ab7e083d7818"
+   },
+   "outputs": {},
+   "params": {},
+   "result": "passed",
+   "stamp": "88d02cf64d45a9c55b55f9ee875446d0d1a133bcd77e83b158014bbf87895fac"
   },
   "registry": {
    "code": {
@@ -764,6 +953,114 @@
     "registry.until": "2027-06-30"
    },
    "stamp": "7200f55e57e93c640eea14dc66d697109629462f5bc1b753b2aff27cc8f1ded4"
+  },
+  "spoc_measured": {
+   "code": {
+    "effects": {
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "findability": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {
+      "numpy": {
+       "version": "2.5.3"
+      },
+      "pandas": {
+       "version": "2.3.3"
+      },
+      "python-dateutil": {
+       "version": "2.9.0.post0"
+      },
+      "pytz": {
+       "version": "2026.5"
+      },
+      "six": {
+       "version": "1.17.0"
+      },
+      "tzdata": {
+       "version": "2026.5"
+      }
+     },
+     "python": "3.12.13"
+    },
+    "parts": {
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
+     "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
+     "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
+     "findability.recheck_problems": "b792c28b0836b8671f4c93d7f4da23e6e2ca73ca703efdef5aa8d668b278a092",
+     "rules.spoc_measured": "38d6c5103b91ed086ee88fa582790efc94792abfc12ed2469dff486f11f6403f"
+    }
+   },
+   "inputs": {
+    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/products/spoc_2min.csv": "bb7fa2c58b3c65d65552541dc2bf55ee6c1257e08c987d7fbf50336f044c3887",
+    "validation/findability.csv": "1c8b97cb19dc5dc6210b4b5c6299308fb3e276886a690a4a47b5be69390e1cdb",
+    "validation/findability_transits.csv.gz": "4e06f639721385098e3a607499b6cf13ea2fd1cb2467702d88802e6c0e93f062"
+   },
+   "outputs": {},
+   "params": {
+    "freshness.depth_ppm": 0.5,
+    "freshness.duration_h": 0.005,
+    "freshness.period_d": 2e-06,
+    "freshness.phase_min": 0.5
+   },
+   "result": "passed",
+   "stamp": "6e516cc2117abd89da4e05e8083ad1b30ed135aedbf69501c44e5e805487a83c"
+  },
+  "spoc_recheck": {
+   "code": {
+    "effects": {
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "findability": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {
+      "numpy": {
+       "version": "2.5.3"
+      },
+      "pandas": {
+       "version": "2.3.3"
+      },
+      "python-dateutil": {
+       "version": "2.9.0.post0"
+      },
+      "pytz": {
+       "version": "2026.5"
+      },
+      "six": {
+       "version": "1.17.0"
+      },
+      "tzdata": {
+       "version": "2026.5"
+      }
+     },
+     "python": "3.12.13"
+    },
+    "parts": {
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
+     "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
+     "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
+     "findability.recheck_table": "ccfbae39e2f9b3fdcde7cf3bed6185ebb540d27b4f8ef382435e6b6893d7d89f",
+     "rules.spoc_recheck": "76224514602a95d8bb267e1137e7e2cb724df12ca824e58ffe7de1123a6a425b"
+    }
+   },
+   "inputs": {
+    "results_public/products/spoc_2min.csv": "bb7fa2c58b3c65d65552541dc2bf55ee6c1257e08c987d7fbf50336f044c3887",
+    "validation/findability.csv": "1c8b97cb19dc5dc6210b4b5c6299308fb3e276886a690a4a47b5be69390e1cdb"
+   },
+   "outputs": {
+    "validation/spoc_2min_recheck.csv": "dbf4a72f87ad41eaa2121093ef702a291b19fcf9ec09fcce1d0feb0181a20276"
+   },
+   "params": {},
+   "stamp": "962a5dd10fe59aac3d4ec5fa3b11985f43aa24df9f2fc5c3f09c07c4cad09976"
   },
   "triceratops_inputs_current": {
    "code": {

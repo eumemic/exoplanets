@@ -117,6 +117,65 @@
   "fpp_empty": 6,
   "rv_empty": 52
  },
+ "findability": {
+  "below_9": {
+   "max": 8.9964158849881,
+   "min": 8.765877486551757,
+   "n": 10
+  },
+  "best_sector": {
+   "below_7_1": {
+    "frac": 0.5569620253164557,
+    "n": 264
+   },
+   "below_9": {
+    "frac": 0.7468354430379747,
+    "n": 354
+   },
+   "median": 6.6529723539873835
+  },
+  "candidates": 474,
+  "ffi_only": {
+   "frac": 0.8122362869198312,
+   "n": 385
+  },
+  "first": 398,
+  "first_by_s96": 0.9271356783919598,
+  "late": {
+   "first": 22,
+   "n": 51,
+   "research": 29
+  },
+  "research": 76,
+  "sectors": {
+   "median": 5.0,
+   "p10": 2.0,
+   "p90": 17.0
+  },
+  "through": {
+   "26": {
+    "frac": 0.11392405063291139,
+    "n": 54
+   },
+   "55": {
+    "frac": 0.4050632911392405,
+    "n": 192
+   },
+   "69": {
+    "frac": 0.5970464135021097,
+    "n": 283
+   },
+   "83": {
+    "frac": 0.7172995780590717,
+    "n": 340
+   },
+   "96": {
+    "frac": 0.8713080168776371,
+    "n": 413
+   }
+  },
+  "two_min": 89
+ },
  "funnel": {
   "rows": 154
  },
@@ -127,5 +186,41 @@
   "predictions": 50200,
   "rows": 738,
   "tess_sector_empty": 49368
+ },
+ "spoc": {
+  "candidates": 89,
+  "few": 13,
+  "ratio_red": 0.8694063926940638,
+  "ratio_white": 0.9066578792784791,
+  "rest": 76,
+  "snr_cdpp": {
+   "max": 8.75,
+   "reach": 2
+  },
+  "snr_red": {
+   "max": 9.97,
+   "reach": 7
+  },
+  "snr_search": {
+   "max": 11.03,
+   "reach": 20
+  },
+  "snr_white": {
+   "max": 10.26,
+   "reach": 13
+  },
+  "strongest": {
+   "P_d": 6.350484,
+   "TIC": 402339417,
+   "sectors": "2, 29 and 69",
+   "snr_cdpp": 8.75,
+   "snr_red": 9.97,
+   "tier": "B"
+  },
+  "tce_on_transit_tics": [
+   200744242
+  ],
+  "tces_on_star": 10,
+  "tces_on_transit": 1
  }
 }

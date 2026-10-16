@@ -111,8 +111,16 @@ def centroid_inputs_current(centroids_csv, measurements_allsky, tol):
     return problems
 
 
+def _cells(line):
+    """The number of cells GitHub finds in a table row: it splits the row at every bar not escaped with a backslash,
+    even inside code spans and comments."""
+    s = line.strip().replace("\\|", "")
+    return s.strip("|").count("|") + 1
+
+
 def markdown_tables(path):
-    """Tables whose rows do not all have the header's number of cells (markers and code blocks excluded)."""
+    """Tables with a row whose number of cells differs from the header's, counted as GitHub counts them (a bar inside a
+    marker or a code span must be escaped, \\|), outside code blocks."""
     import re
     problems, in_code = [], False
     lines = open(path).read().split("\n")
@@ -121,11 +129,10 @@ def markdown_tables(path):
         if lines[i].startswith("```"):
             in_code = not in_code
         if not in_code and lines[i].startswith("|") and i + 1 < len(lines) and re.match(r"^\|[\s:|-]+\|$", lines[i + 1]):
-            cells = lambda l: len(re.sub(r"<!--.*?-->", "", l).strip().strip("|").split("|"))
-            n, j = cells(lines[i]), i + 1
+            n, j = _cells(lines[i]), i + 1
             while j < len(lines) and lines[j].startswith("|"):
-                if cells(lines[j]) != n:
-                    problems.append(f"{path}:{j + 1}: {cells(lines[j])} cells, the header at line {i + 1} has {n}")
+                if _cells(lines[j]) != n:
+                    problems.append(f"{path}:{j + 1}: {_cells(lines[j])} cells, the header at line {i + 1} has {n}")
                 j += 1
             i = j
             continue

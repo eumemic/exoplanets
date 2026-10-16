@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pipeline"))
 from dag import BuildError, Project  # noqa: E402
 from dag.codehash import CodeIndex  # noqa: E402
 from dag.context import covers, match, overlap  # noqa: E402
+from dag.markers import fill, template  # noqa: E402
 from dag.hashing import FileHasher, canonical_json, sha256_json  # noqa: E402
 
 
@@ -434,6 +435,26 @@ class PatternOutputTests(unittest.TestCase):
         write(self.root / "pipeline" / "rules.py", FOLDER_RULES.replace('outputs=["out/summary.txt"]', 'outputs=["out/Fsummary"]'))
         with self.assertRaises(BuildError):
             Project(self.root)
+
+
+class MarkerTests(unittest.TestCase):
+    def test_formats_and_the_escaped_bar_of_table_rows(self):
+        n = {"a": {"b": 1785, "c": 3, "f": 0.4050632911392405}}
+        self.assertEqual(fill("<!--n:a.b|,-->0<!--/n-->", n), "<!--n:a.b|,-->1,785<!--/n-->")
+        self.assertEqual(fill("| x | <!--n:a.b\\|,-->0<!--/n--> |", n), "| x | <!--n:a.b\\|,-->1,785<!--/n--> |")
+        self.assertEqual(fill("<!--n:a.c|Word--><!--/n--> and <!--n:a.f|.0%--><!--/n-->", n),
+                         "<!--n:a.c|Word-->Three<!--/n--> and <!--n:a.f|.0%-->41%<!--/n-->")
+        self.assertEqual(template("<!--n:a.b\\|,-->1,785<!--/n-->"), "<!--n:a.b\\|,--><!--/n-->")
+        with self.assertRaises(KeyError):
+            fill("<!--n:a.zz-->1<!--/n-->", n)
+
+    def test_table_cells_are_counted_as_github_counts_them(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "pipeline"))
+        import catalog_checks as cc
+        d = Path(tempfile.mkdtemp()) / "t.md"
+        d.write_text("| a | b |\n|---|---|\n| x | <!--n:k\\|,-->1<!--/n--> |\n| y | <!--n:k|,-->1<!--/n--> |\n")
+        self.assertEqual(len(cc.markdown_tables(d)), 1)
+        self.assertIn(":4:", cc.markdown_tables(d)[0])
 
 
 if __name__ == "__main__":

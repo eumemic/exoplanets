@@ -11,8 +11,10 @@ Each SNR is maximized over box lengths of 0.5-9 h centred on the transit, since 
 Also counts transits within 0.5 d of a gap longer than 0.5 d or of a sector's ends, and checks every SPOC TCE on the
 star (data/known/tce_all.parquet from fetch_known.py; any run, any period) for an epoch inside one of our transits.
 
-Usage: python spoc_recheck.py --lc-dir ../data/spoc_2min [--last-sector 96]
-Writes validation/spoc_2min_recheck.csv and prints the numbers quoted in validation/findability.md.
+Usage: python spoc_recheck.py --lc-dir ../data/spoc_2min [--last-sector 96] [--all]
+Measures the candidates whose measurement is missing or no longer current (findability.recheck_problems; with --all,
+every candidate) and writes them into results_public/products/spoc_2min.csv, with the ephemeris used and the date. The
+build (rule spoc_recheck) makes validation/spoc_2min_recheck.csv from it.
 """
 import argparse
 from pathlib import Path
@@ -126,35 +128,39 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--lc-dir", required=True, help="where the 2-minute light curves are downloaded")
     ap.add_argument("--last-sector", type=int, default=96)
+    ap.add_argument("--all", action="store_true", help="re-measure every candidate, not only those the build lists")
     a = ap.parse_args()
+    import datetime
+    import tomllib
+    import findability
     Path(a.lc_dir).mkdir(parents=True, exist_ok=True)
-    tr = pd.read_csv(ROOT / "validation" / "findability_transits.csv.gz")
-    fa = pd.read_csv(ROOT / "validation" / "findability.csv")
-    cat = pd.read_csv(ROOT / "results_public" / "candidates_allsky.csv")[["TIC", "P_d", "T0_BJD", "T14_h"]]
+    prod = ROOT / "results_public" / "products" / "spoc_2min.csv"
+    trp, fap = ROOT / "validation" / "findability_transits.csv.gz", ROOT / "validation" / "findability.csv"
+    catp = ROOT / "results_public" / "candidates_allsky.csv"
+    tol = tomllib.loads((ROOT / "pipeline" / "params.toml").read_text())["freshness"]
+    todo = findability.recheck_problems(prod, fap, trp, catp, tol, a.last_sector)
+    tr = pd.read_csv(trp)
+    cat = pd.read_csv(catp)[["TIC", "P_d", "T0_BJD", "T14_h"]]
     tce = pd.read_parquet(ROOT / "data" / "known" / "tce_all.parquet")
     rows = []
     for (tic, P), g in tr[tr.prov == "SPOC"].groupby(["TIC", "P_d"]):
+        if not a.all and (tic, P) not in todo:
+            continue
         c = cat[(cat.TIC == tic) & (cat.P_d == P)].iloc[0]
-        f = fa[(fa.TIC == tic) & (fa.P_d == P)].iloc[0]
         t0, T14 = c.T0_BJD - 2457000, c.T14_h / 24
         sectors = sorted(int(s) for s in g.sector.unique() if s <= a.last_sector)
         tc = tce[tce.ticid == tic]
         off = ((tc.tce_time0bt - t0 + 0.5 * P) % P) - 0.5 * P
-        rows.append(dict(TIC=tic, P_d=P, tier=f.tier, sectors_2min=",".join(map(str, sectors)), T14_h=c.T14_h,
-                         snr_search=f.snr_2min_to_s96, **remeasure(tic, P, t0, T14, sectors, a.lc_dir),
-                         tces_on_star=len(tc), tces_on_transit=int((np.abs(off) < 0.5 * T14).sum())))
-    x = pd.DataFrame(rows)
-    x.round({k: 2 for k in ("snr_search", "snr_white", "snr_red", "snr_cdpp", "beta_T14")}).to_csv(
-        ROOT / "validation" / "spoc_2min_recheck.csv", index=False)
-    two = x[x.n_2min_transits >= 2]
-    print(f"{len(x)} candidates with 2-minute data; fewer than two 2-minute transits through Sector "
-          f"{a.last_sector}: {len(x) - len(two)}")
-    for k in ("snr_search", "snr_white", "snr_red", "snr_cdpp"):
-        print(f"  {k}: >= 7.1 for {(two[k] >= 7.1).sum()} of {len(two)} (max {two[k].max():.1f})")
-    print(f"  median ratio to the search's SNR: white {(two.snr_white / two.snr_search).median():.2f}, "
-          f"red {(two.snr_red / two.snr_search).median():.2f}")
-    print(f"SPOC TCEs on these stars: {x.tces_on_star.sum()}, with an epoch inside one of our transits: "
-          f"{x.tces_on_transit.sum()}")
+        rows.append(dict(TIC=tic, P_d=P, T0_BJD=c.T0_BJD, T14_h=c.T14_h, sectors_2min=",".join(map(str, sectors)),
+                         **remeasure(tic, P, t0, T14, sectors, a.lc_dir), tces_on_star=len(tc),
+                         tces_on_transit=int((np.abs(off) < 0.5 * T14).sum()), measured=datetime.date.today().isoformat()))
+    new = pd.DataFrame(rows).round({k: 2 for k in ("snr_white", "snr_red", "snr_cdpp", "beta_T14")})
+    old = pd.read_csv(prod, dtype={"sectors_2min": str})
+    if len(new):
+        keep = ~old.set_index(["TIC", "P_d"]).index.isin(new.set_index(["TIC", "P_d"]).index)
+        old = pd.concat([old[keep], new[old.columns]], ignore_index=True)
+    old.sort_values(["TIC", "P_d"]).to_csv(prod, index=False, lineterminator="\n")
+    print(f"{len(new)} candidates measured -> {prod.relative_to(ROOT)}; the build makes validation/spoc_2min_recheck.csv")
 
 
 if __name__ == "__main__":

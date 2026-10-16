@@ -56,6 +56,12 @@ phase_min = 0.5
 duration_h = 0.005
 depth_ppm = 0.5
 
+[findability]
+# the candidates whose transits are measured by data date (the SNR >= 9 search's counted tiers), and how a catalog row
+# finds its signal in the search's tables
+tiers = ["A", "B", "N"]
+match_period_rel = 0.002
+
 [registry]
 # predicted transits of newly registered candidates run through this date
 until = "2027-06-30"

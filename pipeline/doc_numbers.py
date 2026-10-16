@@ -1,6 +1,6 @@
 """results_public/numbers.json: every current-state number the documents quote, computed from the tables in one place,
-so README.md and results_public/README.md (through markers, dag/markers.py) and the website follow the data. Built by
-the rule doc_numbers in rules.py. The definitions are the catalog's: counted = tiers A, B, N, L1 (full sky) and A, B (earlier
+so README.md, results_public/README.md and validation/findability.md (through markers, dag/markers.py) and the website
+follow the data. Built by the rule numbers in rules.py. The definitions are the catalog's: counted = tiers A, B, N, L1 (full sky) and A, B (earlier
 searches); the TRICERATOPS values a tier uses are FPP_gc/NFPP_gc where they exist, else FPP_c/NFPP_c; validation level =
 FPP < 0.015, NFPP < 0.001 and Rp < 8 Earth radii.
 """
@@ -100,6 +100,13 @@ def compute(allsky_csv, earlier_csv, ephemerides_csv, predictions_csv, funnel_cs
         "funnel": {"rows": len(fun)},
     }
     return out
+
+
+def validation(findability_json, recheck_csv):
+    """The findability and SPOC 2-minute recheck numbers that validation/findability.md quotes."""
+    import findability as fb
+    with open(findability_json) as fh:
+        return {"findability": json.load(fh), "spoc": fb.recheck_numbers(recheck_csv)}
 
 
 def write(path, numbers):

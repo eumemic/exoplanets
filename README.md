@@ -631,7 +631,7 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 | L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 | 112 | <!--n:catalog.tier.L1-->112<!--/n--> |
 | C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 | 529 | <!--n:catalog.tier.C-->547<!--/n--> |
 | L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 | 72 | <!--n:catalog.tier.L-->72<!--/n--> |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 | 1,803 | <!--n:catalog.tier.other|,-->1,785<!--/n--> |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 | 1,803 | <!--n:catalog.tier.other\|,-->1,785<!--/n--> |
 
 All <!--n:catalog.rows.allsky|,-->2,990<!--/n--> signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,

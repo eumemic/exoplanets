@@ -5,6 +5,7 @@ import catalog as cat
 import catalog_checks as cc
 import centroid_table as ct
 import doc_numbers
+import findability as fb
 import folders as fo
 import predict
 import triceratops_table as tt
@@ -94,34 +95,91 @@ def registry(ctx):
     predict.register(ctx.param("registry.until"))
 
 
+@rule(inputs=["results_public/candidates_allsky.csv", "results_cloud/shard*/cands_allsky.csv",
+              "results_cloud/as/cands_allsky.csv", "results_cloud/qfull/exo-q*/results/cands_q*.csv",
+              "candidates/allsky/*/vetting.json", "data/tess_schedule/TESS_orbit_times.csv"],
+      outputs=["validation/findability_transits.csv.gz"], params=["findability.*"])
+def findability_transits(ctx):
+    """Each counted SNR >= 9 candidate's transits from the search pass that found it (findability.py)."""
+    fb.transits(ctx.input("results_public/candidates_allsky.csv"),
+                ctx.inputs("results_cloud/shard*/cands_allsky.csv") + [ctx.input("results_cloud/as/cands_allsky.csv")],
+                ctx.inputs("results_cloud/qfull/exo-q*/results/cands_q*.csv"), ctx.inputs("candidates/allsky/*/vetting.json"),
+                ctx.input("data/tess_schedule/TESS_orbit_times.csv"), ctx.output("validation/findability_transits.csv.gz"),
+                ctx.param("findability.tiers"), ctx.param("findability.match_period_rel"))
+
+
+@rule(inputs=["validation/findability_transits.csv.gz"], outputs=["validation/findability.csv", "validation/findability.json"])
+def findability(ctx):
+    """SNR by data date and best single sector, per candidate, and the counts (findability.py)."""
+    doc_numbers.write(ctx.output("validation/findability.json"),
+                      fb.summary(ctx.input("validation/findability_transits.csv.gz"), ctx.output("validation/findability.csv")))
+
+
+@rule(inputs=["results_public/products/spoc_2min.csv", "validation/findability.csv"],
+      outputs=["validation/spoc_2min_recheck.csv"])
+def spoc_recheck(ctx):
+    """The SPOC 2-minute re-measurements of the candidates with 2-minute data (findability.recheck_table)."""
+    fb.recheck_table(ctx.input("results_public/products/spoc_2min.csv"), ctx.input("validation/findability.csv"),
+                     ctx.output("validation/spoc_2min_recheck.csv"))
+
+
+@check(inputs=["results_public/products/spoc_2min.csv", "validation/findability.csv", "validation/findability_transits.csv.gz",
+               "results_public/candidates_allsky.csv"], params=["freshness.*"])
+def spoc_measured(ctx):
+    tol = {k.split(".")[1]: v for k, v in ctx.params().items() if k.startswith("freshness.")}
+    problems = fb.recheck_problems(ctx.input("results_public/products/spoc_2min.csv"), ctx.input("validation/findability.csv"),
+                                   ctx.input("validation/findability_transits.csv.gz"),
+                                   ctx.input("results_public/candidates_allsky.csv"), tol)
+    assert not problems, (f"{len(problems)} candidates with 2-minute data need a SPOC re-measurement (spoc_recheck.py):\n"
+                          + "\n".join(f"TIC {t} P {p}: {why}" for (t, p), why in sorted(problems.items())))
+
+
 @rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv",
               "candidates/ephemerides.csv", "candidates/predictions.csv", "results_public/funnel_allsky.csv",
-              "results_public/products/triceratops.csv"],
+              "results_public/products/triceratops.csv", "validation/findability.json", "validation/spoc_2min_recheck.csv"],
       outputs=["results_public/numbers.json"], params=["catalog.*", "tiers.centroid_reject_p", "tiers.centroid_neighbour_p",
                                                       "flags.fa_score_min"])
 def numbers(ctx):
-    doc_numbers.write(ctx.output("results_public/numbers.json"), doc_numbers.compute(
+    out = doc_numbers.compute(
         ctx.input("results_public/candidates_allsky.csv"), ctx.input("results_public/tiers_earlier_candidates.csv"),
         ctx.input("candidates/ephemerides.csv"), ctx.input("candidates/predictions.csv"),
-        ctx.input("results_public/funnel_allsky.csv"), ctx.input("results_public/products/triceratops.csv"), ctx.params()))
+        ctx.input("results_public/funnel_allsky.csv"), ctx.input("results_public/products/triceratops.csv"), ctx.params())
+    out.update(doc_numbers.validation(ctx.input("validation/findability.json"), ctx.input("validation/spoc_2min_recheck.csv")))
+    doc_numbers.write(ctx.output("results_public/numbers.json"), out)
 
 
-@rule(inputs=["results_public/numbers.json"], outputs=["README.md", "results_public/README.md"],
-      inplace={"README.md": "template", "results_public/README.md": "template"})
+DOCS = ("README.md", "results_public/README.md", "validation/findability.md")
+
+
+@rule(inputs=["results_public/numbers.json"], outputs=list(DOCS), inplace={d: "template" for d in DOCS})
 def documents(ctx):
     """The numbers in the documents, between their markers (dag/markers.py)."""
     import json
     from dag.markers import fill
     numbers = json.loads(ctx.input("results_public/numbers.json").read_text())
-    for doc in ("README.md", "results_public/README.md"):
+    for doc in DOCS:
         p = ctx.output(doc)
         p.write_text(fill(p.read_text(), numbers))
 
 
-@check(inputs=["README.md", "results_public/README.md", "results_public/products/README.md"])
+# statements in the documents that name values the markers cannot fill: (numbers key, value, where it is stated)
+CLAIMS = [("spoc.tce_on_transit_tics", [200744242], "validation/findability.md describes the one SPOC TCE with an epoch "
+                                                    "inside our transits, on TIC 200744242")]
+
+
+@check(inputs=["results_public/numbers.json"])
+def prose_claims(ctx):
+    import json
+    from dag.markers import lookup
+    numbers = json.loads(ctx.input("results_public/numbers.json").read_text())
+    problems = [f"{key} is {lookup(numbers, key)!r}, not {value!r}: {where}; rewrite it" for key, value, where in CLAIMS
+                if lookup(numbers, key) != value]
+    assert not problems, "\n".join(problems)
+
+
+@check(inputs=list(DOCS) + ["results_public/products/README.md"])
 def markdown_tables(ctx):
-    problems = [x for d in ("README.md", "results_public/README.md", "results_public/products/README.md")
-                for x in cc.markdown_tables(ctx.input(d))]
+    problems = [x for d in DOCS + ("results_public/products/README.md",) for x in cc.markdown_tables(ctx.input(d))]
     assert not problems, f"{len(problems)} table rows do not match their header:\n" + "\n".join(problems)
 
 
