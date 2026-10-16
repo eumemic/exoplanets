@@ -8,6 +8,12 @@ Rule B depends on rule A when one of B's inputs is one of A's outputs. A rule is
 one in the lock and its outputs still have the hashes the lock recorded. Because the stamp uses the contents of the
 inputs, an upstream rule that reruns but writes identical files leaves everything after it up to date.
 A check is a rule without outputs whose function raises if the data are wrong; the lock records whether it passed.
+
+Two kinds of output are also inputs (`inplace`):
+- "template": a hand-written document with generated numbers (dag/markers.py). The prose, with every marker emptied,
+  is an input: editing it reruns the rule, which fills the markers again. A generated value edited by hand is put back.
+- "ledger": an append-only file the rule extends (the transit registry). Its content is an input, the stamp is taken
+  after the rule has run, and an edit by hand stops the build as for any other output.
 """
 import importlib.util
 import os
@@ -22,6 +28,7 @@ from .codehash import CodeIndex, Environment
 from .context import RunContext, covers, is_glob
 from .hashing import FileHasher, sha256_json
 from .lock import Lock
+from .markers import template as doc_template
 
 _REGISTRY = None
 # the decorators that declare rules: they register a function but do not change what it computes, so they are left
@@ -30,10 +37,14 @@ REGISTRATION = ("dag.rule", "dag.check", "dag.graph.rule", "dag.graph.check")
 
 
 class Rule:
-    def __init__(self, func, name, inputs, outputs, params, is_check, allow_reads):
+    def __init__(self, func, name, inputs, outputs, params, is_check, allow_reads, inplace=None):
         self.func, self.name = func, name
         self.inputs, self.outputs, self.params = list(inputs), list(outputs), list(params)
         self.is_check, self.allow_reads = is_check, list(allow_reads)
+        self.inplace = dict(inplace or {})
+        for path, mode in self.inplace.items():
+            if path not in self.outputs or mode not in ("template", "ledger"):
+                raise ValueError(f"rule {name}: in-place file {path} must be an output, as 'template' or 'ledger'")
         for p in self.inputs + self.outputs:
             if os.path.isabs(p) or ".." in Path(p).parts:
                 raise ValueError(f"rule {name}: paths are relative to the repository root, without '..': {p}")
@@ -43,18 +54,18 @@ class Rule:
         self.module = None          # set by Project: the module name as the code index knows it
 
 
-def _register(func, name, inputs, outputs, params, is_check, allow_reads):
-    r = Rule(func, name or func.__name__, inputs, outputs, params, is_check, allow_reads)
+def _register(func, name, inputs, outputs, params, is_check, allow_reads, inplace=None):
+    r = Rule(func, name or func.__name__, inputs, outputs, params, is_check, allow_reads, inplace)
     if _REGISTRY is not None:
         _REGISTRY.append(r)
     func.dag_rule = r
     return func
 
 
-def rule(*, inputs=(), outputs=(), params=(), name=None, allow_reads=()):
+def rule(*, inputs=(), outputs=(), params=(), name=None, allow_reads=(), inplace=None):
     if not outputs:
         raise ValueError("a rule needs outputs; use @check for a rule that only tests")
-    return lambda f: _register(f, name, inputs, outputs, params, False, allow_reads)
+    return lambda f: _register(f, name, inputs, outputs, params, False, allow_reads, inplace)
 
 
 def check(*, inputs=(), params=(), name=None, allow_reads=()):
@@ -90,6 +101,8 @@ class Project:
             self._load(self.root / rf)
         self._index()
         self._stamps = {}
+        self._details = {}          # rule -> pattern -> {file: hash}, the files behind each glob input
+        self.details_dir = self.root / cache / "inputs"
 
     # loading ---------------------------------------------------------------------------------------------------
     def _module_name(self, path):
@@ -142,8 +155,8 @@ class Project:
             d = set()
             for pat in r.inputs:
                 for o, owner in self.owner.items():
-                    if covers(pat, o) and owner != r.name:
-                        d.add(owner)
+                    if (covers(pat, o) or pat.startswith(o.rstrip("/") + "/")) and owner != r.name:
+                        d.add(owner)        # the input is that output, or lies inside an output directory
             self.deps[r.name] = d
         self.order, state = [], {}
 
@@ -163,17 +176,28 @@ class Project:
 
     # stamps ----------------------------------------------------------------------------------------------------
     def input_hashes(self, r):
+        """{input: hash}. A glob pattern gets one hash over the paths and contents of the files it matches (None if it
+        matches nothing), so the lock stays small; the per-file hashes go to the local cache, for `explain`."""
         out = {}
         for pat in r.inputs:
             if is_glob(pat):
-                hits = sorted(self.root.glob(pat))
-                if not hits:
-                    out[pat] = None
-                for h in hits:
-                    out[h.relative_to(self.root).as_posix()] = self.hasher.path(h)
+                files = {h.relative_to(self.root).as_posix(): self.hasher.path(h) for h in sorted(self.root.glob(pat))}
+                out[pat] = sha256_json(sorted(files.items())) if files else None
+                self._details.setdefault(r.name, {})[pat] = files
             else:
                 out[pat] = self.hasher.path(self.root / pat)
+        for path, mode in r.inplace.items():
+            out[f"{path} ({mode})"] = self.inplace_hash(path, mode)
         return out
+
+    def inplace_hash(self, path, mode):
+        p = self.root / path
+        if not p.exists():
+            return None
+        if mode == "template":
+            from .hashing import sha256_bytes
+            return sha256_bytes(doc_template(p.read_text()).encode())
+        return self.hasher.path(p)
 
     def code_info(self, r, with_env=True):
         parts, effects, external = self.code.closure(r.module, r.func.__name__, ignore=REGISTRATION)
@@ -188,6 +212,15 @@ class Project:
         info = {"code": self.code_info(r), "params": P.select(self.params, r.params), "inputs": self.input_hashes(r)}
         return sha256_json(info), info
 
+    def _glob_details(self, name):
+        import json
+        f = self.details_dir / f"{name}.json"
+        try:
+            old = json.loads(f.read_text()) if f.exists() else {}
+        except ValueError:
+            old = {}
+        return {"old": old, "new": self._details.get(name, {})}
+
     def output_hashes(self, r):
         return {o: self.hasher.path(self.root / o) for o in r.outputs}
 
@@ -201,7 +234,9 @@ class Project:
         st, info = self.stamp(r)
         outs = self.output_hashes(r)
         reasons = []
-        edited = [o for o, h in outs.items() if entry and h is not None and entry["outputs"].get(o) not in (None, h)]
+        edited = [o for o, h in outs.items() if entry and h is not None and entry["outputs"].get(o) not in (None, h)
+                  and not (r.inplace.get(o) == "template" and entry["inputs"].get(f"{o} (template)")
+                           != info["inputs"].get(f"{o} (template)"))]       # a prose edit: the rule reruns
         missing = [o for o, h in outs.items() if h is None]
         waiting = [d for d in sorted(self.deps[name]) if not self.status(d, memo).ok]
         if edited:
@@ -209,7 +244,7 @@ class Project:
         elif entry is None:
             s = Status("new", ["never built"])
         elif st != entry["stamp"]:
-            s = Status("stale", explain_change(entry, info))
+            s = Status("stale", explain_change(entry, info, self._glob_details(name)))
         elif missing:
             s = Status("missing", [f"{o} does not exist" for o in missing])
         elif r.is_check and entry.get("result") != "passed":
@@ -274,13 +309,16 @@ class Project:
             s = self.status(name)
             if s.ok or s.state == "waiting":
                 continue
-            if s.state == "edited" and not discard_edits:
+            regen = [o for o in self.rules[name].outputs if self.rules[name].inplace.get(o) == "template"]
+            if s.state == "edited" and regen and all(any(o in x for o in regen) for x in s.reasons):
+                log(f"{name}: generated values were edited by hand in {', '.join(regen)}; they are generated again")
+            elif s.state == "edited" and not discard_edits:
                 raise BuildError(f"{name}: " + "; ".join(s.reasons) + ". Restore the file, or rerun with --discard-edits "
                                  "to overwrite it.")
             if dry_run:
-                log(f"would run {name}: " + "; ".join(s.reasons))
+                log(f"would run {name}: " + "; ".join(s.reasons[:6]) + (f"; and {len(s.reasons) - 6} more" if len(s.reasons) > 6 else ""))
                 continue
-            log(f"running {name}: " + "; ".join(s.reasons))
+            log(f"running {name}: " + "; ".join(s.reasons[:6]) + (f"; and {len(s.reasons) - 6} more" if len(s.reasons) > 6 else ""))
             ok = self.execute(self.rules[name], log)
             ran.append(name)
             if not ok:
@@ -303,8 +341,14 @@ class Project:
         if w.violations:
             listed = "\n".join(f"  {k} {p}" for k, p in sorted(set(w.violations))[:40])
             raise BuildError(f"rule {r.name} used files it does not declare:\n{listed}")
-        st1, _ = self.stamp(r)
-        if st1 != st0:
+        st1, info1 = self.stamp(r)
+        if r.inplace:                               # the stamp of an in-place rule is taken after it has run
+            fixed = {k: v for k, v in info["inputs"].items() if not any(k == f"{p} ({m})" for p, m in r.inplace.items())}
+            fixed1 = {k: v for k, v in info1["inputs"].items() if not any(k == f"{p} ({m})" for p, m in r.inplace.items())}
+            if fixed != fixed1 or info1["code"] != info["code"]:
+                raise BuildError(f"rule {r.name}: its inputs or code changed while it ran; run it again")
+            st0, info = st1, info1
+        elif st1 != st0:
             raise BuildError(f"rule {r.name}: its inputs or code changed while it ran; run it again")
         outs = self.output_hashes(r)
         missing = [o for o, h in outs.items() if h is None]
@@ -317,13 +361,18 @@ class Project:
                 entry["message"] = message[:2000]
         self.lock.set(r.name, entry)
         self.lock.save()
+        if self._details.get(r.name):
+            import json
+            self.details_dir.mkdir(parents=True, exist_ok=True)
+            (self.details_dir / f"{r.name}.json").write_text(json.dumps(self._details[r.name]))
         self.hasher.save()
         log(f"  {r.name}: {result if r.is_check else 'done'} in {time.time() - t0:.1f} s" + (f" ({message})" if message else ""))
         return result == "passed"
 
 
-def explain_change(old, new):
-    """Why a stamp changed, in words: which inputs, parameters, functions or distributions differ from the lock."""
+def explain_change(old, new, details=None):
+    """Why a stamp changed, in words: which inputs, parameters, functions or distributions differ from the lock.
+    details: {"old": {pattern: {file: hash}}, "new": {...}} for the glob inputs, when the local cache has them."""
     out = []
     oi, ni = old.get("inputs", {}), new["inputs"]
     for k in sorted(set(oi) | set(ni)):
@@ -333,6 +382,10 @@ def explain_change(old, new):
             out.append(f"input {k} no longer matched")
         elif oi[k] != ni[k]:
             out.append(f"input {k} changed" if ni[k] is not None else f"input {k} is missing")
+            if details and k in details.get("old", {}) and k in details.get("new", {}):
+                o, n = details["old"][k], details["new"][k]
+                ch = sorted(f for f in set(o) | set(n) if o.get(f) != n.get(f))
+                out[-1] += f" ({len(ch)} files: " + ", ".join(ch[:3]) + (", …" if len(ch) > 3 else "") + ")"
     op, np_ = old.get("params", {}), new["params"]
     for k in sorted(set(op) | set(np_)):
         if op.get(k) != np_.get(k):

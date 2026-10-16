@@ -303,5 +303,66 @@ def a2(ctx):
         self.assertIn("cycle", str(cm.exception))
 
 
+DOC_RULES = '''
+import json
+from dag import rule
+from dag.markers import fill
+
+
+@rule(inputs=["data/numbers.json"], outputs=["README.md"], inplace={"README.md": "template"})
+def readme(ctx):
+    numbers = json.loads(ctx.input("data/numbers.json").read_text())
+    p = ctx.output("README.md")
+    p.write_text(fill(p.read_text(), numbers))
+
+
+@rule(inputs=["data/items.txt"], outputs=["ledger.txt"], inplace={"ledger.txt": "ledger"})
+def ledger(ctx):
+    p = ctx.output("ledger.txt")
+    old = p.read_text().split() if p.exists() else []
+    new = [x for x in ctx.input("data/items.txt").read_text().split() if x not in old]
+    p.write_text("".join(x + "\\n" for x in old + new))
+'''
+
+
+class InPlaceTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / "pipeline" / "rules.py", DOC_RULES)
+        write(self.root / "data" / "numbers.json", '{"n": {"total": 644}}')
+        write(self.root / "data" / "items.txt", "a b")
+        write(self.root / "README.md", "We have <!--n:n.total-->0<!--/n--> candidates.\n")
+
+    def run_all(self, **kw):
+        return Project(self.root).run(log=lambda *_: None, **kw)
+
+    def test_markers_are_filled_and_prose_edits_rerun(self):
+        self.run_all()
+        self.assertEqual((self.root / "README.md").read_text(), "We have <!--n:n.total-->644<!--/n--> candidates.\n")
+        self.assertEqual(self.run_all(), ([], []))
+        write(self.root / "README.md", "Now <!--n:n.total-->644<!--/n--> candidates.\n")      # prose edit
+        self.assertIn("README.md differs from what the build wrote", Project(self.root).check_lock("readme")[0])
+        self.assertEqual(self.run_all()[0], ["readme"])
+        write(self.root / "README.md", "Now <!--n:n.total-->700<!--/n--> candidates.\n")      # a generated value typed over
+        self.assertEqual(Project(self.root).status("readme").state, "edited")
+        self.run_all()
+        self.assertIn("-->644<", (self.root / "README.md").read_text())
+        write(self.root / "data" / "numbers.json", '{"n": {"total": 650}}')
+        self.run_all()
+        self.assertIn("-->650<", (self.root / "README.md").read_text())
+
+    def test_ledger_appends_and_refuses_hand_edits(self):
+        self.run_all()
+        self.assertEqual((self.root / "ledger.txt").read_text(), "a\nb\n")
+        self.assertEqual(self.run_all(), ([], []))
+        write(self.root / "data" / "items.txt", "a b c")
+        self.assertEqual(self.run_all()[0], ["ledger"])
+        self.assertEqual((self.root / "ledger.txt").read_text(), "a\nb\nc\n")
+        self.assertEqual(self.run_all(), ([], []))
+        (self.root / "ledger.txt").write_text("a\nc\n")                                        # a row removed by hand
+        with self.assertRaises(BuildError):
+            self.run_all()
+
+
 if __name__ == "__main__":
     unittest.main()

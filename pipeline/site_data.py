@@ -168,7 +168,7 @@ def predictions():
 
 def releases():
     """The dated release notes at the top of the README: title, date, count and the first linked note."""
-    text = (ROOT / "README.md").read_text()
+    text = re.sub(r"<!--.*?-->", "", (ROOT / "README.md").read_text())   # generated-number markers (pipeline/dag/markers.py)
     out, months = [], {m: i for i, m in enumerate(("January", "February", "March", "April", "May", "June", "July",
                                                     "August", "September", "October", "November", "December"), 1)}
     for m in re.finditer(r"^- \*\*(.+?)\*\*(.*?)(?=^- \*\*|^\S|\Z)", text, re.M | re.S):

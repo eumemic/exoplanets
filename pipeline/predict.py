@@ -98,9 +98,14 @@ def centre(fit, vet, wins):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--until", default="2027-06-30")
-    a = ap.parse_args()
+    register(ap.parse_args().until)
+
+
+def register(until_date="2027-06-30"):
+    """Add the newly counted candidates to the registry and update the tier of every registered one (the rule
+    registry in rules.py runs this)."""
     now = Time.now().tdb.jd - 2457000
-    until = Time(a.until).tdb.jd - 2457000
+    until = Time(until_date).tdb.jd - 2457000
     wins = orbit_windows()
     sector_end = wins.groupby("sector")["hi"].max()
     first_sector = int(sector_end[sector_end > now].index.min())
@@ -169,7 +174,7 @@ def main():
     rows["tier"] = [key.get((t, round(P, 5)), x) for t, P, x in zip(rows["TIC"], rows["period_d"], rows["tier"])]
     eph.to_csv(eph_f, index=False)
     rows.to_csv(pred_f, index=False)
-    print(f"{len(new_eph)} candidates added ({len(new_rows)} transits from now through {a.until}); {len(eph)} registered in all, "
+    print(f"{len(new_eph)} candidates added ({len(new_rows)} transits from now through {until_date}); {len(eph)} registered in all, "
           f"{int(eph['tier'].isin([t for _, _, ts in COUNTED for t in ts]).sum())} of them counted now")
 
 

@@ -1,0 +1,1 @@
+{"tic": 399426297, "rank": 1, "period": 3.78688532315731, "depth_ppm": 3443.8886835045832, "n_capable_2.5arcmin": 202, "nearest_capable_arcsec": 13.171504889140062, "capable_within_15arcsec": [[399491156.0, 13.17, 5.1], [399426308.0, 13.23, 5.0]], "pixel_error": "TimeoutError('Timeout limit of 600 exceeded.')", "flags": ["no_pixel", "close_nb"]}

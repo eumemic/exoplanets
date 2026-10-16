@@ -45,6 +45,13 @@ def _hook(event, args):
                 w.listing(os.fsdecode(args[0]))
         elif event == "glob.glob":
             w.listing(os.path.dirname(os.fsdecode(args[0])) or ".")
+        elif event in ("os.remove", "os.rmdir", "shutil.rmtree", "os.mkdir"):
+            if args and isinstance(args[0], (str, bytes, os.PathLike)):
+                w.access(os.fsdecode(args[0]), "mkdir" if event == "os.mkdir" else "write")
+        elif event in ("os.rename", "shutil.move", "shutil.copyfile"):
+            for x in args[:2]:
+                if isinstance(x, (str, bytes, os.PathLike)):
+                    w.access(os.fsdecode(x), "write" if x is args[1] or event != "shutil.copyfile" else "read")
     finally:
         w.busy = False
 
@@ -92,15 +99,16 @@ class Watch:
 
     def access(self, path, kind):
         p = os.path.realpath(os.path.join(os.getcwd(), path))
-        if kind == "write":
+        if kind in ("write", "mkdir"):
             inside = self._rel(p) is not None
-            if p in self.outputs or any(p.startswith(o + ".") for o in self.outputs) or (
+            parent = kind == "mkdir" and any(o.startswith(p + os.sep) for o in self.outputs)
+            if parent or p in self.outputs or any(p.startswith(o + ".") or p.startswith(o + os.sep) for o in self.outputs) or (
                     not inside and self._under(p, self.write_ok_prefixes)):
                 self.written.add(p)
                 return
             self.violations.append(("write", p))
             return
-        if p in self.written or p in self.outputs:
+        if p in self.written or p in self.outputs or any(p.startswith(o + os.sep) for o in self.outputs):
             return
         rel = self._rel(p)
         if rel is not None:

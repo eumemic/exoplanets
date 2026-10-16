@@ -6,6 +6,8 @@
 # tiers counted as candidates
 counted_allsky = ["A", "B", "N", "L1"]
 counted_earlier = ["A", "B"]
+# full-sky tiers that have a folder in candidates/allsky/ (a folder, once published, also stays)
+folder_tiers_allsky = ["A", "B", "C", "N", "L1", "L"]
 
 [tiers]
 # the TRICERATOPS bar for every counted candidate: FPP < fpp_max and NFPP < nfpp_max (Gaia-limited and
@@ -53,3 +55,7 @@ period_d = 2e-6
 phase_min = 0.5
 duration_h = 0.005
 depth_ppm = 0.5
+
+[registry]
+# predicted transits of newly registered candidates run through this date
+until = "2027-06-30"

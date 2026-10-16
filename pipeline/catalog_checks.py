@@ -7,9 +7,14 @@ none). Run by the checks in rules.py.
   least two sectors).
 - centroid_inputs_current: every centroid measurement in results_public/products/centroids.csv used the signal's
   current ephemeris.
+- folders_complete: every full-sky row in a folder tier has its folder with the vetting files, and each folder's
+  triceratops_gaia.json is there exactly when the row has a TRICERATOPS result, with the catalog's values.
+- markdown_tables: every table in a document has as many cells in each row as in its header (GitHub does not show a
+  table whose delimiter row differs).
 """
 import csv
 import math
+import os
 
 
 def _rows(path):
@@ -102,4 +107,53 @@ def centroid_inputs_current(centroids_csv, measurements_allsky, tol):
         diff = same_ephemeris(used, cat[(c["TIC"], c["P_d"])], tol)
         if diff:
             problems.append(f"TIC {c['TIC']} P {c['P_d']} ({c['batch']}): " + "; ".join(diff))
+    return problems
+
+
+def markdown_tables(path):
+    """Tables whose rows do not all have the header's number of cells (markers and code blocks excluded)."""
+    import re
+    problems, in_code = [], False
+    lines = open(path).read().split("\n")
+    i = 0
+    while i < len(lines):
+        if lines[i].startswith("```"):
+            in_code = not in_code
+        if not in_code and lines[i].startswith("|") and i + 1 < len(lines) and re.match(r"^\|[\s:|-]+\|$", lines[i + 1]):
+            cells = lambda l: len(re.sub(r"<!--.*?-->", "", l).strip().strip("|").split("|"))
+            n, j = cells(lines[i]), i + 1
+            while j < len(lines) and lines[j].startswith("|"):
+                if cells(lines[j]) != n:
+                    problems.append(f"{path}:{j + 1}: {cells(lines[j])} cells, the header at line {i + 1} has {n}")
+                j += 1
+            i = j
+            continue
+        i += 1
+    return problems
+
+
+def folders_complete(root, catalog_csv, triceratops_csv, folder_tiers):
+    import json
+    base = os.path.join(root, "candidates", "allsky")
+    have = set(os.listdir(base))
+    tri = {(r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv) if r["table"] == "candidates_allsky"}
+    problems = []
+    for r in _rows(catalog_csv):
+        d = os.path.join(base, r["candidate_id"])
+        if r["candidate_id"] not in have:
+            if r["tier"] in folder_tiers:
+                problems.append(f"{r['candidate_id']} (tier {r['tier']}): no folder")
+            continue
+        for f in ("vetting.json", "vetting.png", "followup.json"):
+            if not os.path.exists(os.path.join(d, f)):
+                problems.append(f"{r['candidate_id']}: no {f}")
+        t = tri.get((r["TIC"], r["P_d"]))
+        g = os.path.join(d, "triceratops_gaia.json")
+        if t and t["degenerate"] != "yes":
+            if not os.path.exists(g):
+                problems.append(f"{r['candidate_id']}: no triceratops_gaia.json")
+            elif abs(json.load(open(g))["FPP_mean"] - float(t["FPP_mean"])) > 1e-12:
+                problems.append(f"{r['candidate_id']}: triceratops_gaia.json is not the result the catalog uses")
+        elif os.path.exists(g):
+            problems.append(f"{r['candidate_id']}: triceratops_gaia.json without a TRICERATOPS result in the catalog")
     return problems

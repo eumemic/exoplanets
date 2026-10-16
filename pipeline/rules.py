@@ -4,6 +4,9 @@ import allsky_figure as af
 import catalog as cat
 import catalog_checks as cc
 import centroid_table as ct
+import doc_numbers
+import folders as fo
+import predict
 import triceratops_table as tt
 from dag import check, rule
 
@@ -78,3 +81,66 @@ def centroid_inputs_current(ctx):
     problems = cc.centroid_inputs_current(ctx.input("results_public/products/centroids.csv"),
                                           ctx.input("results_public/products/measurements_allsky.csv"), tol)
     assert not problems, f"{len(problems)} centroid measurements used an ephemeris that has changed since:\n" + "\n".join(problems)
+
+
+@rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv",
+              "candidates/allsky/*/transit_fit.json", "candidates/allsky/*/vetting.json", "candidates/*/transit_fit.json",
+              "candidates/*/vetting.json", "data/catalogs/*.parquet", "data/tess_schedule/TESS_orbit_times.csv"],
+      outputs=["candidates/ephemerides.csv", "candidates/predictions.csv"], params=["registry.until"],
+      inplace={"candidates/ephemerides.csv": "ledger", "candidates/predictions.csv": "ledger"})
+def registry(ctx):
+    """The transit registry (predict.py): append-only; newly counted candidates are added with predictions from the
+    time of the run, and every registered candidate's tier follows the catalog."""
+    predict.register(ctx.param("registry.until"))
+
+
+@rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv",
+              "candidates/ephemerides.csv", "candidates/predictions.csv", "results_public/funnel_allsky.csv",
+              "results_public/products/triceratops.csv"],
+      outputs=["results_public/numbers.json"], params=["catalog.*", "tiers.centroid_reject_p", "tiers.centroid_neighbour_p",
+                                                      "flags.fa_score_min"])
+def numbers(ctx):
+    doc_numbers.write(ctx.output("results_public/numbers.json"), doc_numbers.compute(
+        ctx.input("results_public/candidates_allsky.csv"), ctx.input("results_public/tiers_earlier_candidates.csv"),
+        ctx.input("candidates/ephemerides.csv"), ctx.input("candidates/predictions.csv"),
+        ctx.input("results_public/funnel_allsky.csv"), ctx.input("results_public/products/triceratops.csv"), ctx.params()))
+
+
+@rule(inputs=["results_public/numbers.json"], outputs=["README.md", "results_public/README.md"],
+      inplace={"README.md": "template", "results_public/README.md": "template"})
+def documents(ctx):
+    """The numbers in the documents, between their markers (dag/markers.py)."""
+    import json
+    from dag.markers import fill
+    numbers = json.loads(ctx.input("results_public/numbers.json").read_text())
+    for doc in ("README.md", "results_public/README.md"):
+        p = ctx.output(doc)
+        p.write_text(fill(p.read_text(), numbers))
+
+
+@check(inputs=["README.md", "results_public/README.md", "results_public/products/README.md"])
+def markdown_tables(ctx):
+    problems = [x for d in ("README.md", "results_public/README.md", "results_public/products/README.md")
+                for x in cc.markdown_tables(ctx.input(d))]
+    assert not problems, f"{len(problems)} table rows do not match their header:\n" + "\n".join(problems)
+
+
+@rule(inputs=["results_public/candidates_allsky.csv", "results_cloud/glue/build/folder_sources.csv",
+              "results_public/products/triceratops.csv", "results_cloud/t2/part*/*_fpp.json"],
+      outputs=["candidates/allsky"], params=["catalog.folder_tiers_allsky"], inplace={"candidates/allsky": "ledger"},
+      allow_reads=["results_cloud"])
+def folders(ctx):
+    """Candidate folders (folders.py). Source files are read through the index, which records their hashes."""
+    n = fo.build(ctx.root, ctx.input("results_public/candidates_allsky.csv"),
+                 ctx.input("results_cloud/glue/build/folder_sources.csv"),
+                 ctx.input("results_public/products/triceratops.csv"), ctx.root / "results_cloud",
+                 ctx.param("catalog.folder_tiers_allsky"))
+    print(f"folders: {n}")
+
+
+@check(inputs=["candidates/allsky", "results_public/candidates_allsky.csv", "results_public/products/triceratops.csv"],
+       params=["catalog.folder_tiers_allsky"])
+def folders_complete(ctx):
+    problems = cc.folders_complete(ctx.root, ctx.input("results_public/candidates_allsky.csv"),
+                                   ctx.input("results_public/products/triceratops.csv"), ctx.param("catalog.folder_tiers_allsky"))
+    assert not problems, f"{len(problems)} folder problems:\n" + "\n".join(problems[:40])

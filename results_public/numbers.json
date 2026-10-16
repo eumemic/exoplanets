@@ -1,0 +1,131 @@
+{
+ "catalog": {
+  "bf": {
+   "empty": 984,
+   "with_fpp": 295
+  },
+  "c_reason": {
+   "centroid": 1,
+   "grazing": 148,
+   "mes": 183,
+   "no_fit": 0,
+   "no_parallax": 6,
+   "no_result": 0,
+   "ruwe": 151,
+   "triceratops": 58
+  },
+  "c_reason_empty": 2443,
+  "counted": {
+   "allsky": 586,
+   "earlier": 58,
+   "total": 644
+  },
+  "cs": {
+   "counted_unmeasured": 0,
+   "empty": 1863,
+   "filled": 1127,
+   "p_empty_measured": 35
+  },
+  "earlier_tier": {
+   "A": 24,
+   "B": 34,
+   "C": 10
+  },
+  "flags": {
+   "centroid_strong": {
+    "text": "88 `likely nearby FP`, 11 `likely EB` and 1 `C`",
+    "total": 100
+   },
+   "centroid_weak": {
+    "text": "35 `likely nearby FP`, 7 `N`, 4 `B`, 4 `L1`, 4 `C` and 2 `likely EB`",
+    "total": 56
+   },
+   "desert": {
+    "text": "14 `B`, 10 `N` and 2 `L1`",
+    "total": 26
+   },
+   "fa": {
+    "text": "22 `B`, 21 `N` and 4 `A`",
+    "total": 47
+   },
+   "rv": {
+    "rv_binary": 8,
+    "rv_variable": 24,
+    "rvs_exclude_an_eb": 176
+   }
+  },
+  "fpp": {
+   "empty": 723,
+   "no_parallax": 39
+  },
+  "fpp_g": {
+   "empty": 727,
+   "missing_with_fpp": 4
+  },
+  "fpp_not_run": 684,
+  "l1_low_fa_score": 31,
+  "lfa": {
+   "low_band": 342,
+   "total": 343
+  },
+  "lnfp": {
+   "by_both": 77,
+   "by_centroids": 86,
+   "by_triceratops": 1105,
+   "total": 1114
+  },
+  "nofit": {
+   "text": "1,042 `likely nearby FP`, 137 `C`, 114 `likely EB` and 1 `reported`",
+   "total": 1294
+  },
+  "papers_empty": 2988,
+  "reported_as_empty": 2977,
+  "rows": {
+   "allsky": 2990,
+   "earlier": 68
+  },
+  "set": {
+   "low": 562,
+   "nb": 1573,
+   "snr9": 855
+  },
+  "tier": {
+   "A": 22,
+   "B": 292,
+   "C": 547,
+   "L": 72,
+   "L1": 112,
+   "N": 160,
+   "likely_EB": 315,
+   "likely_false_alarm": 343,
+   "likely_nearby_FP": 1114,
+   "other": 1785,
+   "reported": 13
+  },
+  "validation": {
+   "allsky": 224,
+   "earlier": 28,
+   "total": 252
+  }
+ },
+ "earlier": {
+  "binary_empty": 67,
+  "c_reason_empty": 58,
+  "centroid_flag_empty": 66,
+  "cs_empty": 8,
+  "cs_neighbour_empty": 10,
+  "fpp_empty": 6,
+  "rv_empty": 52
+ },
+ "funnel": {
+  "rows": 154
+ },
+ "registry": {
+  "counted_now": 644,
+  "median_next_sigma_min": 10.8,
+  "planned_empty": 346,
+  "predictions": 50200,
+  "rows": 738,
+  "tess_sector_empty": 49368
+ }
+}
