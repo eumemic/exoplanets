@@ -15,7 +15,9 @@ dated snapshot, and a TOI's period is not ours to keep current). Status: current
 did not keep all of its inputs), or pending with the reason.
 """
 import csv
+import json
 import math
+import os
 
 import catalog
 import catalog_checks as cc
@@ -129,4 +131,31 @@ def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, ou
         w = csv.DictWriter(fh, COLUMNS, lineterminator="\n")
         w.writeheader()
         w.writerows(out)
+    return out
+
+
+def items(keys, allsky_csv, earlier_csv, ephemerides_csv, toi_csv, match_rel):
+    """The inputs of named signal keys of either table, whether or not the plan lists them (for runs the tiers do not
+    need, such as contrast-curve runs of a tier C signal quoted in a draft). {key: item}."""
+    allsky, earlier = _rows(allsky_csv), _rows(earlier_csv)
+    eph = {}
+    for e in _rows(ephemerides_csv):
+        eph.setdefault(int(e["TIC"]), []).append(e)
+    with open(toi_csv, newline="") as fh:
+        toi = list(csv.DictReader(line for line in fh if not line.startswith("#")))
+    signals = known_signals(allsky, earlier, eph, toi, match_rel)
+    out = {}
+    folders = os.path.join(os.path.dirname(os.path.abspath(earlier_csv)), "..", "candidates")
+    for table, rows in (("candidates_allsky", allsky), ("tiers_earlier_candidates", earlier)):
+        for r in rows:
+            it = item(table, r, eph, signals, match_rel)
+            fit = os.path.join(folders, r.get("candidate_id", ""), "transit_fit.json")
+            if it is None and table == "tiers_earlier_candidates" and os.path.exists(fit):
+                with open(fit) as fh:                # not registered (never counted): the folder's transit fit
+                    j = json.load(fh)
+                e = dict(period_d=j["P"][1], T0_BJD_TDB=j["t0"][1] + 2457000, duration_h=round(j["T14_h"][1], 2),
+                         depth_ppm=round(j["depth_ppm"]))
+                it = item(table, r, {int(r["TIC"]): [e]}, signals, match_rel)
+            if it and it["key"] in keys:
+                out[it["key"]] = {k: v for k, v in it.items() if not k.startswith("_")}
     return out

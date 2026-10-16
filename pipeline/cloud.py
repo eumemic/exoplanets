@@ -175,8 +175,15 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True):
     rows = list(pd.read_csv(PLAN_CSV, dtype=str, keep_default_na=False).to_dict("records"))
     if keys:
         sel = [r for r in rows if r["key"] in keys]
-        if {r["key"] for r in sel} != set(keys):
-            raise SystemExit(f"not in triceratops_plan.csv: {sorted(set(keys) - {r['key'] for r in sel})}")
+        rest = set(keys) - {r["key"] for r in sel}
+        if rest:                                    # signals the plan does not list (the tiers do not need them)
+            import tri_plan
+            more = tri_plan.items(rest, *(os.path.join(ROOT, f) for f in (
+                "results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv",
+                "candidates/ephemerides.csv", "data/known/toi.csv")), 0.002)
+            if set(more) != rest:
+                raise SystemExit(f"no catalog row has the key: {sorted(rest - set(more))}")
+            sel += list(more.values())
     else:
         sel = [r for r in rows if r["status"] in ("pending", "stale")]
     if not sel:
