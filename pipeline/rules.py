@@ -6,7 +6,9 @@ import catalog_checks as cc
 import centroid_table as ct
 import doc_numbers
 import findability as fb
+import fit_store
 import folders as fo
+import lcindex as lc
 import predict
 import tri_plan as tp
 import triceratops_table as tt
@@ -48,8 +50,20 @@ def centroid_table(ctx):
              match_rel=ctx.param("triceratops.match_period_rel"))
 
 
+@rule(inputs=[f"{STORE}/fit/*/*/request.json", f"{STORE}/fit/*/*/result.json", f"{STORE}/fit/*/*/check.json",
+              "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
+      outputs=["results_public/products/fits.csv"])
+def fit_table(ctx):
+    """The transit fit each catalog row uses, from the store (fit_store.py)."""
+    rows = [(t, r["TIC"], r["P_d"], r["candidate_id"]) for t, f in (("candidates_allsky", "measurements_allsky.csv"),
+                                                                    ("tiers_earlier_candidates", "measurements_earlier.csv"))
+            for r in cat.read_rows(ctx.input(f"results_public/products/{f}"))]
+    fit_store.table(ctx.root / STORE, rows, ctx.output("results_public/products/fits.csv"))
+
+
 @rule(inputs=["results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv",
-              "results_public/products/triceratops.csv", "results_public/products/centroids.csv", "results_public/overrides.csv"],
+              "results_public/products/triceratops.csv", "results_public/products/centroids.csv",
+              "results_public/products/fits.csv", "results_public/overrides.csv"],
       outputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv"],
       params=["catalog.counted_allsky", "tiers.*", "flags.*"])
 def catalog(ctx):
@@ -58,19 +72,23 @@ def catalog(ctx):
               ctx.input("results_public/products/measurements_earlier.csv"),
               ctx.input("results_public/products/triceratops.csv"), ctx.input("results_public/overrides.csv"),
               ctx.output("results_public/candidates_allsky.csv"), ctx.output("results_public/tiers_earlier_candidates.csv"), P,
-              centroids_csv=ctx.input("results_public/products/centroids.csv"))
+              centroids_csv=ctx.input("results_public/products/centroids.csv"),
+              fits_csv=ctx.input("results_public/products/fits.csv"))
 
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", "candidates/ephemerides.csv",
-              "data/known/toi.csv", "results_public/products/triceratops.csv"],
+              "data/known/toi.csv", "results_public/products/triceratops.csv", "results_public/products/lightcurves_searched.csv",
+              "results_public/products/lightcurves.csv"],
       outputs=["results_public/products/triceratops_plan.csv"], params=["tiers.*", "freshness.*", "triceratops.match_period_rel"])
 def triceratops_plan(ctx):
     """The rows that need a TRICERATOPS result or show one, with the inputs a current result has (tri_plan.py)."""
     tol = {k.split(".")[1]: v for k, v in ctx.params().items() if k.startswith("freshness.")}
+    lists = (lc.star_hashes(ctx.input("results_public/products/lightcurves_searched.csv")),
+             lc.star_hashes(ctx.input("results_public/products/lightcurves.csv")))
     tp.build(ctx.input("results_public/candidates_allsky.csv"), ctx.input("results_public/tiers_earlier_candidates.csv"),
              ctx.input("candidates/ephemerides.csv"), ctx.input("data/known/toi.csv"),
              ctx.input("results_public/products/triceratops.csv"), ctx.output("results_public/products/triceratops_plan.csv"),
-             ctx.params(), tol, ctx.param("triceratops.match_period_rel"))
+             ctx.params(), tol, ctx.param("triceratops.match_period_rel"), lists=lists)
 
 
 @check(inputs=["results_public/products/triceratops_plan.csv"])
@@ -96,6 +114,44 @@ def centroid_inputs_current(ctx):
     problems = cc.centroid_inputs_current(ctx.input("results_public/products/centroids.csv"),
                                           ctx.input("results_public/products/measurements_allsky.csv"), tol)
     assert not problems, f"{len(problems)} centroid measurements used an ephemeris that has changed since:\n" + "\n".join(problems)
+
+
+LC = "results_public/products/lightcurves"
+
+
+@rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", lc.MANIFESTS_NEW]
+      + lc.MANIFESTS_OLD, outputs=[f"{LC}_searched.csv"])
+def lightcurves_searched(ctx):
+    """The light curves the searches used for the catalog's stars, one product per star and sector (lcindex.py)."""
+    lc.searched(ctx.input("results_public/candidates_allsky.csv"), ctx.input("results_public/tiers_earlier_candidates.csv"),
+                ctx.output(f"{LC}_searched.csv"), root=ctx.root)
+
+
+@rule(inputs=[f"{LC}_searched.csv", f"{LC}_current.csv"], outputs=[f"{LC}.csv"])
+def lightcurves(ctx):
+    """The light curves new work uses: the searched lists with the MAST snapshot's redeliveries and withdrawals
+    (lightcurves_current.csv, written by `lcindex.py refresh`) applied (lcindex.py)."""
+    lc.current_lists(ctx.input(f"{LC}_searched.csv"), ctx.input(f"{LC}_current.csv"), ctx.output(f"{LC}.csv"))
+
+
+@rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", f"{LC}_searched.csv",
+              f"{LC}.csv", f"{LC}_current.csv", "results_public/products/fits.csv", "results_public/products/triceratops.csv"],
+      outputs=["results_public/products/redo.csv"], params=["catalog.folder_tiers_allsky"])
+def redo(ctx):
+    """The catalog rows on stars whose light curves have changed, and the stages to redo (lcindex.py)."""
+    lc.redo(ctx.input("results_public/candidates_allsky.csv"), ctx.input("results_public/tiers_earlier_candidates.csv"),
+            ctx.input(f"{LC}_searched.csv"), ctx.input(f"{LC}.csv"), ctx.input(f"{LC}_current.csv"),
+            ctx.input("results_public/products/fits.csv"), ctx.input("results_public/products/triceratops.csv"),
+            ctx.output("results_public/products/redo.csv"), ctx.param("catalog.folder_tiers_allsky"))
+
+
+@check(inputs=["results_public/products/redo.csv"])
+def fits_current(ctx):
+    rows = lc.stale_fits(ctx.input("results_public/products/redo.csv"))
+    assert not rows, (f"{len(rows)} fits were made from light curves that MAST has since redelivered or withdrawn "
+                      "(cloud.py plan --fits refits them):\n" + "\n".join(f"{r['table']} TIC {r['TIC']} P {r['P_d']}: "
+                                                                          f"redelivered {r['redelivered'] or '-'}, removed "
+                                                                          f"{r['removed'] or '-'}" for r in rows[:40]))
 
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv",
@@ -203,7 +259,8 @@ def markdown_tables(ctx):
 
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_cloud/glue/build/folder_sources.csv",
-              "results_public/products/triceratops.csv", f"{STORE}/tri/*/*/fpp.json"],
+              "results_public/products/triceratops.csv", f"{STORE}/tri/*/*/fpp.json", "results_public/products/fits.csv",
+              f"{STORE}/fit/*/*/transit_fit.json"],
       outputs=["candidates/allsky"], params=["catalog.folder_tiers_allsky"], inplace={"candidates/allsky": "ledger"},
       allow_reads=["results_cloud"])
 def folders(ctx):
@@ -211,7 +268,7 @@ def folders(ctx):
     n = fo.build(ctx.root, ctx.input("results_public/candidates_allsky.csv"),
                  ctx.input("results_cloud/glue/build/folder_sources.csv"),
                  ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE,
-                 ctx.param("catalog.folder_tiers_allsky"))
+                 ctx.param("catalog.folder_tiers_allsky"), fits_csv=ctx.input("results_public/products/fits.csv"))
     print(f"folders: {n}")
 
 
@@ -233,12 +290,13 @@ def folders_complete(ctx):
 
 
 @rule(inputs=["results_public/tiers_earlier_candidates.csv", "results_public/products/triceratops.csv",
-              f"{STORE}/tri/*/*/fpp.json"],
+              f"{STORE}/tri/*/*/fpp.json", "results_public/products/fits.csv", f"{STORE}/fit/*/*/transit_fit.json"],
       outputs=["candidates/TIC*_P*"], inplace={"candidates/TIC*_P*": "ledger"})
 def earlier_folders(ctx):
     """The earlier searches' candidate folders (folders.py): every row has one, with the catalog's TRICERATOPS result."""
     n = fo.build_earlier(ctx.root, ctx.input("results_public/tiers_earlier_candidates.csv"),
-                         ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE)
+                         ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE,
+                         fits_csv=ctx.input("results_public/products/fits.csv"))
     print(f"earlier folders: {n}")
 
 

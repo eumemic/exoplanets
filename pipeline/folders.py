@@ -3,9 +3,9 @@ published link keeps working when a signal changes tier or leaves a table.
 
 candidates/allsky/: one folder per full-sky signal in tiers A, B, C, N, L1 or L, named by its candidate_id, and every
 folder ever published. A folder holds vetting.json and vetting.png (the vetting metrics and plot), followup.json (pixel
-and neighbour checks), transit_fit.json where the signal has a fit, and triceratops_gaia.json, the TRICERATOPS result
-the catalog uses (ten runs with the default priors and ten with the Gaia limits; absent where there is none). Files
-other than triceratops_gaia.json are kept as published. A folder that does not exist yet is made from the source index
+and neighbour checks), transit_fit.json, the fit the catalog uses (from the store; a refit replaces it), and
+triceratops_gaia.json, the TRICERATOPS result the catalog uses (ten runs with the default priors and ten with the Gaia
+limits; absent where there is none). The other files are kept as published. A folder that does not exist yet is made from the source index
 (a private file listing, for each signal, its vetting, follow-up and fit files with their SHA-256), and a source whose
 content no longer matches the index is refused. The TRICERATOPS results of earlier methods (triceratops.json,
 triceratops_fpp.json) are removed, since they no longer describe the catalog's values.
@@ -40,11 +40,12 @@ def _same(a, b):
     return os.path.exists(b) and os.path.getsize(a) == os.path.getsize(b) and _sha(a) == _sha(b)
 
 
-def build(root, catalog_csv, sources_csv, triceratops_csv, store_root, folder_tiers):
+def build(root, catalog_csv, sources_csv, triceratops_csv, store_root, folder_tiers, fits_csv=None):
     base = os.path.join(root, "candidates", "allsky")
     existing = set(os.listdir(base))
     sources = {r["candidate_id"]: r for r in _rows(sources_csv)}
     tri = {(r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv) if r["table"] == "candidates_allsky"}
+    fits = _fits(fits_csv, "candidates_allsky")
     n = dict(created=0, updated=0, removed=0)
     for r in _rows(catalog_csv):
         cid = r["candidate_id"]
@@ -62,7 +63,26 @@ def build(root, catalog_csv, sources_csv, triceratops_csv, store_root, folder_ti
                     shutil.copyfile(src, os.path.join(d, name))
             n["created"] += 1
         _sync(d, tri.get((r["TIC"], r["P_d"])), store_root, n)
+        _sync_fit(d, fits.get(r["candidate_id"]), store_root, n)
     return n
+
+
+def _fits(fits_csv, table):
+    """{candidate_id: fits.csv row} of a table's rows whose fit passed its checks."""
+    if not fits_csv:
+        return {}
+    return {r["candidate_id"]: r for r in _rows(fits_csv) if r["table"] == table and r["check"] == "passed"}
+
+
+def _sync_fit(d, f, store_root, n):
+    """transit_fit.json is the fit the catalog uses (a refit replaces it)."""
+    if f is None:
+        return
+    src = os.path.join(store_root, "fit", f["store"][:2], f["store"], "transit_fit.json")
+    target = os.path.join(d, "transit_fit.json")
+    if os.path.exists(src) and not _same(src, target):
+        shutil.copyfile(src, target)
+        n["updated"] += 1
 
 
 def _sync(d, t, store_root, n):
@@ -83,9 +103,10 @@ def _sync(d, t, store_root, n):
             n["removed"] += 1
 
 
-def build_earlier(root, catalog_csv, triceratops_csv, store_root):
+def build_earlier(root, catalog_csv, triceratops_csv, store_root, fits_csv=None):
     base = os.path.join(root, "candidates")
     tri = {(r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv) if r["table"] == "tiers_earlier_candidates"}
+    fits = _fits(fits_csv, "tiers_earlier_candidates")
     n = dict(created=0, updated=0, removed=0)
     for r in _rows(catalog_csv):
         d = os.path.join(base, r["candidate_id"])
@@ -93,4 +114,5 @@ def build_earlier(root, catalog_csv, triceratops_csv, store_root):
             raise ValueError(f"{r['candidate_id']} has no folder; the earlier searches' folders are made by "
                              "package_candidates.py, and a new row needs one before the build can keep it")
         _sync(d, tri.get((r["TIC"], r["P_d"])), store_root, n)
+        _sync_fit(d, fits.get(r["candidate_id"]), store_root, n)
     return n

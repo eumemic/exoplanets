@@ -18,6 +18,7 @@ import centroid_table as ctab  # noqa: E402
 import tri_plan as tp  # noqa: E402
 import triceratops_table as tt  # noqa: E402
 import centroid_store  # noqa: E402
+import fit_store  # noqa: E402
 import store  # noqa: E402
 import tri_store  # noqa: E402
 from dag.params import load  # noqa: E402
@@ -308,6 +309,36 @@ class FreshnessTests(unittest.TestCase):
         self.assertTrue(need(set="SNR 7.5-9"))
         self.assertFalse(need(set="SNR 7.5-9", fa_score_h="0.5"))
         self.assertFalse(cat.needs_triceratops(dict(b="0.95", ruwe="1"), P, "tiers_earlier_candidates"))
+
+
+class FitTests(unittest.TestCase):
+    FIT = dict(P=[0.9919072863903634, 0.991910889854862, 0.9919143486034292], t0=[1842.6585, 1842.66166, 1842.665],
+               k=[0.02, 0.022, 0.023], b=[0.39, 0.5257, 0.63], T14_h=[1.12, 1.1994, 1.27], Rp=[1.49, 1.5644, 1.65])
+
+    def test_columns_are_written_as_the_catalog_writes_them(self):
+        v = fit_store.values(self.FIT)
+        self.assertEqual(v, dict(P_fit="0.991911", P_err="4e-06", T0_BJD="2458842.66166", T14_h="1.2", Rp_Re="1.56", b="0.53"))
+        self.assertEqual(fit_store.problems(self.FIT), [])
+
+    def test_a_fit_that_did_not_converge_is_refused_and_its_row_has_no_fitted_values(self):
+        bad = dict(self.FIT, P=[-1.3e22, 1.1156, 5.0e21], t0=[-2e22, 1385.15, 4.8e22])
+        self.assertTrue(any("period interval" in x for x in fit_store.problems(bad)))
+        d = Path(tempfile.mkdtemp())
+        s = store.Store(d / "store")
+        for i, fit in enumerate((self.FIT, bad)):
+            f = d / f"f{i}.json"
+            f.write_text(json.dumps(fit))
+            s.put("fit", dict(kind="fit", signal_key=f"tic{5 + i}_P3.0000", table="candidates_allsky", tic=5 + i),
+                  dict(seq=0, batch="b", signal=dict(table="candidates_allsky", TIC=str(5 + i), P_d="3.0"), fit=fit,
+                       content=str(i)), files={"transit_fit.json": f})
+        rows = fit_store.table(d / "store", [("candidates_allsky", "5", "3.0", "TIC5_P3.000"),
+                                             ("candidates_allsky", "6", "3.0", "TIC6_P3.000")], d / "fits.csv")
+        self.assertEqual([r["check"][:6] for r in rows], ["passed", "failed"])
+        out = [dict(TIC="5", P_d="3.0", b="0.9", T0_BJD="", T14_h="", Rp_Re="", P_err=""),
+               dict(TIC="6", P_d="3.0", b="0.4", T0_BJD="x", T14_h="x", Rp_Re="x", P_err="x")]
+        cat.fits_into(out, "candidates_allsky", {(r["table"], r["TIC"], r["P_d"]): r for r in rows})
+        self.assertEqual((out[0]["b"], out[0]["_P_fit"]), ("0.53", "0.991911"))
+        self.assertEqual((out[1]["b"], out[1]["T0_BJD"], "_P_fit" in out[1]), ("", "", False))
 
 
 class CloudWorkerTests(unittest.TestCase):

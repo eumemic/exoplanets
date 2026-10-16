@@ -7,8 +7,9 @@ entry is used (the batches run before the store keep their order). A catalog row
 the same TIC and the closest period within a relative difference of match_rel; keys left over (older periods from before
 a refit) are not used. A used result must pass the checks of fpp_check.py; a result in which TRICERATOPS never evaluated
 the target (every scenario equally likely, as for a target without a TIC parallax) is kept as degenerate, with its
-values empty. Column store is the entry's key, batch the batch that computed it, and legacy is yes for a result
-imported from a batch that did not keep all of its inputs.
+values empty. Column store is the entry's key, batch the batch that computed it, legacy is yes for a result
+imported from a batch that did not keep all of its inputs, and lightcurves the hash of the light-curve list its fold was
+made from (lcindex.list_hash; empty for a fold that did not record it, made from the searched list).
 """
 import collections
 import csv
@@ -17,12 +18,13 @@ import os
 import numpy as np
 
 import fpp_check
+import lcindex
 import store as st
 import tri_store
 
 COLUMNS = ["table", "TIC", "P_d", "key", "batch", "period", "t0_btjd", "duration_h", "depth_ppm", "masks", "drop", "exptime_min",
            "n_points", "sectors", "n_scenarios", "runs", "FPP_mean", "NFPP_mean", "NFPP_max", "runs_g", "FPP_g_mean",
-           "NFPP_g_mean", "NFPP_g_max", "molusc_survivors", "degenerate", "store", "legacy"]
+           "NFPP_g_mean", "NFPP_g_max", "molusc_survivors", "degenerate", "store", "legacy", "lightcurves"]
 
 
 def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase_bin_min=2.0, match_rel=0.002):
@@ -58,6 +60,7 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
                                     phase_bin_min)
         problems += [f"{key} ({batch}): {x}" for x in found]
         gaia = "FPP_m_mean" in j
+        fold_req = store.get("fold", res["fold_key"])[0] or {}
         rows.append(dict(
             table=row[0], TIC=row[1], P_d=row[2], key=key, batch=batch, period=sig["period"], t0_btjd=sig["t0_btjd"],
             duration_h=sig["duration_h"], depth_ppm=sig["depth_ppm"], masks=sig["masks"], drop=sig["drop"],
@@ -69,7 +72,8 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
             NFPP_g_mean="" if deg or not gaia else repr(float(j["NFPP_m_mean"])),
             NFPP_g_max="" if deg or not gaia else repr(float(j["NFPP_m_max"])),
             molusc_survivors=int(j["molusc_survivors"]) if gaia else "", degenerate="yes" if deg else "", store=skey,
-            legacy="yes" if req.get("legacy") else ""))
+            legacy="yes" if req.get("legacy") else "",
+            lightcurves=lcindex.list_hash(fold_req["lightcurves"]) if fold_req.get("lightcurves") else ""))
     if problems:
         raise ValueError(f"{len(problems)} TRICERATOPS results fail the checks:\n" + "\n".join(problems[:50]))
     with open(out_csv, "w", newline="") as fh:

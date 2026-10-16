@@ -10,8 +10,8 @@ An entry is ROOT/<kind>/<key[:2]>/<key>/ with
   (for a fold, its arrays), which later requests cite;
 - check.json: the stage's checks and whether they passed (a failing entry is kept for diagnosis and never used);
 - the files.
-Entries are written once: putting a different result under an existing key is an error, and the same result is a
-no-op. Writes go to a temporary directory that is renamed into place, so an interrupted write leaves nothing.
+Entries are written once: putting a different result under an existing key is an error, and the same result (the same
+"content", whatever else differs, such as where the large files are kept or when the entry came in) is a no-op. Writes go to a temporary directory that is renamed into place, so an interrupted write leaves nothing.
 Batch ingest writes the store (tri_store.py); the build's rules only read it.
 """
 import json
@@ -71,9 +71,11 @@ class Store:
         d = self.path(kind, key)
         if os.path.exists(d):
             old = self.get(kind, key)
-            if old is None or canonical_json(old[1]) != canonical_json(result):
+            same = old is not None and (canonical_json(old[1]) == canonical_json(result) or (
+                old[1].get("content") is not None and old[1].get("content") == result.get("content")))
+            if not same:
                 raise ValueError(f"{kind} {key[:12]}: a different result is already stored for this request")
-            return key
+            return key                              # the same content (where it is stored or when it came in may differ)
         os.makedirs(os.path.dirname(d), exist_ok=True)
         tmp = tempfile.mkdtemp(prefix=f".{key[:12]}-", dir=os.path.dirname(d))
         try:

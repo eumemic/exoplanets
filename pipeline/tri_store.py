@@ -299,7 +299,8 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
             req = dict(req, kind="tri_cc", cc_label=lab, cc=c.get("content"), cc_filt=c.get("filt"))
             kind = "tri_cc"
         res = dict(seq=seq, batch=batch, signal=signal, fold_key=fold_key, setup_key=setup_key, molusc_key=molusc_key, fpp=jv,
-                   runs=runs, degenerate=deg, **({"cc_label": lab, "cc_file": curves.get(lab, {}).get("file")} if lab else {}))
+                   runs=runs, degenerate=deg, content=st.sha256_json([{k: v for k, v in r.items() if k != "sec"} for r in runs]),
+                   **({"cc_label": lab, "cc_file": curves.get(lab, {}).get("file")} if lab else {}))
         keys.append(store.put(kind, req, res, check=dict(passed=not (problems + found), problems=problems + found,
                                                          instance=(info.get("check") or {}).get(lab or "base")),
                               files={"fpp.json": os.path.join(vd, "fpp.json")}))

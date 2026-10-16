@@ -243,14 +243,30 @@ def overrides_for(over, table, rows, decisions):
             hit[0]["c_reason"] = ""
 
 
+FIT_COLUMNS = {"candidates_allsky": ("P_err", "T0_BJD", "T14_h", "Rp_Re", "b"), "tiers_earlier_candidates": ("Rp_Re", "b")}
+
+
+def fits_into(rows, table, fits):
+    """The fitted columns of each row from the fit it uses (fits.csv); the period after every lookup by (TIC, P_d)."""
+    for r in rows:
+        f = fits.get((table, r["TIC"], r["P_d"]))
+        if f is not None:
+            for k in FIT_COLUMNS[table]:
+                r[k] = f[k]                         # empty where the fit failed its checks: the row has no usable fit
+            if f["P_fit"]:
+                r["_P_fit"] = f["P_fit"]
+
+
 def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_csv, out_allsky, out_earlier, P,
-          centroids_csv=None):
-    """The TRICERATOPS and centroid tables name, for each catalog row (table, TIC, P_d), the result it uses."""
+          centroids_csv=None, fits_csv=None):
+    """The TRICERATOPS, centroid and fit tables name, for each catalog row (table, TIC, P_d of the measurement table),
+    the result it uses. A row's published period is its fit's; the measurement table's period stays its key."""
     results = {}
     for r in read_rows(triceratops_csv):
         r["degenerate"] = r["degenerate"] == "yes"
         results[(r["table"], r["TIC"], r["P_d"])] = r
     centroids = {(r["table"], r["TIC"], r["P_d"]): r for r in read_rows(centroids_csv)} if centroids_csv else {}
+    fits = {(r["table"], r["TIC"], r["P_d"]): r for r in read_rows(fits_csv)} if fits_csv else {}
     over = read_rows(overrides_csv)
 
     def result_for(r, table):
@@ -258,6 +274,7 @@ def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_
 
     a = read_rows(measurements_allsky)
     centroids_into(a, "candidates_allsky", centroids)
+    fits_into(a, "candidates_allsky", fits)
     for r in a:
         r["reported_as"] = ""
     overrides_for(over, "candidates_allsky", a, decisions=False)
@@ -293,6 +310,7 @@ def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_
 
     e = read_rows(measurements_earlier)
     centroids_into(e, "tiers_earlier_candidates", centroids)
+    fits_into(e, "tiers_earlier_candidates", fits)
     overrides_for(over, "tiers_earlier_candidates", e, decisions=False)
     for r in e:
         v = tri_values(result_for(r, "tiers_earlier_candidates"), num(r["BF"]))
@@ -301,6 +319,11 @@ def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_
             r[k] = fmt(v[k], 3 if k.startswith("FPP") else 4)
         r["centroid_flag"] = centroid_flag(r, P)
     overrides_for(over, "tiers_earlier_candidates", e, decisions=True)
+    for r in a:
+        if "_P_fit" in r:
+            r["P_d"] = r.pop("_P_fit")
+    for r in e:
+        r.pop("_P_fit", None)                       # the earlier tables keep the period they were registered with
     write_rows(out_allsky, ALLSKY, a)
     write_rows(out_earlier, EARLIER, e)
     return a, e

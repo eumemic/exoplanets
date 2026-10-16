@@ -1,8 +1,9 @@
 """Transit-model fit (batman + emcee) for one signal, masking other known signals on the star.
 
-Usage: python fit_transit.py TIC P T0 DUR_H [--mask P,T0,DUR_H ...] [--steps N]
+Usage: python fit_transit.py TIC P T0 DUR_H [--mask P,T0,DUR_H ...] [--steps N] [--seed S] [--out FILE]
 Fits P, T0, Rp/R*, b, rho* (prior from TIC), quadratic LD fixed (Claret via LEO-Vetter),
-with 10-min supersampling for FFI cadences. Prints posteriors and saves a fold plot + JSON.
+with 10-min supersampling for FFI cadences. Prints posteriors and saves a fold plot + JSON. The sampler is seeded
+(--seed, by default from the TIC and period), so the same light curves and settings give the same fit.
 """
 import argparse
 import json
@@ -39,6 +40,11 @@ def model_flux(theta, t, u, exptime_d):
     return out
 
 
+def fit_seed(tic, period):
+    import hashlib
+    return int.from_bytes(hashlib.sha256(f"fit|{int(tic)}|{float(period):.4f}".encode()).digest()[:4], "little")
+
+
 def main():
     import emcee
 
@@ -50,7 +56,10 @@ def main():
     ap.add_argument("--mask", nargs="*", default=[])
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--stars", default=str(CAT / "targets.parquet"))
+    ap.add_argument("--seed", type=int, help="seed of the sampler (default: from the TIC and the period)")
+    ap.add_argument("--out", help="the JSON file (default: results/fit_tic<TIC>_P<P>.json)")
     a = ap.parse_args()
+    np.random.seed(a.seed if a.seed is not None else fit_seed(a.tic, a.P))
     row = pd.read_parquet(a.stars).set_index("ID").loc[a.tic].to_dict()
     star = star_dict(row)
     sectors = load_star(a.tic)
@@ -96,6 +105,7 @@ def main():
     pos = p0 + scale * np.random.default_rng(1).standard_normal((nw, 6))
     pos[:, 3] = np.abs(pos[:, 3])
     sampler = emcee.EnsembleSampler(nw, 6, lnprob)
+    sampler.random_state = np.random.get_state()          # emcee draws from NumPy's global generator: seeded above
     sampler.run_mcmc(pos, a.steps, progress=False)
     ch = sampler.get_chain(discard=a.steps // 2, thin=5, flat=True)
     names = ["P", "t0", "k", "b", "rho", "lnjit"]
@@ -113,7 +123,7 @@ def main():
         lo, mid, hi = out[n]
         print(f"{n:6s} = {mid:.6f} +{hi - mid:.6f} -{mid - lo:.6f}")
     print(f"acceptance {out['acceptance']:.2f}, points {len(t)}")
-    with open(RESULTS / f"fit_tic{a.tic}_P{a.P:.3f}.json", "w") as fh:
+    with open(a.out or RESULTS / f"fit_tic{a.tic}_P{a.P:.3f}.json", "w") as fh:
         json.dump(out, fh, indent=1)
 
 

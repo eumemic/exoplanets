@@ -204,6 +204,38 @@ def fetch_reused(B, R):
     log(f"reused from the bucket: {len(items)} archives ({len(fix)} target setups)")
 
 
+def run_fits(plan, B, R, info, urls, procs):
+    """The batch's transit fits (fit_transit.py, seeded from the request), several at a time, each uploaded when done."""
+    from concurrent.futures import ThreadPoolExecutor
+    os.makedirs(os.path.join(R, "fits"), exist_ok=True)
+
+    def one(x):
+        it, req = x["item"], x["request"]
+        out = os.path.join(R, "fits", f"{it['key']}.json")
+        masks = [m for m in str(it.get("masks") or "").split(";") if m]
+        rc = run(["fit_transit.py", str(it["tic"]), str(it["period"]), str(it["t0"]), str(it["duration_h"]), "--steps",
+                  str(req["steps"]), "--seed", str(req["seed"]), "--stars", os.path.join(B, "stars.parquet"), "--out", out]
+                 + (["--mask", *masks] if masks else []), "fits.log")
+        key = it["key"]
+        if rc != 0 or not os.path.exists(out):
+            STATE["failed"].append(f"fit:{key}")
+            log(f"fit {key}: failed (exit {rc})")
+            return
+        d = os.path.join(R, "fit_items", key)
+        os.makedirs(d, exist_ok=True)
+        shutil.copyfile(out, os.path.join(d, "fit.json"))
+        json.dump(dict(info, key=key), open(os.path.join(d, "item.json"), "w"))
+        arc = d + ".tgz"
+        with tarfile.open(arc, "w:gz") as tf:
+            tf.add(d, arcname=".")
+        ok = put(urls["fit"][key], open(arc, "rb").read())
+        (STATE["uploaded"] if ok else STATE["failed"]).append(f"fit:{key}")
+        log(f"fit {key}: {'uploaded' if ok else 'UPLOAD FAILED'}")
+
+    with ThreadPoolExecutor(max(1, procs)) as ex:
+        list(ex.map(one, plan["fits"]))
+
+
 def return_after_centroids(proc, plan, R, info, urls):
     """Waits for the centroid measurements and uploads each signal's file."""
     if proc is None:
@@ -263,14 +295,18 @@ def main():
         for f in glob.glob(os.path.join(B, "reuse", "molusc", "*")):
             shutil.copyfile(f, os.path.join(R, "molusc", os.path.basename(f)))
         nproc = max(1, (os.cpu_count() or 2) - (7 if cs_proc else 1))
+        if items or plan.get("fits"):
+            STATE["stage"] = "download"
+            run(["download.py", os.path.join(B, "tics.txt"), "--manifest", os.path.join(B, "manifest.parquet"), "--workers",
+                 "32"], "download.log")
+        if plan.get("fits"):
+            STATE["stage"] = "fits"
+            run_fits(plan, B, R, info, urls, nproc)
         if not items:
             STATE["stage"] = "centroids"
             return_after_centroids(cs_proc, plan, R, info, urls)
             STATE["stage"] = "done"
             return
-        STATE["stage"] = "download"
-        run(["download.py", os.path.join(B, "tics.txt"), "--manifest", os.path.join(B, "manifest.parquet"), "--workers", "32"],
-            "download.log")
         STATE["stage"] = "folds, setups and MOLUSC"
         mol = subprocess.Popen([os.path.join(EXO, ".venv", "bin", "python"), "molusc_batch.py", os.path.join(B, "stars.parquet"),
                                 "--gaia", os.path.join(B, "gaia.csv"), "--molusc", os.path.join(B, "molusc_code"),
@@ -315,7 +351,7 @@ def main():
         log(f"ERROR {ex!r}")
     finally:
         stop.set()
-        for name in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log"):
+        for name in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log", "fits.log"):
             p = os.path.join(HOME, name)
             if os.path.exists(p) and name in urls.get("logs", {}):
                 put(urls["logs"][name], open(p, "rb").read()[-2_000_000:])

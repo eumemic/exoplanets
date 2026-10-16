@@ -364,7 +364,31 @@ class Project:
         self.hasher.save()
         return ran, failed_checks
 
+    def _saved_outputs(self, r):
+        """The content of a rule's file outputs before it runs (not of in-place, directory or pattern outputs), so that a
+        run that fails leaves them as the lock records them."""
+        if r.inplace:
+            return {}
+        out = {}
+        for o in r.outputs:
+            p = self.root / o
+            if not any(ch in o for ch in "*?[") and not p.is_dir():
+                out[p] = p.read_bytes() if p.exists() else None
+        return out
+
     def execute(self, r, log=print):
+        saved = self._saved_outputs(r)
+        try:
+            return self._execute(r, log)
+        except BuildError:
+            for p, data in saved.items():
+                if data is None:
+                    p.unlink(missing_ok=True)
+                elif not p.exists() or p.read_bytes() != data:
+                    p.write_bytes(data)
+            raise
+
+    def _execute(self, r, log=print):
         st0, info = self.stamp(r)
         ctx = RunContext(self.root, r, P.select(self.params, r.params))
         result, message = "passed", ""

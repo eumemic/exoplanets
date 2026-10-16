@@ -11,8 +11,9 @@ The inputs of a signal, as every TRICERATOPS batch since 15 October has made the
 - drop: the eclipsing-binary scenarios on the target ("EB,EBx2P") where Gaia's radial velocities exclude them.
 A result is current while its ephemeris, duration and depth match within the freshness tolerances and every other
 catalog signal of the star is masked at its current ephemeris (masks of TOIs are not compared: the TOI catalog is a
-dated snapshot, and a TOI's period is not ours to keep current). Status: current, legacy (current, from a batch that
-did not keep all of its inputs), or pending with the reason.
+dated snapshot, and a TOI's period is not ours to keep current), and its fold was made from the star's light-curve
+list now (lcindex.py: a result that did not record its list was made from the searched list). Status: current, legacy
+(current, from a batch that did not keep all of its inputs), or pending with the reason.
 """
 import csv
 import json
@@ -77,8 +78,9 @@ def item(table, r, eph, signals, match_rel):
                 drop="EB,EBx2P" if r["rv_flag"] == RV_EXCLUDES_EB else "", _others=others)
 
 
-def status(it, used, tol, match_rel):
-    """(status, reason) of the result in use against the inputs the row needs now."""
+def status(it, used, tol, match_rel, lists=None):
+    """(status, reason) of the result in use against the inputs the row needs now; lists: ({tic: hash of the searched
+    list}, {tic: hash of the list now}) (lcindex.star_hashes)."""
     if used is None:
         return "pending", "no result"
     cur = dict(P=_f(it["period"]), T0=_f(it["t0"]) + 2457000, dur=_f(it["duration_h"]), depth=_f(it["depth_ppm"]))
@@ -97,12 +99,16 @@ def status(it, used, tol, match_rel):
             diff.append(f"mask of the {p:.5f} d signal: " + ", ".join(dd))
     if (used["drop"] or "") != it["drop"]:
         diff.append(f"drop {used['drop'] or 'none'} -> {it['drop'] or 'none'}")
+    if lists is not None:
+        tic = int(it["tic"])
+        if (used.get("lightcurves") or lists[0].get(tic)) != lists[1].get(tic):
+            diff.append("light curves: the star's list has changed since it ran (redo.csv)")
     if diff:
         return "pending", "; ".join(diff)
     return ("legacy" if used.get("legacy") == "yes" else "current"), ""
 
 
-def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, out_csv, P, tol, match_rel):
+def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, out_csv, P, tol, match_rel, lists=None):
     allsky, earlier = _rows(allsky_csv), _rows(earlier_csv)
     eph = {}
     for e in _rows(ephemerides_csv):
@@ -111,10 +117,23 @@ def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, ou
         toi = list(csv.DictReader(line for line in fh if not line.startswith("#")))
     signals = known_signals(allsky, earlier, eph, toi, match_rel)
     used = {(r["table"], r["TIC"], r["P_d"]): r for r in _rows(triceratops_csv)}
+    by_tic = {}
+    for r in used.values():
+        by_tic.setdefault((r["table"], r["TIC"]), []).append(r)
+
+    def lookup(table, r):
+        """The result in use for a catalog row: by its period, or (after a refit moved the published period away from
+        the measurement table's) the result of the same star with the closest period within match_rel."""
+        u = used.get((table, r["TIC"], r["P_d"]))
+        if u is None:
+            near = [(abs(_f(x["P_d"]) / _f(r["P_d"]) - 1), x) for x in by_tic.get((table, r["TIC"]), [])]
+            near = [x for d, x in sorted(near, key=lambda t: t[0]) if d < match_rel]
+            u = near[0] if near else None
+        return u
     out = []
     for table, rows in (("candidates_allsky", allsky), ("tiers_earlier_candidates", earlier)):
         for r in rows:
-            need, u = catalog.needs_triceratops(r, P, table), used.get((table, r["TIC"], r["P_d"]))
+            need, u = catalog.needs_triceratops(r, P, table), lookup(table, r)
             if not need and u is None:
                 continue
             it = item(table, r, eph, signals, match_rel)
@@ -122,7 +141,7 @@ def build(allsky_csv, earlier_csv, ephemerides_csv, toi_csv, triceratops_csv, ou
                 st, why = "pending", "not in the transit registry (no ephemeris)"
                 it = dict(key="", tic=r["TIC"], period="", t0="", duration_h="", depth_ppm="", masks="", drop="")
             else:
-                st, why = status(it, u, tol, match_rel)
+                st, why = status(it, u, tol, match_rel, lists)
             if not need and st == "pending":
                 st = "stale"
             out.append(dict({k: v for k, v in it.items() if not k.startswith("_")}, table=table, TIC=r["TIC"], P_d=r["P_d"],

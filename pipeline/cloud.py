@@ -13,6 +13,9 @@ tri_store.py), and the build then takes it up.
         whose measurement used another ephemeris (the checks counted_measured_centroids and centroid_inputs_current),
         or of the named keys; the sectors are the twelve with the highest per-sector SNR in the signal's vetting file.
         A centroid batch has no TRICERATOPS signals.
+  python cloud.py plan --fits [--keys KEY,...]
+        Transit fits (fit_transit.py, seeded) of the full-sky rows held in tier C for want of a fit, or of named keys
+        (a refit, after new light curves), starting from the catalog's ephemeris and masking the star's other signals.
   python cloud.py run ID --approve [--hours 3]
         Builds the kit (git archive of the plan's commit, the snapshots, the reused stage files and presigned upload
         URLs), uploads it to the bucket, launches one spot instance tagged with the batch (cloud_worker.py runs there),
@@ -40,6 +43,7 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 
 import centroid_store
+import fit_store
 import store as st
 import tri_store
 
@@ -131,17 +135,11 @@ def gaia_rows(dr2_ids):
 
 
 def manifest_rows(tics):
-    """The light-curve list of each star: the re-search manifests (fixed QLP reader) where they have the star, else
-    the full-sky and earlier ones, as every batch since 15 October."""
-    ids = list(set(tics))
-    rd = lambda f: pd.read_parquet(f, filters=[("tic", "in", ids)])
-    new = pd.concat([rd(f) for f in sorted(glob.glob(os.path.join(ROOT, "results_cloud", "qfull_kits", "manifest_shard*.parquet")))])
-    old = pd.concat([rd(f) for f in sorted(glob.glob(os.path.join(ROOT, "results_cloud", "manifests_allsky", "manifest_shard*.parquet")))]
-                    + [rd(os.path.join(ROOT, "data", "catalogs", f"{n}.parquet")) for n in
-                       ("manifest_prelim", "manifest_toi", "manifest_tce", "manifest_faint_t1", "manifest_faint_t2")])
-    new = new[[c for c in new.columns if not c.startswith("__")]]
-    old = old[[c for c in old.columns if not c.startswith("__")]]
-    return pd.concat([new, old[~old.tic.isin(set(new.tic))]]).drop_duplicates(["tic", "sector", "prov"])
+    """The light-curve list of each star (lcindex.lists): the re-search manifests (fixed QLP reader) where they have the
+    star, else the full-sky and earlier ones, as every batch since 15 October, with the redeliveries and withdrawals of
+    the MAST snapshot (results_public/products/lightcurves_current.csv) applied."""
+    import lcindex
+    return lcindex.lists(tics, lcindex.CURRENT, ROOT)
 
 
 def curves(tic):
@@ -298,13 +296,57 @@ def split(out, parts):
     return [p[1] for p in load if p[1]]
 
 
-def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids=False, rerun_legacy=False, parts=1):
+def fit_items(keys=None):
+    """The fits of a batch: rows held in tier C for want of a fit and rows whose fit is stale (made from light curves
+    that have changed: redo.csv), or the named keys; with their requests and the snapshots (stars, light-curve list) the
+    instance reads."""
+    import catalog
+    import tri_plan
+    rows = {"candidates_allsky": pd.read_csv(os.path.join(ROOT, "results_public", "candidates_allsky.csv"), dtype=str,
+                                             keep_default_na=False).to_dict("records")}
+    if keys:
+        want = set(keys)
+    else:
+        import lcindex
+        want = {f"tic{r['TIC']}_P{float(r['P_d']):.4f}" for r in rows["candidates_allsky"] if r["c_reason"] == catalog.NO_FIT}
+        want |= {f"tic{r['TIC']}_P{float(r['P_d']):.4f}" for r in
+                 lcindex.stale_fits(os.path.join(ROOT, "results_public", "products", "redo.csv"))}
+    items = tri_plan.items(want, *(os.path.join(ROOT, f) for f in (
+        "results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv", "candidates/ephemerides.csv",
+        "data/known/toi.csv")), 0.002)
+    if set(items) != want:
+        raise SystemExit(f"no catalog row has the key: {sorted(want - set(items))}")
+    if not items:
+        return [], None, None
+    table_of = {f"tic{r['TIC']}_P{float(r['P_d']):.4f}": "candidates_allsky" for r in rows["candidates_allsky"]}
+    tics = sorted({int(it["tic"]) for it in items.values()})
+    stars, man = star_rows(tics), manifest_rows(tics)
+    code, env = fit_store.code_hash(), tri_store.env_hash("fold")
+    out = []
+    for key, it in sorted(items.items()):
+        tic = int(it["tic"])
+        lcs = [[int(r.sector), str(r.prov), float(r.exptime), str(r.uri)] for r in man[man.tic == tic].itertuples()]
+        star = star_hash(stars[stars.ID == tic].iloc[0].to_dict())
+        table = table_of.get(key, "tiers_earlier_candidates")
+        out.append(dict(item=it, request=fit_store.request(table, it, lcs, star, code, env), row_P_d=str(it["period"])))
+    return out, stars, man
+
+
+def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids=False, rerun_legacy=False, parts=1,
+         fits=False):
     """A batch: TRICERATOPS signals, or (centroids) per-sector centroid measurements; with parts > 1, that many
     batches (one instance each). Writes plan.json for each."""
     if git("status", "--porcelain", "--", "pipeline", "requirements.txt", "requirements-triceratops.txt"):
         raise SystemExit("pipeline/ or a lock file has uncommitted changes: the kit ships a commit, so commit first")
     commit = git("rev-parse", "HEAD")
     out, cs_out, stars, gaia, man, extra = [], [], None, None, None, {}
+    if fits:
+        fit_out, stars, man = fit_items(keys)
+        if not fit_out:
+            print("nothing to fit: no row is held in tier C for want of a fit")
+            return None
+        return _write_plan("b" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S"), commit, itype, runs, [], [], stars,
+                           None, man, {}, fit_out)
     if centroids:
         ccode, cenv = centroid_store.code_hash(), tri_store.env_hash("fold")
         cs_out = [dict(item=r, request=centroid_store.request(r, ccode, cenv)) for r in centroid_rows(keys)]
@@ -330,26 +372,32 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids
                        gaia, man, extra)
 
 
-def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra):
+def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, fit_out=()):
     d = os.path.join(BATCHES, bid)
     os.makedirs(d)
-    if out:
+    if out or fit_out:
         stars.to_parquet(os.path.join(d, "stars.parquet"))
-        gaia.to_csv(os.path.join(d, "gaia.csv"), index=False)
         man.to_parquet(os.path.join(d, "manifest.parquet"))
+    if gaia is not None:
+        gaia.to_csv(os.path.join(d, "gaia.csv"), index=False)
     price, vc = spot_price(itype), VCPUS.get(itype, 16)
     # measured: 270 signals (5,400 runs) took 34 min on 64 vCPUs on 15 October (about 0.4 core-minutes a run, with
     # MOLUSC and the setups alongside); a centroid measurement ~1-3 min per signal on one core (12 in ~4 min with 6)
     variants = sum(int(x["base_runs"]) + len(x["cc"]) for x in out)
-    hours = (15 + variants * 2 * runs * 0.4 / max(1, vc - 1) + len(cs_out) * 2.0 / 6) / 60
+    # a fit: 3,000 steps of 32 walkers, ~2-5 min on one core
+    hours = (15 + variants * 2 * runs * 0.4 / max(1, vc - 1) + len(cs_out) * 2.0 / 6 + len(fit_out) * 5.0 / max(1, vc - 1)) / 60
     est = dict(instance=itype, spot_usd_per_h=price, hours=round(hours, 2), usd=round(price * hours, 2) if price else None,
                limit_hours=round(max(1.0, 3 * hours), 1))
     p = dict(id=bid, commit=commit, created=datetime.now(timezone.utc).isoformat(timespec="seconds"), runs=runs,
-             code=extra.get("code", {}), env=extra.get("env", {}), items=out, centroids=cs_out,
+             code=extra.get("code", {}), env=extra.get("env", {}), items=out, centroids=cs_out, fits=list(fit_out),
+             fit_env=tri_store.env_hash("fold"),
              centroid_env=tri_store.env_hash("fold"), reuse={k: extra.get(k, []) for k in ("fold", "molusc")}, estimate=est)
     with open(os.path.join(d, "plan.json"), "w") as fh:
         json.dump(p, fh, indent=1)
-    print(f"batch {bid}: {len(out)} TRICERATOPS signals, {len(cs_out)} centroid measurements, commit {commit[:7]}")
+    print(f"batch {bid}: {len(out)} TRICERATOPS signals, {len(cs_out)} centroid measurements, {len(fit_out)} fits, "
+          f"commit {commit[:7]}")
+    for x in list(fit_out)[:10]:
+        print(f"  fit {x['item']['key']}: from P {x['item']['period']} d, T14 {x['item']['duration_h']} h")
     for x in out[:10]:
         it = x["item"]
         print(f"  {it['key']}: P {it['period']} d, T14 {it['duration_h']} h, depth {it['depth_ppm']} ppm"
@@ -380,10 +428,13 @@ def kit(p, d, s3, hours):
                      for x in p["items"]},
                 cs={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}cs/{x['item']['key']}.tgz", hours)
                     for x in p.get("centroids", [])},
+                fit={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}fit/{x['item']['key']}.tgz", hours)
+                     for x in p.get("fits", [])},
                 heartbeat=_presign(s3, "put_object", f"{prefix}heartbeat.json", hours),
                 done=_presign(s3, "put_object", f"{prefix}done.json", hours),
                 logs={n: _presign(s3, "put_object", f"{prefix}logs/{n}", hours)
-                      for n in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log")})
+                      for n in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log",
+                                "fits.log")})
     k = os.path.join(d, "kit")
     shutil.rmtree(k, ignore_errors=True)
     os.makedirs(os.path.join(k, "batch", "reuse", "folds"))
@@ -401,7 +452,7 @@ def kit(p, d, s3, hours):
     with open(os.path.join(b, "urls.json"), "w") as fh:
         json.dump(urls, fh)
     with open(os.path.join(b, "tics.txt"), "w") as fh:
-        fh.write("\n".join(sorted({str(x["item"]["tic"]) for x in p["items"]})) + "\n")
+        fh.write("\n".join(sorted({str(x["item"]["tic"]) for x in p["items"] + p.get("fits", [])})) + "\n")
     shutil.copytree(MOLUSC_CODE, os.path.join(b, "molusc_code"))
     os.makedirs(os.path.join(b, "cc"), exist_ok=True)
     for x in p["items"]:
@@ -513,31 +564,39 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
     done = ledger.setdefault(root, {})
     by_key = {x["item"]["key"]: x for x in p["items"]}
     by_cs = {x["item"]["key"]: x for x in p.get("centroids", [])}
+    by_fit = {x["item"]["key"]: x for x in p.get("fits", [])}
     store = st.Store(store_root)
-    objs = s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=prefix).get("Contents", []) + \
-        s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/cs/").get("Contents", [])
+    objs = [o for sub in ("items/", "cs/", "fit/") for o in
+            s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/{sub}").get("Contents", [])]
     for o in objs:
         if o["Key"].endswith(".big.tgz"):           # the large files stay in the bucket
             continue
-        cs = "/cs/" in o["Key"]
+        kind = "cs" if "/cs/" in o["Key"] else "fit" if "/fit/" in o["Key"] else "tri"
         key = os.path.basename(o["Key"])[:-4]
-        rec = f"cs:{key}" if cs else key
-        if rec in done or key not in (by_cs if cs else by_key):
+        rec = key if kind == "tri" else f"{kind}:{key}"
+        if rec in done or key not in {"cs": by_cs, "fit": by_fit, "tri": by_key}[kind]:
             continue
-        idir = os.path.join(d, "cs" if cs else "items", key)
+        cs = kind == "cs"
+        idir = os.path.join(d, {"cs": "cs", "fit": "fits", "tri": "items"}[kind], key)
         shutil.rmtree(idir, ignore_errors=True)
         os.makedirs(idir)
         arc = idir + ".tgz"
         s3.download_file(AWS["bucket"], o["Key"], arc)
         with tarfile.open(arc) as tf:
             tf.extractall(idir, filter="data")
-        if cs:
-            item = dict(by_cs[key], env=p["centroid_env"], commit=p["commit"])
-            tkey, problems = centroid_store.ingest_item(store, idir, item, bid, int(time.time()))
-        else:
-            item = dict(by_key[key], code=p["code"], env=p["env"], commit=p["commit"])
-            tkey, problems = tri_store.ingest_item(store, idir, item, bid, int(time.time()), n_runs=p["runs"],
-                                                   remote_archive=f"s3://{AWS['bucket']}/{o['Key'][:-4]}.big.tgz")
+        try:
+            if kind == "fit":
+                item = dict(by_fit[key], env=p["fit_env"], commit=p["commit"])
+                tkey, problems = fit_store.ingest_item(store, idir, item, bid, int(time.time()))
+            elif cs:
+                item = dict(by_cs[key], env=p["centroid_env"], commit=p["commit"])
+                tkey, problems = centroid_store.ingest_item(store, idir, item, bid, int(time.time()))
+            else:
+                item = dict(by_key[key], code=p["code"], env=p["env"], commit=p["commit"])
+                tkey, problems = tri_store.ingest_item(store, idir, item, bid, int(time.time()), n_runs=p["runs"],
+                                                       remote_archive=f"s3://{AWS['bucket']}/{o['Key'][:-4]}.big.tgz")
+        except Exception as ex:                     # recorded, not retried: remove it from ingested.json to try again
+            tkey, problems = None, [f"ingest failed: {ex!r}"]
         key = rec
         done[key] = dict(store=tkey, problems=problems)
         with open(done_path, "w") as fh:
@@ -560,16 +619,33 @@ def run(bid, hours=None, store_root=st.ROOT):
     kit_url = _presign(s3, "get_object", f"batches/{bid}/kit.tgz", 1)
     boot_url = _presign(s3, "put_object", f"batches/{bid}/logs/boot.log", 1)
     iid = launch(p, d, kit_url, boot_url, int(limit_h * 60), itype)
-    t0 = time.time()
+    follow(bid, store_root, limit_h)
+
+
+def follow(bid, store_root=st.ROOT, limit_h=None):
+    """Follows a launched batch: ingests each item as it arrives, and terminates the instance when every item is in,
+    when it stops sending heartbeats, or at the time limit. Also resumes a batch whose follower stopped."""
+    d = os.path.join(BATCHES, bid)
+    p = json.load(open(os.path.join(d, "plan.json")))
+    inst = json.load(open(os.path.join(d, "instance.json")))
+    iid = inst["instance_id"]
+    limit_h = limit_h or p["estimate"]["limit_hours"]
+    s3 = s3client()
+    t0 = inst["launched"]
     from zoneinfo import ZoneInfo
     pt = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%H:%M %Z")
-    print(f"batch {bid}: launched {iid} ({itype}) at {pt}; limit {limit_h} h", flush=True)
-    keys = {x["item"]["key"] for x in p["items"]} | {f"cs:{x['item']['key']}" for x in p.get("centroids", [])}
+    print(f"batch {bid}: following {iid} ({inst['type']}) from {pt}; limit {limit_h} h", flush=True)
+    keys = ({x["item"]["key"] for x in p["items"]} | {f"cs:{x['item']['key']}" for x in p.get("centroids", [])}
+            | {f"fit:{x['item']['key']}" for x in p.get("fits", [])})
     last_beat, status = t0, "running"
     try:
         while True:
             time.sleep(30)
-            done = ingest(bid, store_root)
+            try:
+                done = ingest(bid, store_root)
+            except Exception as ex:                 # a network error: try again on the next round
+                print(f"ingest round failed: {ex!r}", flush=True)
+                continue
             try:
                 hb = s3.get_object(Bucket=AWS["bucket"], Key=f"batches/{bid}/heartbeat.json")
                 beat = json.loads(hb["Body"].read())
@@ -591,7 +667,11 @@ def run(bid, hours=None, store_root=st.ROOT):
                 break
     finally:
         time.sleep(5)
-        done = ingest(bid, store_root)
+        try:
+            done = ingest(bid, store_root)
+        except Exception as ex:
+            print(f"last ingest failed: {ex!r}; run `cloud.py ingest {bid}` later", flush=True)
+            done = {}
         state = terminate(bid, iid)
         os.makedirs(os.path.join(d, "logs"), exist_ok=True)
         for o in s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/").get("Contents", []):
@@ -605,7 +685,7 @@ def run(bid, hours=None, store_root=st.ROOT):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["plan", "run", "ingest"])
+    ap.add_argument("cmd", choices=["plan", "run", "follow", "ingest"])
     ap.add_argument("id", nargs="?")
     ap.add_argument("--keys", default="")
     ap.add_argument("--type", default="c8g.4xlarge")
@@ -615,18 +695,21 @@ def main():
     ap.add_argument("--centroids", action="store_true", help="a batch of per-sector centroid measurements")
     ap.add_argument("--rerun-legacy", action="store_true", help="every legacy result in use, computed again")
     ap.add_argument("--parts", type=int, default=1, help="split into this many batches (one instance each)")
+    ap.add_argument("--fits", action="store_true", help="a batch of transit fits")
     ap.add_argument("--hours", type=float)
     ap.add_argument("--approve", action="store_true")
     ap.add_argument("--store", default=st.ROOT, help="store to ingest into (a trial can use its own)")
     a = ap.parse_args()
     if a.cmd == "plan":
         plan([k for k in a.keys.split(",") if k] or None, a.type, a.runs, a.cc, not a.no_base, a.centroids, a.rerun_legacy,
-             a.parts)
+             a.parts, a.fits)
     elif a.cmd == "run":
         if not a.approve:
             p = json.load(open(os.path.join(BATCHES, a.id, "plan.json")))
             sys.exit(f"batch {a.id}: {len(p['items'])} signals, estimate {p['estimate']}. Nothing launched: add --approve.")
         run(a.id, a.hours, a.store)
+    elif a.cmd == "follow":
+        follow(a.id, a.store, a.hours)
     else:
         print(f"{len(ingest(a.id, a.store))} items ingested")
 

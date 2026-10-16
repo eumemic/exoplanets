@@ -271,6 +271,20 @@ class RunnerTests(unittest.TestCase):
         self.run_all(discard_edits=True)
         self.assertEqual(self.out("b.txt"), "30!")
 
+    def test_a_failed_rule_leaves_its_outputs_as_they_were(self):
+        self.run_all()
+        write(self.root / "data" / "in.txt", "5")
+        write(self.root / "pipeline" / "rules.py", RULES.replace(
+            'ctx.output("out/b.txt").write_text(ctx.input("out/a.txt").read_text() + "!")',
+            'ctx.output("out/b.txt").write_text("partial")\n    raise RuntimeError("stopped")'))
+        with self.assertRaises(BuildError):
+            self.run_all()
+        self.assertEqual(self.out("b.txt"), "12!")
+        self.assertEqual(self.states()["b"], "stale")              # not "edited": the next run may write it
+        write(self.root / "pipeline" / "rules.py", RULES)
+        self.run_all()
+        self.assertEqual(self.out("b.txt"), "30!")
+
     def test_lock_check_without_the_packages(self):
         self.run_all()
         p = self.project()
