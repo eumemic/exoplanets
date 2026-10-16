@@ -49,6 +49,11 @@ binaries) keep their tiers whatever TRICERATOPS gives. Per-signal results are in
   because of the fix; they stay uncounted and keep their released values. The rerun of TIC 89171942 was stopped
   after 17 of 20 runs (FPP ≈ 0.98); it keeps its released values.
 
+  As of 15 October 2026 TIC 1393293 and 338864147 are tier N. In the TRICERATOPS corrections of 15 October they pass
+  the bar (`FPP_gc` 0.479 and 0.497, `NFPP_gc` 0.014 and 0.029), and their transit fits and per-sector centroids
+  allow tier N. TIC 338864147's centroids give p = 0.003 for the target, so it carries `centroid_flag`; TIC 1393293
+  has a centroid fit in one sector only, so the test could not be applied to it.
+
 The counted candidates are now 470 from the full sky (11 A, 257 B, 152 N, 50 L1) and 60 from the earlier searches
 (25 A, 35 B): 530 in all.
 

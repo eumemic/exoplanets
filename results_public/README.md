@@ -1,7 +1,7 @@
 # Data dictionary for `results_public/` and `candidates/`
 
 This page defines every column of the tables in this directory and of `candidates/ephemerides.csv` and
-`candidates/predictions.csv`. Counts are for the data of 14 October 2026, after the QLP re-search, the CTOI correction, the move of TIC 206609457 to tier L1, the correction of the combined TRICERATOPS probabilities and the cross-match with the TESS Ten Thousand eclipsing binaries (658 candidates). The method behind each table is in the
+`candidates/predictions.csv`. Counts are for the data of 15 October 2026, after the QLP re-search, the CTOI correction, the move of TIC 206609457 to tier L1, the correction of the combined TRICERATOPS probabilities, the cross-match with the TESS Ten Thousand eclipsing binaries, and the TRICERATOPS rerun with single-cadence light curves and its corrections (644 candidates). The method behind each table is in the
 [top-level README](../README.md) and in [`validation/`](../validation/). Where none of these states what a column
 means, the entry says "not documented; appears to be" and gives the likeliest reading.
 
@@ -11,10 +11,10 @@ means, the entry says "not documented; appears to be" and gives the likeliest re
 | `tiers_earlier_candidates.csv` | 68 | [Earlier searches](#tiers_earlier_candidatescsv) |
 | `candidates.csv` | 12 | [Release tables](#release-tables) |
 | `candidates_2026-10-08.csv`, `candidates_2026-10-08b.csv`, `candidates_2026-10-08c.csv`, `candidates_2026-10-08d.csv` | 38, 8, 18, 12 | [Release tables](#release-tables) |
-| `../candidates/ephemerides.csv`, `../candidates/predictions.csv` | 712, 45,781 | [Ephemerides and predictions](#ephemerides-and-predictions) |
+| `../candidates/ephemerides.csv`, `../candidates/predictions.csv` | 738, 50,200 | [Ephemerides and predictions](#ephemerides-and-predictions) |
 | `all_signals*.csv.gz`, `vetted_signals*.csv.gz` | 7 files each | [Signal tables](#signal-tables) |
 | `followup_*.csv` | 7 files | [Follow-up tables](#follow-up-tables) |
-| `funnel_allsky.csv` | 124 | [Search stage counts](#funnel_allskycsv) |
+| `funnel_allsky.csv` | 154 | [Search stage counts](#funnel_allskycsv) |
 
 `novelty_check.md` is prose and is not covered here.
 
@@ -151,16 +151,16 @@ default priors and ten with the Gaia limits), where there is one.
 |---|---|---|---|
 | `TIC` | TIC ID of the host star | integer | never empty |
 | `P_d` | Orbital period: the median of the transit-fit posterior, or the search period when there is no fit | days | never empty |
-| `P_err` | 1σ period uncertainty: half the 16th to 84th percentile range of the fit posterior | days | no transit fit (1,322 rows) |
+| `P_err` | 1σ period uncertainty: half the 16th to 84th percentile range of the fit posterior | days | no transit fit (1,294 rows) |
 | `T0_BJD` | Reference transit time of the fit, or of the search when there is no fit. Usually the first transit in the data; it is not the reference epoch of the ephemerides (see [quirks](#known-quirks)) | BJD_TDB, days | never empty |
 | `Rp_Re` | Planet radius from the fitted Rp/R*, using the TIC stellar radius. Without a fit: √(`depth_ppm` × 10⁻⁶) × `Rstar`, converted to R⊕ | R⊕ | never empty |
-| `b` | Impact parameter, median of the fit posterior | dimensionless | no transit fit (1,322 rows) |
+| `b` | Impact parameter, median of the fit posterior | dimensionless | no transit fit (1,294 rows) |
 | `T14_h` | Transit duration, first to fourth contact, median of the fit posterior. Without a fit: the box duration of the search | hours | never empty |
 | `depth_ppm` | Transit depth measured in the vetting step: a box over the transit-masked, re-detrended light curve. It is not the depth of the fitted model | ppm | never empty |
 | `MES` | LEO-Vetter multiple-event statistic | dimensionless | never empty |
 | `n_transits` | Number of transits in the data (LEO-Vetter `N_transit`) | count | never empty |
 
-Rows without a transit fit: 1,102 `likely nearby FP`, 114 `likely EB`, 105 `C` and 1 `reported`; every counted candidate
+Rows without a transit fit: 1,075 `likely nearby FP`, 114 `likely EB`, 104 `C` and 1 `reported`; every counted candidate
 has a fit.
 
 ### Host star
@@ -189,12 +189,15 @@ From the difference-image and neighbour checks made when the signal was vetted.
 The centroid test of 12 October 2026 ([details](../validation/centroid_sectors.md)). The difference-image centroid is
 measured in each sector with transits (up to 12 per candidate) as an offset east and north of the target. The test asks
 whether the mean offset is consistent with the target and with each TIC star within 2′ that is bright enough to cause
-the dip. It needs at least two sectors. The columns are filled for 1,092 rows: every counted candidate, the signals the
-test moved out of the counted tiers, signals examined for tier L1, and all 564 signals of the QLP re-search.
+the dip. It needs at least two sectors. The columns are filled for 1,115 rows: the counted candidates, apart from the 12
+below, the signals the test moved out of the counted tiers, signals examined for tier L1 and, on 15 October, for tier N,
+and all 564 signals of the QLP re-search. They are empty for 12 counted candidates: 11 tier A and B signals that joined
+the counted tiers in the TRICERATOPS reruns of 15 October and have not been measured, and TIC 1393293 (4.29 d, tier N),
+which was measured in one sector only.
 
 | Column | Meaning | Units, timescale | Empty means |
 |---|---|---|---|
-| `cs_sectors` | Number of sectors with a usable centroid fit | count | not measured (1,898 rows) |
+| `cs_sectors` | Number of sectors with a usable centroid fit | count | not measured (1,875 rows) |
 | `cs_offset_arcsec` | Length of the mean offset of the per-sector centroids from the target | arcsec | not measured |
 | `cs_pa_deg` | Direction of that mean offset, east of north | degrees | not measured |
 | `cs_p_target` | p-value of the test that the target is the source of the offsets. A small value means the offsets are inconsistent with the target | probability, 0–1 | not measured, or only one sector (34 rows) |
@@ -230,7 +233,7 @@ scenario), and their columns are empty.
 |---|---|---|---|
 | `FPP` | Mean FPP over the ten runs, default priors | probability | TRICERATOPS not run (685 rows), or the TIC gives the target no parallax (39 rows); none in tiers A, B, N or L1 |
 | `NFPP` | Largest NFPP over the ten runs, default priors | probability | as `FPP` |
-| `BF` | The centroid Bayes factor: how likely the measured centroid offset is if the transit is on the target, relative to a capable neighbour within 30″. In every row with `BF` > 1, `NFPP_c` ≤ `NFPP`; with `BF` < 1, `NFPP_c` ≥ `NFPP` | dimensionless | no ratio applied: the 685 rows without TRICERATOPS and 299 rows that have it, where `FPP_c` = `FPP` and `NFPP_c` = `NFPP` |
+| `BF` | The centroid Bayes factor: how likely the measured centroid offset is if the transit is on the target, relative to a capable neighbour within 30″. In every row with `BF` > 1, `NFPP_c` ≤ `NFPP`; with `BF` < 1, `NFPP_c` ≥ `NFPP` | dimensionless | no ratio applied: the 685 rows where TRICERATOPS was not run, 5 of the 39 whose target has no TIC parallax (the other 34 keep their ratio), and 294 rows with TRICERATOPS values, where `FPP_c` = `FPP` and `NFPP_c` = `NFPP` |
 | `FPP_c` | `FPP` combined with the centroid ratio, using the mean NFPP of the same runs ([details](../validation/fpp_combination.md)) | probability | as `FPP` |
 | `NFPP_c` | `NFPP` (the largest of the ten runs) combined with the centroid ratio | probability | as `FPP` |
 | `FPP_g` | `FPP` rerun with Gaia DR3 limits on companions (MOLUSC) and, for bright stars, Gaia epoch-RV limits on an eclipsing binary at the target | probability | not run (728 rows: those without `FPP`, and 4 whose star has no Gaia DR3 row or mass for MOLUSC) |
@@ -240,8 +243,8 @@ scenario), and their columns are empty.
 | `rv_flag` | Gaia radial-velocity check; values in [Flag columns](#flag-columns) | text | no flag |
 
 The Gaia-constrained columns were computed for the counted candidates, for signals that had failed only the
-TRICERATOPS bar and for the QLP re-search's signals that went through TRICERATOPS ([details](../validation/gaia_companion_limits.md)). The Gaia columns are empty for one counted
-candidate (see [quirks](#known-quirks)).
+TRICERATOPS bar and for the QLP re-search's signals that went through TRICERATOPS ([details](../validation/gaia_companion_limits.md)). Every counted
+candidate has them; 4 uncounted rows with TRICERATOPS values do not (see [quirks](#known-quirks)).
 
 ### Classifier, tier and flags
 
@@ -251,7 +254,7 @@ candidate (see [quirks](#known-quirks)).
 | `fa_score_h` | The hold-out score that tier L1 is selected on (cut 0.80), from models trained without the stars of the second inverted sample. Both scores come from the classifier retrained after the QLP re-search where the signal has a row in its table, and from the previous one otherwise | 0–1 | never empty |
 | `set` | Group the signal came from; values in [The `set` column](#the-set-column) | text | never empty |
 | `tier` | Reliability tier; values in [Tier labels](#tier-labels) | text | never empty |
-| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (2,458 rows) |
+| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (2,461 rows) |
 | `reported_as` | Where a signal labelled `reported` was reported: a CTOI (with its period, or `single transit`), a K2 candidate, or an ADS bibcode | text | not tier `reported` (2,977 rows) |
 | `fa_flag` | Low classifier score; see [Flag columns](#flag-columns) | text | no flag |
 | `desert_flag` | Neptunian desert; see [Flag columns](#flag-columns) | text | no flag |
@@ -348,7 +351,7 @@ candidate that leaves the counted tiers stays listed with its new tier.
 
 ### `candidates/ephemerides.csv`
 
-One row per registered candidate: 712 rows, of which 658 are counted now.
+One row per registered candidate: 738 rows, of which 644 are counted now.
 
 | Column | Meaning | Units, timescale | Empty means |
 |---|---|---|---|
@@ -366,13 +369,13 @@ One row per registered candidate: 712 rows, of which 658 are counted now.
 | `next_tc_BJD_TDB` | First predicted transit after the registration run | BJD_TDB, days | never empty |
 | `next_tc_sigma_min` | 1σ uncertainty of that transit | minutes | never empty |
 | `tess_transits_scheduled` | Number of predicted transits that fall inside a published TESS orbit window while the star is on a detector (rows of `predictions.csv` with a `tess_sector`) | count | never empty |
-| `tess_sectors_planned` | Sectors planned for the star, comma-separated, from the first sector that ends after the registration run (tess-point; its special pointings, numbered from 1751, are left out) | sector numbers | no planned sector places the star on a detector (334 rows) |
+| `tess_sectors_planned` | Sectors planned for the star, comma-separated, from the first sector that ends after the registration run (tess-point; its special pointings, numbered from 1751, are left out) | sector numbers | no planned sector places the star on a detector (346 rows) |
 | `registered` | Date of the run that registered the candidate | UTC date | never empty |
 | `candidate_id` | As in the candidate tables | text | never empty |
 
 ### `candidates/predictions.csv`
 
-One row per predicted transit from the registration date through June 2027: 45,781 rows. The 1σ uncertainty is
+One row per predicted transit from the registration date through June 2027: 50,200 rows. The 1σ uncertainty is
 propagated from the information-weighted centre of the observed transits and assumes a constant period, so
 transit-timing variations would move transits away from these times.
 
@@ -386,7 +389,7 @@ transit-timing variations would move transits away from these times.
 | `tc_UTC` | The same time as UTC at Earth's centre, to the minute | UTC | never empty |
 | `sigma_min` | 1σ uncertainty of the predicted time | minutes | never empty |
 | `duration_h` | Transit duration T14 of the fit | hours | never empty |
-| `tess_sector` | TESS sector in which the transit falls inside a published orbit window and the star is on a detector | sector number | not inside a published window, or the star is not on a detector (45,064 rows) |
+| `tess_sector` | TESS sector in which the transit falls inside a published orbit window and the star is on a detector | sector number | not inside a published window, or the star is not on a detector (49,368 rows) |
 | `candidate_id` | As in the candidate tables | text | never empty |
 
 ## Signal tables
@@ -508,8 +511,9 @@ a candidates table, so its `prefilter` is computed with the pre-filters and its 
   observed transits, chosen so that the epoch and period errors are uncorrelated. For the same candidate the two
   differ by hundreds of days (for example 763.8 d for TIC 137499615, P = 0.9919 d). Use `T0_BJD_TDB` and `period_d` to
   predict transits.
-- **TIC 370244729**, a counted tier B candidate, has empty `FPP_g`, `NFPP_g`, `FPP_gc` and `NFPP_gc`. It has no TIC
-  mass, and its default-prior values are kept
+- **Four rows with TRICERATOPS values have empty `FPP_g`, `NFPP_g`, `FPP_gc` and `NFPP_gc`**, because their stars have
+  no Gaia DR3 row or no TIC mass for MOLUSC. One of them, TIC 370244729 (3.62 d, no TIC mass), was a counted tier B
+  candidate until 15 October; its tier uses the default-prior values, and with `FPP_c` 0.504 it is now tier C
   ([details](../validation/gaia_companion_limits.md)).
 - **`fa_score` and tier L1 use different scores.** `fa_score` is the out-of-fold score; tier L1 is selected on the
   hold-out score, published since 13 October as `fa_score_h` (cut 0.80). All 112 tier L1 rows have `fa_score_h` ≥ 0.80,

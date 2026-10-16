@@ -54,3 +54,8 @@ searches. The registry keeps the four rows that left the counted tiers, with the
 TIC 46806792 (1.968 d, 3.1 R⊕, MES 18.4) is listed as a likely nearby false positive although it passes the limits
 (FPP_gc 0.019, NFPP_gc 0.019). It has no transit fit, so the grazing check cannot be made, and it has not had the
 per-sector centroid test. It stays where it is until both are done.
+
+As of 15 October 2026 both are done. The transit fit gives b = 0.11 and 3.06 R⊕. The per-sector centroids (9 sectors,
+mean offset 10.9″) reject the target (p = 1.7 × 10⁻⁵) and fit TIC 46806773, 10.8″ away (p = 0.99), so under the
+centroid rule it stays a likely nearby false positive, with `centroid_flag` p < 0.001. Its values after the
+single-cadence TRICERATOPS rerun are `FPP_gc` 0.005 and `NFPP_gc` 0.0064.

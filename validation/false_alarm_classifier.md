@@ -15,6 +15,10 @@ passed every LEO-Vetter test, MES ≥ 7.1, per-sector χ²/dof ≤ 5 and Rp ≤ 
   of 399,408 and 399,361 stars (`inv_set` 1 and 2). In an inverted light curve every dip the pipeline finds
   is noise or a systematic.
 
+These are the counts of the table as first built. Since 13 October the committed table is the one rebuilt after the QLP
+re-search: 13,516 real rows and 1,026 inverted rows (532 and 494 in the two samples); see
+[Retraining after the QLP re-search](#retraining-after-the-qlp-re-search-13-october-2026).
+
 The features are the search statistics (SNR, MES, SDE, duration against the expected duration, number of
 good transits, the largest single-event fraction, odd-even and secondary significance, per-sector depth
 consistency, early- against late-sector SNR), LEO-Vetter's continuous metrics (CHI, DMM, Fred, SHP, chases,
@@ -170,3 +174,6 @@ TRICERATOPS run, the default one, gave NFPP 0.103 from three capable stars 44–
 the per-sector centroid test, with nearby-star scenarios within 30″ as for the others, give FPP 0.041 and NFPP 0. Its
 centroids sit 15–38″ west of the star in all four sectors (p = 0.004 for the star as the source), so the row carries
 `centroid_flag`.
+
+As of 15 October 2026 tier L1 has 112 candidates: TIC 296974573 (13.19 d) returned to tier L in the single-cadence
+TRICERATOPS rerun of 15 October (`FPP_gc` 0.59 after the corrections of the same day).

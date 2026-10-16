@@ -76,3 +76,6 @@ Of the 546 candidates counted after these changes, 236 have FPP < 0.015 and NFPP
 (62 with default priors). These are the validation thresholds of Giacalone et al. (2021), but validation also
 requires high-resolution imaging, which most of these stars lack. One counted candidate, TIC 370244729, has no TIC
 mass and keeps its default-prior values.
+
+As of 15 October 2026 TIC 370244729 is tier C: with single-cadence input its default-prior `FPP_c` is 0.504, which
+fails the bar. No counted candidate now lacks the Gaia-constrained values.

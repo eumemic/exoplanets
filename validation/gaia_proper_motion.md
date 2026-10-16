@@ -43,3 +43,6 @@ tier C: TIC 156909067 (L1), TIC 165827520 (earlier-search A) and TIC 32636748 (e
 is already tier C. Whether to apply the rule, and the counts that follow, is for the authors to decide. The
 check has not been rerun on the full candidate list, so other counted candidates with a NaN `ruwe` may also
 be affected.
+
+As of 15 October 2026 the rule has been applied (in the QLP re-search release of 13 October):
+TIC 156909067, TIC 165827520 and TIC 32636748 are tier C with `c_reason` RUWE > 1.4, and TIC 26432942 is still tier C.

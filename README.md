@@ -518,8 +518,9 @@ the largest NFPP of the ten ([details](validation/fpp_combination.md)). On the c
 of the neighbour-caused signals whose source is 5–21″ away (75% within 5″), and the target for 88–96%
 of the TOI planets when tested against a neighbour 8–14″ away (76% at 5″). Tier N requires a combined FPP
 below 0.5 and NFPP below 0.1, MES ≥ 10, and the same binary, grazing and literature checks as tiers
-A and B: 169 candidates. 111 of them have NFPP < 0.01, and 13 have FPP < 0.015 and NFPP < 0.001, the
-TRICERATOPS validation thresholds, though validation also needs high-resolution imaging. The
+A and B. In this release 169 candidates met them; 111 of them had NFPP < 0.01, and 13 had FPP < 0.015 and NFPP < 0.001,
+the TRICERATOPS validation thresholds, though validation also needs high-resolution imaging (the tier table below gives
+tier N in each release). The
 `FPP_c`, `NFPP_c` and `BF` columns of the catalog give the combined values and the centroid ratio. Since 15 October,
 TRICERATOPS gets the transits of one cadence, the one whose in-transit points carry the most information, modelled with
 that cadence's exposure; it models a single exposure time, and folding every sector together had made some FPPs far too
@@ -564,10 +565,10 @@ alarms expected among them, judged on the second sample, which it never saw: abo
 astrophysical, close to tier B. The 51 that also pass the binary, grazing and literature checks and
 TRICERATOPS (FPP < 0.5, NFPP < 0.1) form tier L1: median radius 2.6 R⊕ (45 smaller than 4 R⊕), median
 period 11 d. The remaining 56 with MES ≥ 9 are listed as tier L and not counted. The classifier's score
-for every signal is in the catalog column `fa_score`; 36 tier A, B and N candidates score below 0.8,
-where most false alarms lie, and are flagged (`fa_flag`) but not moved. Separately, 23 counted
-candidates lie in the core of the Neptunian desert (P < 3.2 d, 4–10 R⊕; Castro-González et al. 2024),
-where real planets are rare, and are flagged (`desert_flag`).
+for every signal is in the catalog column `fa_score`; tier A, B and N candidates that score below 0.8, where most
+false alarms lie, are flagged (`fa_flag`) but not moved: 36 in this release, 47 on 15 October. Separately, counted
+candidates in the core of the Neptunian desert (P < 3.2 d, 4–10 R⊕; Castro-González et al. 2024), where real planets
+are rare, are flagged (`desert_flag`): 23 in this release, 26 on 15 October.
 
 **TRICERATOPS for tiers A and B.** We ran TRICERATOPS on all 322 tier A and B candidates that
 remained after the false-alarm cut, with the same settings and the centroid ratio over capable
@@ -623,8 +624,9 @@ signals have no capable neighbour without them), plus the QLP re-search's 122, 2
 the out-of-fold score, and `fa_score_h`, the hold-out score that tier L1 is selected on (≥ 0.8; added 13 October),
 both from the retrained classifier where the signal has a row in its table and from the previous one otherwise; the
 low-score flag `fa_flag` uses `fa_score`. `host_tois` is empty here because TOI hosts were searched separately, and
-`zenodo_with_period` because no Zenodo record matched. TIC 370244729 (3.62 d, tier B) has no Gaia-constrained
-TRICERATOPS values (no TIC mass), so its tier uses `FPP_c` and `NFPP_c`. The last column, `candidate_id`, is the
+`zenodo_with_period` because no Zenodo record matched. TIC 370244729 (3.62 d, tier C) has no Gaia-constrained
+TRICERATOPS values (no TIC mass), so its tier uses `FPP_c` and `NFPP_c`; with `FPP_c` 0.504 it fails the bar. The
+last column, `candidate_id`, is the
 candidate's folder name where it has one (else `TIC{tic}_P{period:.3f}`); the earlier-search table, the ephemerides and
 the predictions have it too, so all four join on it.
 
