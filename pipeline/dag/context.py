@@ -46,6 +46,10 @@ class RunContext:
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
 
+    def params(self):
+        """All declared parameters, {dotted key: value}."""
+        return dict(self._params)
+
     def param(self, key):
         if key not in self._params:
             raise KeyError(f"rule {self.rule.name}: parameter {key} is not declared")

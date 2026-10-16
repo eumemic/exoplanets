@@ -120,8 +120,11 @@ class Watch:
         if rel is None or rel.split(os.sep)[0] in INTERNAL or "__pycache__" in rel:
             return
         for pat in self.inputs:
-            base = pat.split("*")[0].split("?")[0].split("[")[0].rstrip("/") if is_glob(pat) else pat.rstrip("/")
-            if rel == base or rel.startswith(base + "/") or base.startswith(rel + "/") or rel == "":
+            parts = pat.rstrip("/").split("/")
+            if is_glob(pat):                    # the directory above the first component with a wildcard
+                parts = parts[:next(i for i, x in enumerate(parts) if is_glob(x))]
+            base = "/".join(parts)
+            if rel == "" or rel == base or rel.startswith(base + "/") or base.startswith(rel + "/"):
                 return
         if any(rel == os.path.relpath(o, self.root) for o in self.outputs):
             return

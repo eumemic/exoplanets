@@ -6,3 +6,50 @@
 # tiers counted as candidates
 counted_allsky = ["A", "B", "N", "L1"]
 counted_earlier = ["A", "B"]
+
+[tiers]
+# the TRICERATOPS bar for every counted candidate: FPP < fpp_max and NFPP < nfpp_max (Gaia-limited and
+# centroid-combined values where they exist)
+fpp_max = 0.5
+nfpp_max = 0.1
+# SNR >= 9 and neighbour<15" signals below this MES are tier C
+mes_min = 10
+# SNR 7.5-9 signals below this MES, unless selected for tier L1, are likely false alarms
+lowband_mes_min = 9
+# grazing at b >= b_max; Gaia RUWE above ruwe_max; likely eclipsing binary above rp_eb_min Earth radii
+b_max = 0.9
+ruwe_max = 1.4
+rp_eb_min = 20
+# tier L1: the false-alarm classifier's hold-out score
+fa_score_h_min = 0.8
+# per-sector centroid test: the target rejected below centroid_reject_p; a neighbour that fits at centroid_neighbour_p
+centroid_reject_p = 0.001
+centroid_neighbour_p = 0.01
+# tier A: at least this many counted candidates on the star
+system_min = 2
+
+[flags]
+centroid_p_strong = 0.001
+centroid_p = 0.01
+fa_score_min = 0.8
+fa_flag_tiers = ["A", "B", "N"]
+desert_period_max = 3.2
+desert_rp_min = 4.0
+desert_rp_max = 10.0
+
+[triceratops]
+# a result is used only with this many runs in each mode, MOLUSC survivors not below min_survivors, and at most one
+# point per phase bin (phase_bin_min minutes for 10- and 30-minute data)
+runs = 10
+min_survivors = 20000
+phase_bin_min = 2.0
+# a result belongs to a catalog row with the same TIC and a period within this relative difference
+match_period_rel = 0.002
+
+[freshness]
+# a stored result is current while the ephemeris it ran on differs from the current one by no more than this
+# (the catalog rounds periods to 1e-6 d, epochs to 1e-5 d and durations to 0.01 h)
+period_d = 2e-6
+phase_min = 0.5
+duration_h = 0.005
+depth_ppm = 0.5
