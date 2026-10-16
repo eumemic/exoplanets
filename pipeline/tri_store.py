@@ -143,9 +143,10 @@ STAGE_CODE = {
                   ("s3cut", "cut")],
     "molusc": [("molusc_batch", "one"), ("molusc_batch", "main")],
     "tri": [("fpp_pool", "_run_one"), ("fpp_pool", "run"), ("fpp_pool", "merge"), ("fpp_pool", "mean_probs")],
+    "molusc_sample": [("molusc_sample", None)],     # MOLUSC samples other than the catalog's (molusc_sample.py)
 }
 LOCKS = {"fold": "requirements.txt", "tri_setup": "requirements-triceratops.txt", "molusc": "requirements.txt",
-         "tri": "requirements-triceratops.txt"}
+         "tri": "requirements-triceratops.txt", "molusc_sample": "requirements.txt"}
 SEED_RULE = "numpy seed = first 4 bytes (little-endian) of sha256('<key>|<mode>|<k>|stock')"
 
 

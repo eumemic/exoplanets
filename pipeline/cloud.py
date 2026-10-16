@@ -225,7 +225,7 @@ def star_hash(row):
     return st.sha256_json({k: (v.item() if hasattr(v, "item") else v) for k, v in row.items()})
 
 
-def tri_items(keys, cc, base, rerun_legacy=False, runs=10):
+def tri_items(keys, cc, base, rerun_legacy=False, runs=10, molusc_sample=0):
     """The TRICERATOPS signals of a batch with the requests of their fold and MOLUSC stages, and the snapshots the
     instance reads: (items, stars, gaia, manifest, reuse)."""
     rows = list(pd.read_csv(PLAN_CSV, dtype=str, keep_default_na=False).to_dict("records"))
@@ -273,6 +273,10 @@ def tri_items(keys, cc, base, rerun_legacy=False, runs=10):
             row = {k: (v.item() if hasattr(v, "item") else v) for k, v in gaia_by.loc[star.GAIA_DR3].to_dict().items()}
             mreq = tri_store.molusc_request(tic, dict(row, source_id=int(star.GAIA_DR3)), float(star["mass"]), mcode,
                                            code["molusc"], env["molusc"])
+            if molusc_sample:                       # another sample of simulated companions (molusc_sample.py)
+                import molusc_sample as ms
+                mreq = dict(mreq, sample=int(molusc_sample), seed=ms.sample_seed(tic, molusc_sample),
+                            code=code["molusc_sample"], env=env["molusc_sample"])
         if s.has("fold", st.key_of(freq)):
             reuse["fold"].append(it["key"])
         if mreq and s.has("molusc", st.key_of(mreq)):
@@ -282,9 +286,9 @@ def tri_items(keys, cc, base, rerun_legacy=False, runs=10):
             raise SystemExit(f"{it['key']}: --no-base, and no contrast curve for TIC {tic}")
         x = dict(item=it, fold_request=freq, molusc_request=mreq, base_runs=base, cc=cs,
                  star=star_hash(star.drop(labels=["GAIA_DR3"]).to_dict()), not_hosts=nonhost.get(tic, []))
-        x["prior"] = prior_result(s, in_use.get(it["key"]), x, code, env, runs)
+        x["prior"] = None if molusc_sample else prior_result(s, in_use.get(it["key"]), x, code, env, runs)
         out.append(x)
-    return out, stars, gaia, man, dict(reuse, code=code, env=env)
+    return out, stars, gaia, man, dict(reuse, code=code, env=env, molusc_sample=int(molusc_sample))
 
 
 def prior_result(s, used, x, code, env, runs):
@@ -369,7 +373,7 @@ def fit_items(keys=None):
 
 
 def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids=False, rerun_legacy=False, parts=1,
-         fits=False):
+         fits=False, molusc_sample=0):
     """A batch: TRICERATOPS signals, or (centroids) per-sector centroid measurements; with parts > 1, that many
     batches (one instance each). Writes plan.json for each."""
     if git("status", "--porcelain", "--", "pipeline", "requirements.txt", "requirements-triceratops.txt"):
@@ -390,7 +394,7 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids
             print("nothing to measure: every counted candidate has a current per-sector centroid measurement")
             return None
     else:
-        out, stars, gaia, man, extra = tri_items(keys, cc, base, rerun_legacy, runs)
+        out, stars, gaia, man, extra = tri_items(keys, cc, base, rerun_legacy, runs, molusc_sample)
         if not out:
             print("nothing to run: no row of triceratops_plan.csv is pending or stale")
             return None
@@ -428,7 +432,8 @@ def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra, 
     p = dict(id=bid, commit=commit, created=datetime.now(timezone.utc).isoformat(timespec="seconds"), runs=runs,
              code=extra.get("code", {}), env=extra.get("env", {}), items=out, centroids=cs_out, fits=list(fit_out),
              fit_env=tri_store.env_hash("fold"),
-             centroid_env=tri_store.env_hash("fold"), reuse={k: extra.get(k, []) for k in ("fold", "molusc")}, estimate=est)
+             centroid_env=tri_store.env_hash("fold"), reuse={k: extra.get(k, []) for k in ("fold", "molusc")}, estimate=est,
+             molusc_sample=extra.get("molusc_sample", 0))
     with open(os.path.join(d, "plan.json"), "w") as fh:
         json.dump(p, fh, indent=1)
     print(f"batch {bid}: {len(out)} TRICERATOPS signals, {len(cs_out)} centroid measurements, {len(fit_out)} fits, "
@@ -755,13 +760,16 @@ def main():
     ap.add_argument("--rerun-legacy", action="store_true", help="every legacy result in use, computed again")
     ap.add_argument("--parts", type=int, default=1, help="split into this many batches (one instance each)")
     ap.add_argument("--fits", action="store_true", help="a batch of transit fits")
+    ap.add_argument("--molusc-sample", type=int, default=0,
+                    help="k > 0: the runs with MOLUSC sample k instead of the catalog's (molusc_sample.py); run such a batch "
+                         "into a store of its own (--store)")
     ap.add_argument("--hours", type=float)
     ap.add_argument("--approve", action="store_true")
     ap.add_argument("--store", default=st.ROOT, help="store to ingest into (a trial can use its own)")
     a = ap.parse_args()
     if a.cmd == "plan":
         plan([k for k in a.keys.split(",") if k] or None, a.type, a.runs, a.cc, not a.no_base, a.centroids, a.rerun_legacy,
-             a.parts, a.fits)
+             a.parts, a.fits, a.molusc_sample)
     elif a.cmd == "run":
         if not a.approve:
             p = json.load(open(os.path.join(BATCHES, a.id, "plan.json")))

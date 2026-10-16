@@ -408,11 +408,14 @@ def main():
             STATE["stage"] = "done"
             return
         STATE["stage"] = "folds, setups and MOLUSC"
-        mol = subprocess.Popen([os.path.join(EXO, ".venv", "bin", "python"), "molusc_batch.py", os.path.join(B, "stars.parquet"),
+        k = int(plan.get("molusc_sample") or 0)     # another sample of simulated companions than the catalog's
+        mol = subprocess.Popen([os.path.join(EXO, ".venv", "bin", "python"), "molusc_sample.py" if k else "molusc_batch.py",
+                                os.path.join(B, "stars.parquet"),
                                 "--gaia", os.path.join(B, "gaia.csv"), "--molusc", os.path.join(B, "molusc_code"),
                                 "--out", os.path.join(R, "molusc"), "--n", "200000", "--procs",
                                 str(min(40, max(2, len({it["tic"] for it in items}))))],
-                               cwd=PIPE, env=ENV, stdout=open(os.path.join(HOME, "molusc.log"), "a"), stderr=subprocess.STDOUT)
+                               cwd=PIPE, env=dict(ENV, EXO_MOLUSC_SAMPLE=str(k)), stdout=open(os.path.join(HOME, "molusc.log"), "a"),
+                               stderr=subprocess.STDOUT)
         rc = run(["fpp_fleet.py", os.path.join(R, "list.csv"), "--stars", os.path.join(B, "stars.parquet"), "--out",
                   os.path.join(R, "t2"), "--procs", str(nproc), "--molusc", os.path.join(R, "molusc")], "fleet.log")
         mol.wait()

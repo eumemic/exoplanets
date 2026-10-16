@@ -58,6 +58,24 @@ class TestNoScenarios(unittest.TestCase):
             self.assertEqual(list(t.stars.fluxratio), [0.99, 0.01, 0.01])
 
 
+class TestMoluscSample(unittest.TestCase):
+    def test_seeds(self):
+        import molusc_batch as mb
+        import molusc_sample as ms
+        catalog = mb.molusc_seed(123)
+        self.assertEqual(ms.sample_seed(123, 0), catalog)
+        self.assertEqual(len({ms.sample_seed(123, k) for k in range(5)}), 5)
+        old = (mb.molusc_seed, mb.__file__)
+        try:
+            ms.use_sample(2)
+            self.assertEqual(mb.molusc_seed(123), ms.sample_seed(123, 2))
+            self.assertTrue(mb.__file__.endswith("molusc_sample.py"))      # the per-star subprocesses run the sample too
+            ms.use_sample(0)
+            self.assertEqual(mb.molusc_seed(123), catalog)
+        finally:
+            mb.molusc_seed, mb.__file__ = old
+
+
 class TestTicField(unittest.TestCase):
     def field(self):
         return pd.DataFrame([

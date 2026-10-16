@@ -13,7 +13,7 @@ import os
 from dag.hashing import sha256_json
 
 PIPE = os.path.dirname(os.path.abspath(__file__))
-KINDS = ("fold", "tri_setup", "molusc", "tri", "fit", "centroid")
+KINDS = ("fold", "tri_setup", "molusc", "tri", "fit", "centroid", "molusc_sample")
 
 
 def short(code, env):
