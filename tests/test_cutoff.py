@@ -47,6 +47,17 @@ class TestDigest(unittest.TestCase):
         self.assertEqual(base, fc.setup_digest(t))
 
 
+class TestNoScenarios(unittest.TestCase):
+    def test_light_stays_scenarios_go(self):
+        with pd.option_context("mode.copy_on_write", True):           # as in .venv-trice (pandas 3)
+            t = target("unused", tdepth=(0.001, 0.002))
+            t.stars = pd.concat([t.stars, t.stars.iloc[[1]].assign(ID=7, tdepth=0.003)], ignore_index=True)
+            rows = fc.no_scenarios(t.stars, [5, 7])                   # the target itself is never dropped
+            self.assertEqual(list(rows), [False, False, True])
+            self.assertEqual(list(t.stars.tdepth), [0.001, 0.002, 0.0])
+            self.assertEqual(list(t.stars.fluxratio), [0.99, 0.01, 0.01])
+
+
 class TestTicField(unittest.TestCase):
     def field(self):
         return pd.DataFrame([

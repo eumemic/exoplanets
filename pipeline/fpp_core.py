@@ -158,14 +158,21 @@ def setup_target(tic, sectors, cache_dir, depth_ppm, cutouts=None, nearby_max_ar
             print(f"{int((far & (target.stars['tdepth'] > 0)).sum())} capable neighbours beyond {nearby_max_arcsec}\" dropped")
         target.stars.loc[far, "tdepth"] = 0.0
     if len(not_hosts):
-        nh = target.stars["ID"].astype(int).isin([int(x) for x in not_hosts]).to_numpy()
-        nh[0] = False
+        nh = no_scenarios(target.stars, not_hosts)
         if verbose and nh.any():
             print("no scenarios on galaxies and their cores:", ", ".join(target.stars["ID"][nh].astype(str)))
-        target.stars.loc[nh, "tdepth"] = 0.0
     if verbose:
         print(target.stars[["ID", "Tmag", "sep (arcsec)", "fluxratio", "tdepth"]].head(8).to_string())
     return target
+
+
+def no_scenarios(stars, ids):
+    """Give the stars with these TIC IDs, other than the target (the first), no scenario: their transit depth goes to 0,
+    their flux ratio (their light in the aperture) stays. Returns which rows."""
+    nh = np.array(stars["ID"].astype(int).isin([int(x) for x in ids]), dtype=bool)     # writable copy
+    nh[0] = False
+    stars.loc[nh, "tdepth"] = 0.0
+    return nh
 
 
 def setup_digest(target):
