@@ -615,8 +615,9 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
     by_cs = {x["item"]["key"]: x for x in p.get("centroids", [])}
     by_fit = {x["item"]["key"]: x for x in p.get("fits", [])}
     store = st.Store(store_root)
-    objs = [o for sub in ("items/", "cs/", "fit/") for o in
-            s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/{sub}").get("Contents", [])]
+    pages = s3.get_paginator("list_objects_v2")     # a listing holds at most 1,000 keys
+    objs = [o for sub in ("items/", "cs/", "fit/") for page in pages.paginate(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/{sub}")
+            for o in page.get("Contents", [])]
     for o in objs:
         if o["Key"].endswith(".big.tgz"):           # the large files stay in the bucket
             continue
@@ -722,14 +723,23 @@ def follow(bid, store_root=st.ROOT, limit_h=None):
             print(f"last ingest failed: {ex!r}; run `cloud.py ingest {bid}` later", flush=True)
             done = {}
         state = terminate(bid, iid)
-        os.makedirs(os.path.join(d, "logs"), exist_ok=True)
-        for o in s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/").get("Contents", []):
-            if "/logs/" in o["Key"] or o["Key"].endswith("done.json"):
-                s3.download_file(AWS["bucket"], o["Key"], os.path.join(d, "logs", os.path.basename(o["Key"])))
+        fetch_logs(s3, bid, d)
         bad = {k: v["problems"] for k, v in done.items() if v["problems"]}
         print(f"batch {bid}: {status}; instance {iid} was {state}, terminated; {len(done)} of {len(keys)} stored"
               + (f"; failed checks: {bad}" if bad else "") + f"; {(time.time() - t0) / 60:.1f} min")
         print("next: cd pipeline && ../.venv/bin/python -m dag run")
+
+
+def fetch_logs(s3, bid, d):
+    """The instance's logs and its last state (done.json) into the batch's logs/."""
+    os.makedirs(os.path.join(d, "logs"), exist_ok=True)
+    keys = [o["Key"] for page in s3.get_paginator("list_objects_v2").paginate(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/logs/")
+            for o in page.get("Contents", [])] + [f"batches/{bid}/done.json"]
+    for k in keys:
+        try:
+            s3.download_file(AWS["bucket"], k, os.path.join(d, "logs", os.path.basename(k)))
+        except Exception as ex:
+            print(f"no {k}: {ex!r}", flush=True)
 
 
 def main():
