@@ -149,6 +149,30 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
     return ok
 
 
+def return_after_centroids(proc, plan, R, info, urls):
+    """Waits for the centroid measurements and uploads each signal's file."""
+    if proc is None:
+        return
+    proc.wait()
+    log(f"centroids exit {proc.returncode}")
+    for x in plan["centroids"]:
+        key = x["item"]["key"]
+        f = os.path.join(R, "cs", f"{key}.json")
+        if not os.path.exists(f):
+            STATE["failed"].append(f"cs:{key}")
+            continue
+        d = os.path.join(R, "cs_items", key)
+        os.makedirs(d, exist_ok=True)
+        shutil.copyfile(f, os.path.join(d, f"{key}.json"))
+        json.dump(dict(info, key=key), open(os.path.join(d, "item.json"), "w"))
+        arc = d + ".tgz"
+        with tarfile.open(arc, "w:gz") as tf:
+            tf.add(d, arcname=".")
+        ok = put(urls["cs"][key], open(arc, "rb").read())
+        (STATE["uploaded"] if ok else STATE["failed"]).append(f"cs:{key}")
+        log(f"cs {key}: {'uploaded' if ok else 'UPLOAD FAILED'}")
+
+
 def main():
     B = os.path.join(EXO, sys.argv[1])
     plan, urls = json.load(open(os.path.join(B, "plan.json"))), json.load(open(os.path.join(B, "urls.json")))
@@ -164,6 +188,13 @@ def main():
         if any(v.startswith("mismatch") for v in env.values()):
             raise RuntimeError("an environment does not match its lock file")
         info = dict(batch=plan["id"], commit=plan["commit"], env=env)
+        cs_proc = None
+        if plan.get("centroids"):                   # per-sector centroids, alongside the TRICERATOPS stages
+            os.makedirs(os.path.join(R, "cs"), exist_ok=True)
+            cs_proc = subprocess.Popen([os.path.join(EXO, ".venv", "bin", "python"), "centroid_sectors.py",
+                                        os.path.join(B, "cs_list.csv"), "--out", os.path.join(R, "cs"), "--procs", "6"],
+                                       cwd=PIPE, env=ENV, stdout=open(os.path.join(HOME, "centroids.log"), "a"),
+                                       stderr=subprocess.STDOUT)
         import csv
         items = [p["item"] for p in plan["items"]]
         cols = ["key", "tic", "period", "t0", "duration_h", "depth_ppm", "masks", "drop"]
@@ -175,7 +206,12 @@ def main():
             shutil.copyfile(f, os.path.join(R, "t2", "folds", os.path.basename(f)))
         for f in glob.glob(os.path.join(B, "reuse", "molusc", "*")):
             shutil.copyfile(f, os.path.join(R, "molusc", os.path.basename(f)))
-        nproc = max(1, (os.cpu_count() or 2) - 1)
+        nproc = max(1, (os.cpu_count() or 2) - (7 if cs_proc else 1))
+        if not items:
+            STATE["stage"] = "centroids"
+            return_after_centroids(cs_proc, plan, R, info, urls)
+            STATE["stage"] = "done"
+            return
         STATE["stage"] = "download"
         run(["download.py", os.path.join(B, "tics.txt"), "--manifest", os.path.join(B, "manifest.parquet"), "--workers", "32"],
             "download.log")
@@ -209,13 +245,15 @@ def main():
             ok = pack(it, R, jobs, info, urls, base=base, cc=[c["label"] for c in cc])
             (STATE["uploaded"] if ok else STATE["failed"]).append(key)
         STATE["failed"] += [it["key"] for it in items if it["key"] not in jobs]
+        STATE["stage"] = "centroids"
+        return_after_centroids(cs_proc, plan, R, info, urls)
         STATE["stage"] = "done"
     except Exception as ex:
         STATE["stage"] = f"error: {ex!r}"
         log(f"ERROR {ex!r}")
     finally:
         stop.set()
-        for name in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log"):
+        for name in ("worker.log", "download.log", "fleet.log", "molusc.log", "runs.log", "centroids.log"):
             p = os.path.join(HOME, name)
             if os.path.exists(p) and name in urls.get("logs", {}):
                 put(urls["logs"][name], open(p, "rb").read()[-2_000_000:])
