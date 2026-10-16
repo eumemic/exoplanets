@@ -178,6 +178,32 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
     return ok
 
 
+def fetch_reused(B, R):
+    """The stored target setups and MOLUSC files this batch reuses, from their archives in the bucket. A reused
+    setup's population file is put where this machine keeps it, and the pickled target is pointed at it."""
+    path = os.path.join(B, "reuse", "remote.json")
+    items = json.load(open(path)) if os.path.exists(path) else []
+    fix = []
+    for i, x in enumerate(items):
+        arc = os.path.join(R, f"reuse_{i}.tgz")
+        with urllib.request.urlopen(x["url"], timeout=300) as r, open(arc, "wb") as fh:
+            shutil.copyfileobj(r, fh)
+        with tarfile.open(arc) as tf:
+            for member, dest in x["members"].items():
+                f = tf.extractfile("./" + member) if "./" + member in tf.getnames() else tf.extractfile(member)
+                os.makedirs(os.path.dirname(os.path.join(R, dest)), exist_ok=True)
+                with open(os.path.join(R, dest), "wb") as out:
+                    shutil.copyfileobj(f, out)
+        if x.get("state"):
+            fix.append([os.path.join(R, x["state"]), os.path.join(R, x["population"]) if x.get("population") else ""])
+    if fix:
+        script = ("import json, sys; sys.path.insert(0, %r); import fpp_core as fc\n"
+                  "for st, pop in json.loads(sys.argv[1]):\n"
+                  "    t = fc.load_state(st); t.trilegal_fname = pop or None; fc.save_state(t, st)\n") % PIPE
+        subprocess.run([os.path.join(EXO, ".venv-trice", "bin", "python"), "-c", script, json.dumps(fix)], check=True, env=ENV)
+    log(f"reused from the bucket: {len(items)} archives ({len(fix)} target setups)")
+
+
 def return_after_centroids(proc, plan, R, info, urls):
     """Waits for the centroid measurements and uploads each signal's file."""
     if proc is None:
@@ -231,6 +257,7 @@ def main():
             w = csv.DictWriter(fh, cols, extrasaction="ignore")
             w.writeheader()
             w.writerows(items)
+        fetch_reused(B, R)
         for f in glob.glob(os.path.join(B, "reuse", "folds", "*.npz")):
             shutil.copyfile(f, os.path.join(R, "t2", "folds", os.path.basename(f)))
         for f in glob.glob(os.path.join(B, "reuse", "molusc", "*")):

@@ -411,17 +411,39 @@ def kit(p, d, s3, hours):
                 raise SystemExit(f"{c['file']} changed since the plan was made")
             shutil.copyfile(src, os.path.join(b, "cc", c["file"]))
     s = st.Store()
+    remote = []                                     # large files to fetch from the bucket: archive URL, members, destinations
     for x in p["items"]:
+        tic, key = int(x["item"]["tic"]), x["item"]["key"]
         fk = st.key_of(x["fold_request"])
         if s.has("fold", fk):
-            shutil.copyfile(os.path.join(s.path("fold", fk), "fold.npz"), os.path.join(b, "reuse", "folds", f"{x['item']['key']}.npz"))
-        if x["molusc_request"] and s.has("molusc", st.key_of(x["molusc_request"])):
-            md = s.path("molusc", st.key_of(x["molusc_request"]))
-            tic = x["item"]["tic"]
-            shutil.copyfile(os.path.join(md, "molusc.csv.gz"), os.path.join(b, "reuse", "molusc", f"tic{tic}_kept.csv.gz"))
-            info = s.get("molusc", st.key_of(x["molusc_request"]))[1].get("info") or {}
+            shutil.copyfile(os.path.join(s.path("fold", fk), "fold.npz"), os.path.join(b, "reuse", "folds", f"{key}.npz"))
+            # the target setup the fold implies (its three most informative sectors), if it is stored
+            ranked = s.get("fold", fk)[1].get("sectors_ranked") or []
+            secs = ",".join(str(v) for v in sorted(ranked[:3]))
+            sk = st.key_of(tri_store.setup_request(tic, secs, x["item"]["depth_ppm"], x.get("star"), p["code"]["tri_setup"],
+                                                   p["env"]["tri_setup"]))
+            ent = s.get("tri_setup", sk) if ranked else None
+            if ent and ent[1].get("remote"):
+                files = ent[1]["remote"]["files"]
+                dest = {"state.pkl": f"t2/states/{tic}_{secs.replace(',', '-')}.pkl"}
+                if "population.csv" in files:
+                    dest["population.csv"] = f"t2/cache/{tic}/population.csv"
+                dest.update({f"cuts/{n[4:]}": f"t2/cuts/tic{tic}/{n[4:]}" for n in files if n.startswith("cut_")})
+                remote.append(dict(url=_presign(s3, "get_object", ent[1]["remote"]["archive"].split("/", 3)[3], hours),
+                                   members=dest, state=dest["state.pkl"], population=dest.get("population.csv")))
+        mk = st.key_of(x["molusc_request"]) if x["molusc_request"] else None
+        if mk and s.has("molusc", mk):
+            res = s.get("molusc", mk)[1]
+            if os.path.exists(os.path.join(s.path("molusc", mk), "molusc.csv.gz")):
+                shutil.copyfile(os.path.join(s.path("molusc", mk), "molusc.csv.gz"),
+                                os.path.join(b, "reuse", "molusc", f"tic{tic}_kept.csv.gz"))
+            elif res.get("remote"):
+                remote.append(dict(url=_presign(s3, "get_object", res["remote"]["archive"].split("/", 3)[3], hours),
+                                   members={"molusc.csv.gz": f"molusc/tic{tic}_kept.csv.gz"}))
             with open(os.path.join(b, "reuse", "molusc", f"tic{tic}_molusc.json"), "w") as fh:
-                json.dump(info, fh)
+                json.dump(res.get("info") or {}, fh)
+    with open(os.path.join(b, "reuse", "remote.json"), "w") as fh:
+        json.dump(remote, fh)
     tgz = os.path.join(d, "kit.tgz")
     with tarfile.open(tgz, "w:gz") as tf:
         for name in sorted(os.listdir(k)):
