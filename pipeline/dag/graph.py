@@ -11,6 +11,10 @@ hashes the lock recorded. Because the stamp uses the contents of the inputs, an 
 identical files leaves everything after it up to date.
 A check is a rule without outputs whose function raises if the data are wrong; the lock records whether it passed.
 
+Private rules (for files that are not published) are declared in a rules file outside the repository's published
+part, with their code next to it; they are loaded only where that file exists, their lock entries go to a
+private lock beside it, and `check --ci` leaves them out. A published rule may not use a private rule's output.
+
 Two kinds of output are also inputs (`inplace`):
 - "template": a hand-written document with generated numbers (dag/markers.py). The prose, with every marker emptied,
   is an input: editing it reruns the rule, which fills the markers again. A generated value edited by hand is put back.
@@ -51,6 +55,7 @@ class Rule:
             if os.path.isabs(p) or ".." in Path(p).parts:
                 raise ValueError(f"rule {name}: paths are relative to the repository root, without '..': {p}")
         self.module = None          # set by Project: the module name as the code index knows it
+        self.private = False        # set by Project for the rules of a private rules file
 
 
 def _register(func, name, inputs, outputs, params, is_check, allow_reads, inplace=None):
@@ -86,18 +91,28 @@ class BuildError(Exception):
 
 class Project:
     def __init__(self, root, rules=("pipeline/rules.py",), code_paths=("pipeline",), params="pipeline/params.toml",
-                 lock="dag.lock.json", cache=".dag-cache"):
+                 lock="dag.lock.json", cache=".dag-cache", private_rules=("results_cloud/glue/build/private_rules.py",),
+                 private_lock="results_cloud/glue/build/dag.lock.json"):
         self.root = Path(root).resolve()
+        private_rules = [self.root / p for p in private_rules if (self.root / p).exists()]
         self.code_paths = [self.root / c for c in code_paths]
+        private_dirs = sorted({p.parent for p in private_rules} - set(self.code_paths))   # private code is next to its rules
+        clash = sorted(set(CodeIndex(self.code_paths).paths) & set(CodeIndex(private_dirs).paths))
+        if clash:
+            raise BuildError(f"private modules have the names of published ones: {', '.join(clash)}")
+        self.code_paths += private_dirs
         self.code = CodeIndex(self.code_paths)
         self.hasher = FileHasher(self.root / cache / "hashes.json")
         self.env = Environment(self.hasher)
         pp = self.root / params
         self.params = P.load(pp) if pp.exists() else {}
         self.lock = Lock(self.root / lock)
+        self.private_lock = Lock(self.root / private_lock)
         self.rules = {}
         for rf in rules:
             self._load(self.root / rf)
+        for rf in private_rules:
+            self._load(rf, private=True)
         self._index()
         self._stamps = {}
         self._details = {}          # rule -> pattern -> {file: hash}, the files behind each glob input
@@ -114,7 +129,7 @@ class Project:
             return ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
         raise BuildError(f"{path} is not under the code paths {self.code_paths}")
 
-    def _load(self, path):
+    def _load(self, path, private=False):
         global _REGISTRY
         for c in reversed(self.code_paths):
             if str(c) not in sys.path:
@@ -140,6 +155,7 @@ class Project:
             if r.name in self.rules:
                 raise BuildError(f"two rules are named {r.name}")
             r.module = self._module_name(r.func.__code__.co_filename)
+            r.private = private
             self.rules[r.name] = r
 
     def _index(self):
@@ -155,6 +171,9 @@ class Project:
             # the input is that output, lies inside an output directory, or can match what an output pattern matches
             self.deps[r.name] = {owner for pat in r.inputs for o, owner in self.owner.items()
                                  if owner != r.name and overlap(pat, o)}
+            private = sorted(d for d in self.deps[r.name] if self.rules[d].private)
+            if private and not r.private:
+                raise BuildError(f"the published rule {r.name} uses outputs of the private rules {', '.join(private)}")
         self.order, state = [], {}
 
         def visit(n, path):
@@ -170,6 +189,9 @@ class Project:
 
         for n in sorted(self.rules):
             visit(n, [])
+
+    def lock_of(self, name):
+        return self.private_lock if self.rules[name].private else self.lock
 
     # stamps ----------------------------------------------------------------------------------------------------
     def input_hashes(self, r):
@@ -237,7 +259,7 @@ class Project:
         if name in memo:
             return memo[name]
         r = self.rules[name]
-        entry = self.lock.get(name)
+        entry = self.lock_of(name).get(name)
         st, info = self.stamp(r)
         outs = self.output_hashes(r)
         reasons = []
@@ -271,7 +293,7 @@ class Project:
         """Problems with a rule's lock entry that can be seen on any machine: outputs that differ from what the build
         wrote, and inputs, parameters or code that changed since. The installed packages are not compared, since they
         differ between machines; inputs that are not present here (private data) are listed as not checked."""
-        r, entry = self.rules[name], self.lock.get(name)
+        r, entry = self.rules[name], self.lock_of(name).get(name)
         if entry is None:
             return ["never built"], []
         problems, unchecked = [], []
@@ -338,7 +360,7 @@ class Project:
         ctx = RunContext(self.root, r, P.select(self.params, r.params))
         result, message = "passed", ""
         t0 = time.time()
-        with Watch(self.root, r, r.inputs, r.outputs) as w:
+        with Watch(self.root, r, r.inputs, r.outputs, self.code_paths) as w:
             try:
                 r.func(ctx)
             except Exception as ex:
@@ -366,8 +388,8 @@ class Project:
             entry["result"] = result
             if message:
                 entry["message"] = message[:2000]
-        self.lock.set(r.name, entry)
-        self.lock.save()
+        self.lock_of(r.name).set(r.name, entry)
+        self.lock_of(r.name).save()
         if self._details.get(r.name):
             import json
             self.details_dir.mkdir(parents=True, exist_ok=True)

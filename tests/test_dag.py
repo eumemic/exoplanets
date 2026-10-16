@@ -457,5 +457,55 @@ class MarkerTests(unittest.TestCase):
         self.assertIn(":4:", cc.markdown_tables(d)[0])
 
 
+PRIVATE_RULES = '''
+from dag import rule
+import privlib
+
+
+@rule(inputs=["out/b.txt"], outputs=["drafts/paper.txt"])
+def paper(ctx):
+    ctx.output("drafts/paper.txt").write_text(privlib.cite(ctx.input("out/b.txt").read_text()))
+'''
+
+
+class PrivateRuleTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        write(self.root / "pipeline" / "rules.py", RULES)
+        write(self.root / "pipeline" / "lib.py", LIB)
+        write(self.root / "pipeline" / "params.toml", "scale = 3\n")
+        write(self.root / "data" / "in.txt", "2")
+        self.priv = self.root / "results_cloud" / "glue" / "build"
+        write(self.priv / "private_rules.py", PRIVATE_RULES)
+        write(self.priv / "privlib.py", "def cite(x):\n    return 'we find ' + x\n")
+
+    def test_private_rules_have_their_own_lock_and_are_left_out_of_ci(self):
+        from dag.__main__ import main
+        Project(self.root).run(log=lambda *_: None)
+        self.assertEqual((self.root / "drafts" / "paper.txt").read_text(), "we find 12!")
+        self.assertNotIn("paper", (self.root / "dag.lock.json").read_text())
+        self.assertIn('"paper"', (self.priv / "dag.lock.json").read_text())
+        write(self.priv / "privlib.py", "def cite(x):\n    return 'we report ' + x\n")
+        p = Project(self.root)
+        self.assertEqual(p.status("paper").reasons, ["code privlib.cite changed"])
+        self.assertEqual(main(["check", "--ci", "--root", str(self.root)]), 0)
+        self.assertEqual(Project(self.root).run(log=lambda *_: None)[0], ["paper"])
+
+    def test_a_published_rule_may_not_use_a_private_output(self):
+        write(self.root / "pipeline" / "rules.py", RULES + '''
+
+@rule(inputs=["drafts/paper.txt"], outputs=["out/c.txt"])
+def c(ctx):
+    pass
+''')
+        with self.assertRaises(BuildError):
+            Project(self.root)
+
+    def test_a_private_module_may_not_take_a_published_name(self):
+        write(self.priv / "lib.py", "X = 1\n")
+        with self.assertRaises(BuildError):
+            Project(self.root)
+
+
 if __name__ == "__main__":
     unittest.main()

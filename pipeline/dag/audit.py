@@ -64,8 +64,9 @@ def install():
 
 
 class Watch:
-    def __init__(self, root, rule, input_patterns, output_patterns):
+    def __init__(self, root, rule, input_patterns, output_patterns, code_dirs=()):
         self.root = os.path.realpath(root)
+        self.code_dirs = [os.path.realpath(c) for c in code_dirs]       # Python lists these when it imports
         self.rule = rule
         self.inputs = list(input_patterns)
         self.outputs = [o.rstrip("/") for o in output_patterns]       # relative to the root; files, directories, patterns
@@ -129,7 +130,7 @@ class Watch:
     def listing(self, path):
         p = os.path.realpath(os.path.join(os.getcwd(), path))
         rel = self._rel(p)
-        if rel is None or rel.split(os.sep)[0] in INTERNAL or "__pycache__" in rel:
+        if rel is None or rel.split(os.sep)[0] in INTERNAL or "__pycache__" in rel or self._under(p, self.code_dirs):
             return
         for pat in self.inputs:
             b = base(pat)

@@ -7,7 +7,8 @@
       --discard-edits   overwrite outputs that were changed outside the build
   check             exit 1 unless every rule is up to date and every check passed
       --ci              on another machine (CI): compare the lock with the committed files and code only, not with the
-                        installed packages, and list inputs that are not present (private data) instead of failing
+                        installed packages, and list inputs that are not present (private data) instead of failing;
+                        private rules are left out
   graph             the rules in build order, with their inputs and outputs
 """
 import argparse
@@ -33,7 +34,7 @@ def main(argv=None):
         if a.command == "status":
             for n in p.order:
                 s = p.status(n)
-                print(f"{n:28s} {s.state}" + ("" if s.ok else ": " + "; ".join(s.reasons[:6]) + (" …" if len(s.reasons) > 6 else "")))
+                print(f"{n + (' (private)' if p.rules[n].private else ''):28s} {s.state}" + ("" if s.ok else ": " + "; ".join(s.reasons[:6]) + (" …" if len(s.reasons) > 6 else "")))
             p.hasher.save()
         elif a.command == "explain":
             for n in a.rules or p.order:
@@ -58,6 +59,8 @@ def main(argv=None):
         elif a.command == "check" and a.ci:
             n_bad = 0
             for n in p.order:
+                if p.rules[n].private:
+                    continue
                 problems, unchecked = p.check_lock(n)
                 n_bad += bool(problems)
                 for x in problems:
@@ -77,7 +80,7 @@ def main(argv=None):
         elif a.command == "graph":
             for n in p.order:
                 r = p.rules[n]
-                print(f"{n}" + (" (check)" if r.is_check else ""))
+                print(f"{n}" + (" (check)" if r.is_check else "") + (" (private)" if r.private else ""))
                 for i in r.inputs:
                     print(f"    < {i}")
                 for o in r.outputs:

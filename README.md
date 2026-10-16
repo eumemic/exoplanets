@@ -941,14 +941,19 @@ Actions runs the same on every push and pull request to `main` (with uv, since p
 
 ### Build
 
-Published files are moving onto a small build system in `pipeline/dag/`. Each rule in `pipeline/rules.py` names the
+Published files are built by a small build system in `pipeline/dag/`. Each rule in `pipeline/rules.py` names the
 files it reads, the files it writes and the parameters it uses (`pipeline/params.toml`), and `dag.lock.json` records
 what each output was last built from: the hashes of its inputs, of its parameters and of the code of every function it
 calls, and the Python packages installed. A changed input, parameter or function makes the rule and everything after it
 out of date, while edits to comments do not; a file edited by hand no longer matches the lock and stops the build; and a
 rule that reads or writes a file it did not declare fails. `cd pipeline && ../.venv/bin/python -m dag status` shows
-what is out of date and why, `run` rebuilds it, and CI runs `check --ci` on every push. So far it builds
-`figures/allsky.png`.
+what is out of date and why, `run` rebuilds it, and CI runs `check --ci` on every push. It builds the candidate tables
+from their measured inputs (`results_public/products/`, with the TRICERATOPS, centroid and SPOC 2-minute results), the
+candidate folders, the transit registry, the findability tables, `figures/allsky.png`, and `results_public/numbers.json`,
+from which it fills the numbers in this file, `results_public/README.md` and `validation/findability.md`; its checks
+test that every TRICERATOPS and centroid result ran on the current ephemeris, that every counted candidate has
+per-sector centroids and every candidate with 2-minute data a SPOC re-measurement, that the folders hold the catalog's
+results, and that every table renders on GitHub.
 
 ## Layout
 

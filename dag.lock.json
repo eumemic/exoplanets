@@ -379,18 +379,18 @@
     }
    },
    "inputs": {
-    "README.md (template)": "04b8681cc3c938d3c83f9aa67eac3d41ca38d453a495ade6aa1ed37d3f4b6ef2",
+    "README.md (template)": "b5ca14020484ed4154766a11dcaf1e27513920b7378cc3cc5964cc740aeeae6a",
     "results_public/README.md (template)": "a1de7ffe7b059f0501d81b4d61c9457573d9cfbeaf9be8fe8757ab961c6631ff",
     "results_public/numbers.json": "6e187fcfe94e9c29365e09d27a08f089e4e486f83bbff0480258ab7e083d7818",
     "validation/findability.md (template)": "11fedfa455c2fe7f7ff81dad9604914e307c90528cc85d0a41f1aaef22af4cd4"
    },
    "outputs": {
-    "README.md": "9586f5484422106e712a6cd5e24dd0070385ac71b95597f022dcaa0c2adf3c6f",
+    "README.md": "ccc91cb6253ba1be18e4a0d285c024300a7efa6e9676526b7e26be4c792bd42f",
     "results_public/README.md": "b3c396e883f6fe8412ed10fea11e3668a11908f3f475676e1c529249210ddcf8",
     "validation/findability.md": "73a02c3fea44e24b5cf03ee5a001bb1373d9a83e5bd7ef7faad7dabf53373dc4"
    },
    "params": {},
-   "stamp": "062ae8ed298b00ead24b57b3bff4447172916a75b6e2b3190bd0b71ad3d2a180"
+   "stamp": "fc9c206df2d2efd6776569ae13abeb003b8d223606684f5a4a237e060bdd26ad"
   },
   "earlier_folders": {
    "code": {
@@ -701,7 +701,7 @@
     }
    },
    "inputs": {
-    "README.md": "9586f5484422106e712a6cd5e24dd0070385ac71b95597f022dcaa0c2adf3c6f",
+    "README.md": "ccc91cb6253ba1be18e4a0d285c024300a7efa6e9676526b7e26be4c792bd42f",
     "results_public/README.md": "b3c396e883f6fe8412ed10fea11e3668a11908f3f475676e1c529249210ddcf8",
     "results_public/products/README.md": "3743ae93633e133e779aaabb4d0087a956a88c7ced563fdf451f84144d1f5357",
     "validation/findability.md": "73a02c3fea44e24b5cf03ee5a001bb1373d9a83e5bd7ef7faad7dabf53373dc4"
@@ -709,7 +709,7 @@
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "3865e4773250748e8affb6036f51edc7d5c2296203726f898f65fbd1622a5280"
+   "stamp": "b726ea6edb985e510307c52b17dd8ef3844beae288e789758126783e0140f524"
   },
   "numbers": {
    "code": {
