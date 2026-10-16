@@ -2,10 +2,12 @@
 (results_public/products/triceratops_plan.csv) or for named signal keys; every result goes into the store (store.py,
 tri_store.py), and the build then takes it up.
 
-  python cloud.py plan [--keys KEY,...] [--type c8g.4xlarge]
+  python cloud.py plan [--keys KEY,...] [--cc] [--no-base] [--type c8g.4xlarge]
         The batch: its signals, the requests of their stages (fold, MOLUSC; the setup and runs are requested from the
         fold's content when it arrives), the store entries it reuses, and the cost estimate. Writes
-        results_cloud/batches/<id>/plan.json and the snapshots the instance reads.
+        results_cloud/batches/<id>/plan.json and the snapshots the instance reads. --cc adds runs with each contrast
+        curve of high-resolution imaging found for the star in data/followup/exofop_cc (speckle at 832 nm, modelled in
+        the TESS band; adaptive optics in K or Br-gamma, in K); --no-base leaves out the runs without a curve.
   python cloud.py run ID --approve [--hours 3]
         Builds the kit (git archive of the plan's commit, the snapshots, the reused stage files and presigned upload
         URLs), uploads it to the bucket, launches one spot instance tagged with the batch (cloud_worker.py runs there),
@@ -40,6 +42,7 @@ PIPE = os.path.join(ROOT, "pipeline")
 BATCHES = os.path.join(ROOT, "results_cloud", "batches")
 PLAN_CSV = os.path.join(ROOT, "results_public", "products", "triceratops_plan.csv")
 MOLUSC_CODE = os.path.join(ROOT, "results_cloud", "rescue", "exo_pix_20261015", "kitE2", "molusc", "code")
+CC_DIR = os.path.join(ROOT, "data", "followup", "exofop_cc")
 GAIA_CACHE = os.path.join(ROOT, "results_cloud", "glue", "build", "gaia_dr3.csv")
 DR2_CACHE = os.path.join(ROOT, "results_cloud", "glue", "build", "dr2_to_dr3.csv")
 AWS = dict(profile="jarvis-ec2", region="us-east-1", bucket="eumemic-exoplanets-cache", subnet="subnet-3172a550",
@@ -135,6 +138,22 @@ def manifest_rows(tics):
     return pd.concat([new, old[~old.tic.isin(set(new.tic))]]).drop_duplicates(["tic", "sector", "prov"])
 
 
+def curves(tic):
+    """The contrast curves on ExoFOP for a star: [{label, file, filt, content}], labelled by band and observation."""
+    out = []
+    for f in sorted(glob.glob(os.path.join(CC_DIR, f"{tic}__*.csv"))):
+        name = os.path.basename(f)
+        obs = name.split("__", 1)[1].split("-")
+        if name.endswith("-832_sensitivity.csv"):
+            band, filt = "832", "TESS"
+        elif name.endswith(("Kcont_plot.csv", "Brgamma_plot.csv")):
+            band, filt = "K", "K"
+        else:
+            continue
+        out.append(dict(label=f"cc{band}-{obs[1]}", file=name, filt=filt, content=st.file_content(f)))
+    return out
+
+
 def dir_content(d):
     return st.sha256_json([[os.path.relpath(p, d), st.file_content(p)] for p in sorted(glob.glob(os.path.join(d, "**", "*"), recursive=True))
                            if os.path.isfile(p)])
@@ -149,7 +168,7 @@ def spot_price(itype):
     return max(p) if p else None
 
 
-def plan(keys=None, itype="c8g.4xlarge", runs=10):
+def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True):
     if git("status", "--porcelain", "--", "pipeline", "requirements.txt", "requirements-triceratops.txt"):
         raise SystemExit("pipeline/ or a lock file has uncommitted changes: the kit ships a commit, so commit first")
     commit = git("rev-parse", "HEAD")
@@ -191,7 +210,10 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10):
             reuse["fold"].append(it["key"])
         if mreq and s.has("molusc", st.key_of(mreq)):
             reuse["molusc"].append(tic)
-        out.append(dict(item=it, fold_request=freq, molusc_request=mreq))
+        cs = curves(tic) if cc else []
+        if not base and not cs:
+            raise SystemExit(f"{it['key']}: --no-base, and no contrast curve for TIC {tic}")
+        out.append(dict(item=it, fold_request=freq, molusc_request=mreq, base_runs=base, cc=cs))
     bid = "b" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     d = os.path.join(BATCHES, bid)
     os.makedirs(d)
@@ -200,7 +222,8 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10):
     man.to_parquet(os.path.join(d, "manifest.parquet"))
     price, vc = spot_price(itype), VCPUS.get(itype, 16)
     # measured: ~4 min on 16 vCPUs for two signals (t10); a run takes 20-90 s of one core
-    hours = (15 + len(items) * 2 * runs * 1.0 / max(1, vc - 1)) / 60
+    variants = sum(int(x["base_runs"]) + len(x["cc"]) for x in out)
+    hours = (15 + variants * 2 * runs * 1.0 / max(1, vc - 1)) / 60
     est = dict(instance=itype, spot_usd_per_h=price, hours=round(hours, 2), usd=round(price * hours, 2) if price else None,
                limit_hours=round(max(1.0, 3 * hours), 1))
     p = dict(id=bid, commit=commit, created=datetime.now(timezone.utc).isoformat(timespec="seconds"), runs=runs, code=code,
@@ -208,9 +231,11 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10):
     with open(os.path.join(d, "plan.json"), "w") as fh:
         json.dump(p, fh, indent=1)
     print(f"batch {bid}: {len(items)} signals on {len(tics)} stars, commit {commit[:7]}")
-    for it in items:
+    for x in out:
+        it = x["item"]
         print(f"  {it['key']}: P {it['period']} d, T14 {it['duration_h']} h, depth {it['depth_ppm']} ppm"
-              + (f", drop {it['drop']}" if it['drop'] else ""))
+              + (f", drop {it['drop']}" if it['drop'] else "") + ("" if x["base_runs"] else "; no runs without a curve")
+              + "".join(f"; {c['label']} ({c['filt']})" for c in x["cc"]))
     print(f"reused from the store: {len(reuse['fold'])} folds, {len(reuse['molusc'])} MOLUSC files")
     print(f"estimate: {itype} spot at ${price}/h, about {est['hours']} h, about ${est['usd']}; limit {est['limit_hours']} h")
     print(f"launch with: python cloud.py run {bid} --approve")
@@ -245,6 +270,13 @@ def kit(p, d, s3, hours):
     with open(os.path.join(b, "tics.txt"), "w") as fh:
         fh.write("\n".join(sorted({str(x["item"]["tic"]) for x in p["items"]})) + "\n")
     shutil.copytree(MOLUSC_CODE, os.path.join(b, "molusc_code"))
+    os.makedirs(os.path.join(b, "cc"), exist_ok=True)
+    for x in p["items"]:
+        for c in x.get("cc") or []:
+            src = os.path.join(CC_DIR, c["file"])
+            if st.file_content(src) != c["content"]:
+                raise SystemExit(f"{c['file']} changed since the plan was made")
+            shutil.copyfile(src, os.path.join(b, "cc", c["file"]))
     s = st.Store()
     for x in p["items"]:
         fk = st.key_of(x["fold_request"])
@@ -410,12 +442,14 @@ def main():
     ap.add_argument("--keys", default="")
     ap.add_argument("--type", default="c8g.4xlarge")
     ap.add_argument("--runs", type=int, default=10)
+    ap.add_argument("--cc", action="store_true", help="add runs with each contrast curve of the star")
+    ap.add_argument("--no-base", action="store_true", help="only the runs with contrast curves")
     ap.add_argument("--hours", type=float)
     ap.add_argument("--approve", action="store_true")
     ap.add_argument("--store", default=st.ROOT, help="store to ingest into (a trial can use its own)")
     a = ap.parse_args()
     if a.cmd == "plan":
-        plan([k for k in a.keys.split(",") if k] or None, a.type, a.runs)
+        plan([k for k in a.keys.split(",") if k] or None, a.type, a.runs, a.cc, not a.no_base)
     elif a.cmd == "run":
         if not a.approve:
             p = json.load(open(os.path.join(BATCHES, a.id, "plan.json")))

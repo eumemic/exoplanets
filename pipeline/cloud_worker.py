@@ -95,21 +95,28 @@ def run(cmd, logname, py=".venv", **kw):
                               stderr=subprocess.STDOUT, **kw).returncode
 
 
-def pack(item, R, jobs, info, urls):
-    """Check, pack and upload one signal; returns True if it was uploaded."""
-    sys.path.insert(0, PIPE)
+def _gate(fpp_path, runs, fold_npz, duration_h):
     import numpy as np
     import fpp_check
+    f = np.load(fold_npz)
+    problems, deg = fpp_check.gate(json.load(open(fpp_path)), runs, f["time"], int(f["cadence_s"]), duration_h)
+    return dict(passed=not problems, problems=problems, degenerate=deg)
+
+
+def pack(item, R, jobs, info, urls, base=True, cc=()):
+    """Check, pack and upload one signal: its fold, target setup, MOLUSC file and, as planned, its runs (base) and the
+    runs with each contrast curve (cc: labels; job key <key>__<label>). Returns True if it was uploaded."""
+    sys.path.insert(0, PIPE)
     key, tic = item["key"], int(item["tic"])
     t2 = os.path.join(R, "t2")
-    fpp = os.path.join(t2, f"{key}_fpp.json")
     job = jobs.get(key)
-    if not (os.path.exists(fpp) and job):
+    variants = ([("", key)] if base else []) + [(lab, f"{key}__{lab}") for lab in cc]
+    done = [(lab, jk) for lab, jk in variants if os.path.exists(os.path.join(t2, f"{jk}_fpp.json"))]
+    if not (done and job):
         return False
     d = os.path.join(R, "items", key)
     shutil.rmtree(d, ignore_errors=True)
     os.makedirs(os.path.join(d, "cuts"))
-    shutil.copyfile(fpp, os.path.join(d, "fpp.json"))
     shutil.copyfile(os.path.join(t2, "folds", f"{key}.npz"), os.path.join(d, "fold.npz"))
     shutil.copyfile(os.path.join(t2, "states", f"{tic}_{job['sectors'].replace(',', '-')}.pkl"), os.path.join(d, "state.pkl"))
     pops = sorted(glob.glob(os.path.join(t2, "cache", str(tic), "*gaia_background.csv")))
@@ -120,20 +127,25 @@ def pack(item, R, jobs, info, urls):
     for src, dst in ((f"tic{tic}_kept.csv.gz", "molusc.csv.gz"), (f"tic{tic}_molusc.json", "molusc.json")):
         if os.path.exists(os.path.join(R, "molusc", src)):
             shutil.copyfile(os.path.join(R, "molusc", src), os.path.join(d, dst))
-    runs = [json.loads(x) for x in open(os.path.join(t2, "runs.jsonl")) if f'"{key}"' in x]
-    runs = [r for r in runs if r["key"] == key]
-    with open(os.path.join(d, "runs.jsonl"), "w") as fh:
-        fh.writelines(json.dumps(r) + "\n" for r in runs)
-    f = np.load(os.path.join(d, "fold.npz"))
-    problems, deg = fpp_check.gate(json.load(open(fpp)), runs, f["time"], int(f["cadence_s"]), item["duration_h"])
-    json.dump(dict(info, key=key, tic=tic, sectors=job["sectors"], check=dict(passed=not problems, problems=problems,
-                                                                                degenerate=deg)),
-              open(os.path.join(d, "item.json"), "w"))
+    lines = [json.loads(x) for x in open(os.path.join(t2, "runs.jsonl"))]
+    checks = {}
+    for lab, jk in done:
+        out = os.path.join(d, "cc", lab) if lab else d
+        os.makedirs(out, exist_ok=True)
+        shutil.copyfile(os.path.join(t2, f"{jk}_fpp.json"), os.path.join(out, "fpp.json"))
+        runs = [r for r in lines if r["key"] == jk]
+        with open(os.path.join(out, "runs.jsonl"), "w") as fh:
+            fh.writelines(json.dumps(r) + "\n" for r in runs)
+        checks[lab or "base"] = _gate(os.path.join(out, "fpp.json"), runs, os.path.join(d, "fold.npz"), item["duration_h"])
+    json.dump(dict(info, key=key, tic=tic, sectors=job["sectors"], base=any(lab == "" for lab, _ in done),
+                   cc=[lab for lab, _ in done if lab], check=checks), open(os.path.join(d, "item.json"), "w"))
     arc = os.path.join(R, "items", f"{key}.tgz")
     with tarfile.open(arc, "w:gz") as tf:
         tf.add(d, arcname=".")
     ok = put(urls["items"][key], open(arc, "rb").read())
-    log(f"{key}: {'uploaded' if ok else 'UPLOAD FAILED'}" + (f"; checks: {problems}" if problems else ""))
+    bad = {k: v["problems"] for k, v in checks.items() if v["problems"]}
+    log(f"{key}: {'uploaded' if ok else 'UPLOAD FAILED'} ({', '.join(lab or 'base' for lab, _ in done)})"
+        + (f"; checks: {bad}" if bad else ""))
     return ok
 
 
@@ -178,20 +190,24 @@ def main():
         log(f"fleet prep exit {rc}; MOLUSC exit {mol.returncode}")
         jobs = {r["key"]: r for r in csv.DictReader(open(os.path.join(R, "t2", "jobs.csv")))}
         STATE["stage"] = "runs"
-        per = max(1, nproc // 16)                   # signals per chunk: about one run per process
-        keys = [it["key"] for it in items if it["key"] in jobs]
-        for i in range(0, len(keys), per):
-            chunk = keys[i:i + per]
+        for i, x in enumerate(plan["items"]):          # one signal at a time, so each is uploaded when its runs end
+            it, key = x["item"], x["item"]["key"]
+            if key not in jobs:
+                continue
+            base, cc = x.get("base_runs", True), x.get("cc") or []
+            rows = ([dict(jobs[key], cc="", cc_filt="")] if base else []) + [
+                dict(jobs[key], key=f"{key}__{c['label']}", cc=os.path.join(B, "cc", c["file"]), cc_filt=c["filt"]) for c in cc]
+            if not rows:
+                continue
             cj = os.path.join(R, "t2", f"jobs_{i}.csv")
             with open(cj, "w", newline="") as fh:
-                w = csv.DictWriter(fh, list(next(iter(jobs.values())).keys()))
+                w = csv.DictWriter(fh, list(rows[0].keys()))
                 w.writeheader()
-                w.writerows(jobs[k] for k in chunk)
+                w.writerows(rows)
             run(["fpp_pool.py", "run", cj, "--out", os.path.join(R, "t2"), "--procs", str(nproc), "--runs",
                  str(plan["runs"])], "runs.log", py=".venv-trice")
-            for it in items:
-                if it["key"] in chunk:
-                    (STATE["uploaded"] if pack(it, R, jobs, info, urls) else STATE["failed"]).append(it["key"])
+            ok = pack(it, R, jobs, info, urls, base=base, cc=[c["label"] for c in cc])
+            (STATE["uploaded"] if ok else STATE["failed"]).append(key)
         STATE["failed"] += [it["key"] for it in items if it["key"] not in jobs]
         STATE["stage"] = "done"
     except Exception as ex:

@@ -256,6 +256,22 @@ class TriceratopsTableTests(unittest.TestCase):
         rows = tt.build(root2 / "store", [("candidates_allsky", "5", "3.0")], root2 / "out.csv")
         self.assertEqual(rows[0]["batch"], "b1")
 
+    def test_contrast_curve_runs_are_stored_as_their_own_kind(self):
+        root = Path(tempfile.mkdtemp())
+        d, plan_item = self.cloud_item(root)
+        (d / "cc" / "ccK-x").mkdir(parents=True)
+        for f in ("fpp.json", "runs.jsonl"):
+            (d / f).rename(d / "cc" / "ccK-x" / f)
+        info = json.loads((d / "item.json").read_text())
+        (d / "item.json").write_text(json.dumps(dict(info, base=False, cc=["ccK-x"])))
+        plan_item["cc"] = [dict(label="ccK-x", file="x.csv", filt="K", content="c1")]
+        s = store.Store(root / "store")
+        key, problems = tri_store.ingest_item(s, d, plan_item, "bX", 10 ** 9)
+        self.assertEqual(problems, [])
+        self.assertEqual((len(s.keys("tri")), len(s.keys("tri_cc"))), (0, 1))
+        req = s.get("tri_cc", key)[0]
+        self.assertEqual((req["cc_label"], req["cc_filt"], req["cc"]), ("ccK-x", "K", "c1"))
+
     def test_degenerate_results_are_kept_without_values(self):
         root = Path(tempfile.mkdtemp())
         rows = self.run_build(root, [self.batch(root, "b1", probs=(("", 1 / 18), ("", 1 / 18)))])

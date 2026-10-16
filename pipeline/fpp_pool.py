@@ -5,7 +5,9 @@ Usage:
   python fpp_pool.py setup JOBS.csv --out DIR [--procs 63] [--nearby-max-arcsec 30]
   python fpp_pool.py run   JOBS.csv --out DIR [--procs 63] [--runs 10] [--draws 200000]
 JOBS columns: key, tic, fold (npz from export_fold.py), depth_ppm, sectors (field geometry, "s1,s2,..."), cutouts
-(directory of tess-sSSSS-*.fits), molusc (MOLUSC survivors, may be empty), drop (scenarios to drop in the MOLUSC runs).
+(directory of tess-sSSSS-*.fits), molusc (MOLUSC survivors, may be empty), drop (scenarios to drop in the MOLUSC runs),
+and optionally cc and cc_filt: a contrast curve (CSV of separation in arcsec, delta-magnitude) and its band (TESS, Vis,
+J, H, K), which limit unresolved companions in every run of that job.
 setup writes DIR/states/<tic>_<sectors>.pkl (fpp_core.save_state). run evaluates `runs` default-prior runs per signal,
 and as many with the MOLUSC companions where a survivors file is given; each finished run is appended to DIR/runs.jsonl
 (so an interrupted run resumes), and at the end DIR/<key>_fpp.json is written in fpp.py's format with the mean scenario
@@ -71,7 +73,7 @@ def _init_run():
 
 
 def _run_one(task):
-    key, mode, k, sp, fold, molusc, drop, draws, method = task
+    key, mode, k, sp, fold, molusc, drop, draws, method, cc, cc_filt = task
     seed = int.from_bytes(hashlib.sha256(f"{key}|{mode}|{k}|{method[0]}".encode()).digest()[:4], "little")
     np.random.seed(seed)
     t0 = time.time()
@@ -84,7 +86,7 @@ def _run_one(task):
         target = _target(sp)
         d = np.load(fold)
         f, n = fc.run_once(target, d, N=draws, molusc_file=molusc if mode == "m" else None,
-                           drop=[x for x in drop.split(",") if x] if mode == "m" else ())
+                           drop=[x for x in drop.split(",") if x] if mode == "m" else (), cc=cc or None, cc_filt=cc_filt or "TESS")
         pr = target.probs[["ID", "scenario", "prob"]]
         out = dict(key=key, mode=mode, k=k, FPP=f, NFPP=n, sec=time.time() - t0, seed=seed,
                    probs=[[int(i), s, float(v)] for i, s, v in pr.itertuples(index=False) if v > 1e-6],
@@ -137,7 +139,10 @@ def run(a, jobs):
                            sectors=r.sectors, n_scenarios=fc.n_scenarios(target), molusc=molusc, drop=drop)
         # TRICERATOPS evaluates every transiting draw at once: about 2e4 of the 2e5 draws, each over points x sub-exposures
         mem = 0.5 + 8e-9 * 0.1 * a.draws * len(d["time"]) * fc.auto_nsamples(ex) * 1.2
-        meta[r.key]["task"] = (cost, sp, r.fold, molusc, drop)
+        cc = getattr(r, "cc", "") if isinstance(getattr(r, "cc", ""), str) else ""
+        cc_filt = getattr(r, "cc_filt", "") if isinstance(getattr(r, "cc_filt", ""), str) else ""
+        meta[r.key].update(cc=os.path.basename(cc), cc_filt=cc_filt)
+        meta[r.key]["task"] = (cost, sp, r.fold, molusc, drop, cc, cc_filt)
         meta[r.key]["mem"] = mem
     first = a.runs_min or a.runs
 
@@ -145,11 +150,12 @@ def run(a, jobs):
         """Tasks for the runs k < want[(key, mode)] that are not done, longest first."""
         out = []
         for key, m in meta.items():
-            cost, sp, fold, molusc, drop = m["task"]
+            cost, sp, fold, molusc, drop, cc, cc_filt = m["task"]
             for mode in ("d", "m") if molusc else ("d",):
                 for k in range(want.get((key, mode), first)):
                     if (key, mode, k) not in done:
-                        out.append((cost, (key, mode, k, sp, fold, molusc, drop, a.draws, (a.method, a.n_pilot, a.n_final))))
+                        out.append((cost, (key, mode, k, sp, fold, molusc, drop, a.draws, (a.method, a.n_pilot, a.n_final), cc,
+                                           cc_filt)))
         return [t for _, t in sorted(out, key=lambda x: -x[0])]
 
     res_by = {}
@@ -253,6 +259,8 @@ def merge(a, meta, tag=""):
                    FPP=fpps, NFPP=nfpps, NFPP_mean=float(np.mean(nfpps)), NFPP_max=float(np.max(nfpps)), runs=len(d), draws=a.draws,
                    exptime_min=m["exptime_min"], nsamples=m["nsamples"], n_points=m["n_points"], sectors=m["sectors"],
                    n_scenarios=m["n_scenarios"], cpu_s=float(sum(r["sec"] for r in d)), probs_mean=mean_probs(d))
+        if m.get("cc"):
+            res.update(cc=m["cc"], cc_filt=m["cc_filt"])
         mm = [by.get((key, "m"), {})[k] for k in sorted(by.get((key, "m"), {}))]
         if mm:
             kept = pd.read_csv(m["molusc"])

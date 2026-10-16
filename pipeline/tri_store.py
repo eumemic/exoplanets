@@ -6,7 +6,9 @@
   field-star population, the TIC stars within 30" and the FFI cutouts of the field;
 - molusc (one star): the simulated bound companions that Gaia does not rule out (molusc_batch.py);
 - tri (one signal): the runs with the default priors and, where the star has MOLUSC survivors, with the Gaia limits,
-  each seeded from the signal's key, the mode and the run number (fpp_pool.py).
+  each seeded from the signal's key, the mode and the run number (fpp_pool.py);
+- tri_cc (one signal and one contrast curve of high-resolution imaging): the same runs with the curve limiting
+  unresolved companions (job key <key>__<label>, so the seeds differ from the tri runs').
 A tri request cites the content of the fold, setup and MOLUSC entries it used, not their keys, so an earlier stage that
 is redone and comes out the same leaves the runs current.
 
@@ -213,8 +215,8 @@ def _gz_content(path):
 def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000, phase_bin_min=2.0):
     """Store one finished item of a cloud batch (cloud.py): d is its unpacked archive (cloud_worker.py), plan_item the
     plan's entry for it (the signal row, the fold and MOLUSC requests, and the code and package hashes). Every entry is
-    written; the tri entry's check.json says whether the result passed fpp_check.gate and was made with the planned
-    code and packages. Returns (tri key, problems)."""
+    written; each run entry's check.json (tri, and tri_cc for each contrast curve) says whether the result passed
+    fpp_check.gate and was made with the planned code and packages. Returns (the first run entry's key, problems)."""
     import numpy as np
     import fpp_check
     it, info = plan_item["item"], json.load(open(os.path.join(d, "item.json")))
@@ -224,7 +226,9 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
             problems.append(f"{kind}: the instance's packages do not match {LOCKS[kind]}")
     if info.get("commit") != plan_item["commit"]:
         problems.append(f"code: the instance ran commit {info.get('commit')}, the plan {plan_item['commit']}")
-    with open(os.path.join(d, "fpp.json")) as fh:
+    first = os.path.join(d, "fpp.json") if os.path.exists(os.path.join(d, "fpp.json")) else \
+        os.path.join(d, "cc", info["cc"][0], "fpp.json")          # the fold's details are in every variant's result
+    with open(first) as fh:
         j = json.load(fh)
     fold_npz = os.path.join(d, "fold.npz")
     fres = dict(content=st.npz_content(fold_npz), exptime_min=j.get("exptime_min"), n_points=j.get("n_points"),
@@ -246,16 +250,32 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
         molusc = _gz_content(kept)
         molusc_key = store.put("molusc", plan_item["molusc_request"], dict(content=molusc, survivors=minfo.get("survivors"),
                                                                           info=minfo), files={"molusc.csv.gz": kept})
-    runs = [json.loads(line) for line in open(os.path.join(d, "runs.jsonl"))]
-    f = np.load(fold_npz)
-    found, deg = fpp_check.gate(j, runs, f["time"], int(f["cadence_s"]), it["duration_h"], n_runs, min_survivors, phase_bin_min)
-    problems += found
-    treq = tri_request(it, fres["content"], scontent, molusc, n_runs, j.get("draws"), plan_item["code"]["tri"],
-                       plan_item["env"]["tri"])
     signal = dict(period=str(it["period"]), t0_btjd=str(it["t0"]), duration_h=str(it["duration_h"]),
                   depth_ppm=str(it["depth_ppm"]), masks=str(it.get("masks") or ""), drop=str(it.get("drop") or ""))
-    res = dict(seq=seq, batch=batch, signal=signal, fold_key=fold_key, setup_key=setup_key, molusc_key=molusc_key, fpp=j,
-               runs=runs, degenerate=deg)
-    key = store.put("tri", treq, res, check=dict(passed=not problems, problems=problems, instance=info.get("check")),
-                    files={"fpp.json": os.path.join(d, "fpp.json")})
-    return key, problems
+    variants = [("", d)] if os.path.exists(os.path.join(d, "fpp.json")) else []
+    variants += [(lab, os.path.join(d, "cc", lab)) for lab in info.get("cc", [])]
+    curves = {c["label"]: c for c in plan_item.get("cc") or []}
+    f = np.load(fold_npz)
+    keys, allp = [], list(problems)
+    for lab, vd in variants:
+        with open(os.path.join(vd, "fpp.json")) as fh:
+            jv = json.load(fh)
+        runs = [json.loads(line) for line in open(os.path.join(vd, "runs.jsonl"))]
+        found, deg = fpp_check.gate(jv, runs, f["time"], int(f["cadence_s"]), it["duration_h"], n_runs, min_survivors,
+                                    phase_bin_min)
+        req = tri_request(it, fres["content"], scontent, molusc, n_runs, jv.get("draws"), plan_item["code"]["tri"],
+                          plan_item["env"]["tri"])
+        kind = "tri"
+        if lab:
+            if lab not in curves:
+                found = found + [f"contrast curve {lab} is not in the plan"]
+            c = curves.get(lab, {})
+            req = dict(req, kind="tri_cc", cc_label=lab, cc=c.get("content"), cc_filt=c.get("filt"))
+            kind = "tri_cc"
+        res = dict(seq=seq, batch=batch, signal=signal, fold_key=fold_key, setup_key=setup_key, molusc_key=molusc_key, fpp=jv,
+                   runs=runs, degenerate=deg, **({"cc_label": lab, "cc_file": curves.get(lab, {}).get("file")} if lab else {}))
+        keys.append(store.put(kind, req, res, check=dict(passed=not (problems + found), problems=problems + found,
+                                                         instance=(info.get("check") or {}).get(lab or "base")),
+                              files={"fpp.json": os.path.join(vd, "fpp.json")}))
+        allp += [f"{lab or 'base'}: {x}" for x in found]
+    return (keys[0] if keys else None), allp
