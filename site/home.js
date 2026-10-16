@@ -597,9 +597,10 @@
   /* ================= 05: findability ================= */
   (function findability() {
     var cv = $('cv-find'); if (!cv) return;
+    // c: the sector through which findability.json counts the candidates at SNR >= 9 (null: every sector)
     var steps = [
-      { k: 'snr_to_s26', s: 'S26', d: 'Jul 2020' }, { k: 'snr_to_s55', s: 'S55', d: 'Sep 2022' }, { k: 'snr_to_s69', s: 'S69', d: 'Sep 2023' },
-      { k: 'snr_to_s83', s: 'S83', d: 'Sep 2024' }, { k: 'snr_to_s96', s: 'S96', d: 'Sep 2025' }, { k: 'snr', s: 'S104', d: 'all sectors' }
+      { c: '26', s: 'S26', d: 'Jul 2020' }, { c: '55', s: 'S55', d: 'Sep 2022' }, { c: '69', s: 'S69', d: 'Sep 2023' },
+      { c: '83', s: 'S83', d: 'Sep 2024' }, { c: '96', s: 'S96', d: 'Sep 2025' }, { c: null, s: 'S104', d: 'all sectors' }
     ];
     var vals = null, prog = S.reduced ? 1 : 0, total = 0;
     var o = S.canvas(cv, function (c, W, H) {
@@ -644,20 +645,17 @@
         c.fillText(Math.round(vals[i] * 100) + '%', sx(i), sy(vals[i]) - 11);
       }
     }, { aspect: function (w) { return w < 480 ? 0.95 : 0.84; }, animate: false });
-    X.fetchText(X.DATA.findability.site).then(function (txt) {
-      var rows = X.parseCSVObjects(txt);
-      total = rows.length;
-      // SNR above 9 reproduces the counts in findability.md (one row sits at 9.0 after rounding)
-      vals = steps.map(function (s) { return rows.filter(function (r) { return X.num(r[s.k]) > 9; }).length / total; });
-      var at96 = rows.filter(function (r) { return X.num(r.snr_to_s96) > 9; }).length;
-      var atAll = rows.filter(function (r) { return X.num(r.snr) > 9; }).length;
-      var ffi = rows.filter(function (r) { return r.two_min === 'False'; }).length;
-      var weak = rows.filter(function (r) { return X.num(r.best_sector_snr) < 7.1; }).length;
-      var med = X.median(rows.map(function (r) { return X.num(r.best_sector_snr); }));
+    // the counts of validation/findability.md, from the unrounded SNRs (numbers.json, built by pipeline/findability.py)
+    X.loadSummary().then(function (sm) {
+      var F = sm.numbers.findability;
+      total = F.candidates;
+      vals = steps.map(function (s) { return s.c ? F.through[s.c].frac : (total - F.below_9.n) / total; });
+      var at96 = F.through['96'].n, late = F.late.n;
+      var ffi = F.ffi_only.n, weak = F.best_sector.below_7_1.n, med = F.best_sector.median;
       var f = [
         [S.pct(ffi, total) + '%', S.n(ffi) + ' of ' + S.n(total) + ' are on stars observed only in full-frame images in their transit sectors, outside SPOC’s multi-sector searches.', ffi / total],
         [S.pct(weak, total) + '%', 'never reach SNR 7.1, SPOC’s threshold, in any single sector. The median best sector reaches ' + X.fmt(med, 1) + '.', weak / total],
-        [S.n(atAll - at96), 'needed Sectors 97–104 to reach SNR 9; ' + S.n(at96) + ' (' + S.pct(at96, total) + '%) were there with data through Sector 96.', (atAll - at96) / total]
+        [S.n(late), 'needed Sectors 97–104 to reach SNR 9; ' + S.n(at96) + ' (' + S.pct(at96, total) + '%) were there with data through Sector 96.', late / total]
       ];
       $('find-facts').innerHTML = f.map(function (x) { return '<div class="fact"><div class="v">' + x[0] + '</div><div class="l">' + x[1] + '</div><div class="meter"><i data-w="' + (100 * x[2]).toFixed(1) + '"></i></div></div>'; }).join('');
       $('find-cap').insertAdjacentHTML('afterbegin', 'Covers the ' + S.n(total) + ' full-sky candidates in tiers A, B and N; each one\u2019s transits come from the search pass that found it. ');

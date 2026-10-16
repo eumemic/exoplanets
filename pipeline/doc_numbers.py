@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 
 SETS = {"SNR>=9": "snr9", "SNR 7.5-9": "low", 'neighbour<15"': "nb"}
+FIRST, RESEARCH = "full-sky search", "QLP re-search"
+INV = ("inverted, sample 1", "inverted, sample 2")
 TIER_ORDER = ["A", "B", "N", "L1", "C", "L", "likely EB", "likely nearby FP", "likely false alarm", "reported"]
 C_REASONS = {"grazing": "grazing", "RUWE > 1.4": "ruwe", "MES < 10": "mes", "TRICERATOPS FPP >= 0.5 or NFPP >= 0.1": "triceratops",
              "centroid offset in all sectors": "centroid", "no TRICERATOPS result": "no_result",
@@ -99,7 +101,68 @@ def compute(allsky_csv, earlier_csv, ephemerides_csv, predictions_csv, funnel_cs
                      "median_next_sigma_min": float(np.median(eph.next_tc_sigma_min))},
         "funnel": {"rows": len(fun)},
     }
+    both = pd.concat([ca, ce])
+    fb_, _ = tier_values(both)
+    out["catalog"].update({
+        "median_fpp": {"default": float(both.FPP_c.median()), "gaia": float(fb_.median())},
+        "reported_ctoi": int(((a.tier == "reported") & a.reported_as.fillna("").str.startswith("CTOI")).sum()),
+        "centroid_flagged_counted": int(both.centroid_flag.fillna("").str.endswith("p < 0.01").sum()),
+        "from_research": int((ca.search == RESEARCH).sum()),
+        "hosts": int(ca.TIC.nunique()),
+        "median_radius": float(ca.Rp_Re.median()),
+        "smaller_than_4": int((ca.Rp_Re < 4).sum()),
+        "lower_confidence": int(a.tier.isin(["C", "L"]).sum() + (e.tier == "C").sum()),
+    })
     return out
+
+
+def funnel(funnel_csv):
+    """{pass: {band: {stage: count}}} from results_public/funnel_allsky.csv."""
+    f = {}
+    for r in pd.read_csv(funnel_csv).to_dict("records"):
+        f.setdefault(r["pass"], {}).setdefault(r["band"], {})[r["stage"]] = int(r["count"])
+    return f
+
+
+def false_alarms(funnel_csv, tri_inverted_csv, scores_csv, allsky_csv, P):
+    """Expected false alarms among the counted full-sky candidates, from the search of inverted light curves (the
+    first pass's measurement), and tier L1's selection by the false-alarm classifier at the 0.80 cut, as
+    fa_classifier.py computes it. {"false_alarms": ..., "classifier": ...}."""
+    f = funnel(funnel_csv)
+    stars = f[FIRST]["all"]["stars"]
+    inv_stars = sum(f[q]["all"]["stars"] for q in INV)
+    scale = stars / inv_stars
+    fa = {"stars": stars, "inverted_stars": inv_stars, "scale": scale, "bands": {}, "mes_bins": []}
+    for b in ("hi", "low"):
+        fa["bands"][b] = {k: {"real": f[FIRST][b][k], "inverted": sum(f[q][b][k] for q in INV),
+                              "expected": scale * sum(f[q][b][k] for q in INV)}
+                          for k in ("clean", "close_nb", "offset", "no_image")}
+    rate = {}
+    for key, lo, hi in (("lt10", None, 10), ("10_12", 10, 12), ("ge12", 12, None)):
+        real, inv = f[FIRST]["hi"]["clean_mes_" + key], sum(f[q]["hi"]["clean_mes_" + key] for q in INV)
+        rate[key] = scale * inv / real
+        fa["mes_bins"].append({"bin": key, "lo": lo, "hi": hi, "real": real, "inverted": inv, "fraction": rate[key]})
+    a = pd.read_csv(allsky_csv)
+    ab = a[a.tier.isin(["A", "B"])]
+    exp_ab = float(sum(rate["lt10" if m < 10 else ("10_12" if m < 12 else "ge12")] for m in ab.MES))
+    # tier N: TRICERATOPS run on the first sample's inverted close-neighbour false alarms
+    tri = pd.read_csv(tri_inverted_csv, dtype=str)
+    tri = tri[tri.band == "SNR>=9"]
+    tri_pass = int((tri.pass10 == "True").sum())
+    fa["triceratops_inverted"] = {"tested": len(tri), "pass": int((tri["pass"] == "True").sum()), "pass_mes10": tri_pass}
+    s = pd.read_csv(scores_csv, dtype={"inv_set": str})
+    lo = s[s.band == "low"]
+    real_c = lo[(lo.label == "real") & (lo.cls == "clean")]
+    n_fa = int(((lo.label == "inverted") & (lo.cls == "clean")).sum()) * stars / inv_stars
+    i2 = lo[(lo.label == "inverted") & lo.inv_set.isin(["2", "2.0"])]
+    cut = 0.8
+    sel = int((real_c.score_h >= cut).sum())
+    exp_cl = n_fa * int((i2.score_h >= cut).sum()) / len(i2)
+    cl = {"cut": cut, "clean_low": len(real_c), "selected": sel, "expected_false_alarms": exp_cl, "purity": 1 - exp_cl / sel,
+          "baseline_false_alarms": n_fa}
+    fa["expected"] = {"AB": exp_ab, "N": tri_pass * stars / f[INV[0]]["all"]["stars"],
+                      "L1": exp_cl / sel * int((a.tier == "L1").sum())}
+    return {"false_alarms": fa, "classifier": cl}
 
 
 def validation(findability_json, recheck_csv):

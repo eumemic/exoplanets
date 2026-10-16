@@ -1,4 +1,5 @@
-"""The website: its numbers come from pipeline/site_data.py, which reads the committed tables; none is typed into a page."""
+"""The website: its numbers come from pipeline/site_data.py, which passes on results_public/numbers.json (the build's
+numbers, which the documents also quote) with the funnel and the release notes; none is typed into a page."""
 from html.parser import HTMLParser
 from pathlib import Path
 import re
@@ -59,11 +60,11 @@ class SummaryTests(unittest.TestCase):
         rows = list(csv.DictReader(open(ROOT / 'results_public' / 'candidates_allsky.csv')))
         earlier = list(csv.DictReader(open(ROOT / 'results_public' / 'tiers_earlier_candidates.csv')))
         n = sum(r['tier'] in ('A', 'B', 'N', 'L1') for r in rows) + sum(r['tier'] in ('A', 'B') for r in earlier)
-        self.assertEqual(self.s['catalog']['counted']['total'], n)
+        self.assertEqual(self.s['numbers']['catalog']['counted']['total'], n)
 
     def test_latest_release_note_gives_the_current_total(self):
         latest = next(r for r in self.s['releases'] if r['count'] is not None)
-        self.assertEqual(latest['count'], self.s['catalog']['counted']['total'],
+        self.assertEqual(latest['count'], self.s['numbers']['catalog']['counted']['total'],
                          'the newest dated release note in README.md should state the current number of candidates')
 
     def test_funnel_stages_decrease(self):

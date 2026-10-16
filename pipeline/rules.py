@@ -136,7 +136,8 @@ def spoc_measured(ctx):
 
 @rule(inputs=["results_public/candidates_allsky.csv", "results_public/tiers_earlier_candidates.csv",
               "candidates/ephemerides.csv", "candidates/predictions.csv", "results_public/funnel_allsky.csv",
-              "results_public/products/triceratops.csv", "validation/findability.json", "validation/spoc_2min_recheck.csv"],
+              "results_public/products/triceratops.csv", "validation/findability.json", "validation/spoc_2min_recheck.csv",
+              "validation/triceratops_inverted_close_neighbour.csv", "validation/false_alarm_classifier_scores_star.csv.gz"],
       outputs=["results_public/numbers.json"], params=["catalog.*", "tiers.centroid_reject_p", "tiers.centroid_neighbour_p",
                                                       "flags.fa_score_min"])
 def numbers(ctx):
@@ -145,6 +146,10 @@ def numbers(ctx):
         ctx.input("candidates/ephemerides.csv"), ctx.input("candidates/predictions.csv"),
         ctx.input("results_public/funnel_allsky.csv"), ctx.input("results_public/products/triceratops.csv"), ctx.params())
     out.update(doc_numbers.validation(ctx.input("validation/findability.json"), ctx.input("validation/spoc_2min_recheck.csv")))
+    out.update(doc_numbers.false_alarms(ctx.input("results_public/funnel_allsky.csv"),
+                                        ctx.input("validation/triceratops_inverted_close_neighbour.csv"),
+                                        ctx.input("validation/false_alarm_classifier_scores_star.csv.gz"),
+                                        ctx.input("results_public/candidates_allsky.csv"), ctx.params()))
     doc_numbers.write(ctx.output("results_public/numbers.json"), out)
 
 

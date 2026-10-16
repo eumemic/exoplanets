@@ -7,7 +7,9 @@ a module stale whenever anything in that module changes. Instead, CodeIndex foll
 - `module.name` through `import module [as alias]`;
 - `name` through `from module import name`;
 
-within the project's own modules (the .py files under the search paths). The index transitively collects the
+within the project's own modules (the .py files under the search paths), including modules a function imports in its
+own body. Names a function binds itself (parameters, assignments, loop, with and except targets, nested definitions)
+are local and lead nowhere, as are the variables of a lambda or a comprehension. The index transitively collects the
 definitions reached. Each definition is hashed by its syntax tree, with docstrings removed and without line numbers,
 so editing comments, docstrings or layout changes nothing.
 
@@ -81,6 +83,7 @@ class Module:
         self.effects = []     # top-level statements that are not plain definitions or imports
         # the package that relative imports start from
         self.package = name if self.path.name == "__init__.py" else (name.rsplit(".", 1)[0] if "." in name else "")
+        self._top_imports = set()
         for node in self.tree.body:
             self._top(node, effect_ok=True)
 
@@ -91,27 +94,37 @@ class Module:
         base = parts[:len(parts) - (node.level - 1)] if node.level > 1 else parts
         return ".".join(base + ([node.module] if node.module else []))
 
-    def _import(self, node):
+    def _import(self, node, table=None):
+        table = self.imports if table is None else table
         if isinstance(node, ast.Import):
             for a in node.names:
                 if a.asname:
-                    self.imports[a.asname] = ("mod", a.name)
+                    table[a.asname] = ("mod", a.name)
                 else:
                     top = a.name.split(".")[0]
-                    self.imports[top] = ("mod", top)
+                    table[top] = ("mod", top)
         else:
             mod = self._resolve_relative(node)
             for a in node.names:
                 if a.name == "*":
                     self.stars.append(mod)
                 else:
-                    self.imports[a.asname or a.name] = ("from", mod, a.name)
+                    table[a.asname or a.name] = ("from", mod, a.name)
+
+    def local_imports(self, node):
+        """{alias: import} for the imports inside a definition's body (functions that import what they use)."""
+        table = {}
+        for n in ast.walk(node):
+            if isinstance(n, (ast.Import, ast.ImportFrom)) and n not in self._top_imports:
+                self._import(n, table)
+        return table
 
     def _top(self, node, effect_ok):
         if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
             return                                          # module docstring
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             self._import(node)
+            self._top_imports.add(node)
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             self.defs.setdefault(node.name, []).append(node)
         elif isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
@@ -125,25 +138,112 @@ class Module:
             # if/try/with/for blocks and bare calls: imports and definitions inside them resolve to the whole block,
             # which is also a side effect of importing the module
             for n in ast.walk(node):
-                if isinstance(n, (ast.Import, ast.ImportFrom)):
+                if isinstance(n, (ast.Import, ast.ImportFrom)) and not _in_function(node, n):
                     self._import(n)
+                    self._top_imports.add(n)
             for n in _bound_names(node):
                 self.defs.setdefault(n, []).append(node)
             self.effects.append(node)
 
 
+FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+
+
+def _in_function(top, node):
+    """True if node lies inside a function or lambda body within the top-level statement top."""
+    for n in ast.walk(top):
+        if isinstance(n, FUNCTIONS) and n is not top and any(x is node for x in ast.walk(n)):
+            return True
+    return False
+
+
+def _params(args):
+    return {a.arg for a in args.posonlyargs + args.args + args.kwonlyargs + [args.vararg, args.kwarg] if a}
+
+
+def _scope_names(body, imports):
+    """The names a function body binds in its own scope (assignment, loop, with, except and match targets, nested
+    definitions), without those declared global; names bound by an import are left to `imports` instead."""
+    bound, glob = set(), set()
+    stack = list(body)
+    while stack:
+        n = stack.pop()
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            bound.add(n.name)
+            continue
+        if isinstance(n, ast.Lambda):
+            continue
+        if isinstance(n, COMPREHENSIONS):               # only a walrus in a comprehension binds in the function
+            bound |= {x.target.id for x in ast.walk(n) if isinstance(x, ast.NamedExpr) and isinstance(x.target, ast.Name)}
+            continue
+        if isinstance(n, ast.Global):
+            glob.update(n.names)
+        elif isinstance(n, ast.Nonlocal):
+            bound.update(n.names)
+        elif isinstance(n, ast.Name) and isinstance(n.ctx, (ast.Store, ast.Del)):
+            bound.add(n.id)
+        elif isinstance(n, ast.ExceptHandler) and n.name:
+            bound.add(n.name)
+        elif isinstance(n, (ast.MatchAs, ast.MatchStar)) and n.name:
+            bound.add(n.name)
+        elif isinstance(n, ast.MatchMapping) and n.rest:
+            bound.add(n.rest)
+        elif isinstance(n, (ast.Import, ast.ImportFrom)):
+            imports.update((a.asname or a.name).split(".")[0] for a in n.names if a.name != "*")
+        stack += list(ast.iter_child_nodes(n))
+    return bound - glob
+
+
 def _refs(node):
-    """Names a node uses: ("name", id) for bare names and ("attr", base, attr) for base.attr, where the base name is
-    used only through that attribute."""
-    attr_bases = set()
+    """Names a definition uses from its module: ("name", id) for bare names and ("attr", base, attr) for base.attr,
+    where the base name is used only through that attribute. A name bound in an enclosing function, lambda or
+    comprehension scope is local and left out; a name bound by an import inside a function is kept, and resolved
+    through Module.local_imports."""
     out = []
-    for n in ast.walk(node):
+
+    def visit(n, scopes):
+        local = lambda name: any(name in sc for sc in scopes)
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for d in n.decorator_list + n.args.defaults + [d for d in n.args.kw_defaults if d] + ([n.returns] if n.returns else []):
+                visit(d, scopes)
+            for a in n.args.posonlyargs + n.args.args + n.args.kwonlyargs + [n.args.vararg, n.args.kwarg]:
+                if a and a.annotation:
+                    visit(a.annotation, scopes)
+            imports = set()
+            sc = (_params(n.args) | _scope_names(n.body, imports)) - imports
+            for x in n.body:
+                visit(x, scopes + [sc])
+            return
+        if isinstance(n, ast.Lambda):
+            for d in n.args.defaults + [d for d in n.args.kw_defaults if d]:
+                visit(d, scopes)
+            visit(n.body, scopes + [_params(n.args)])
+            return
+        if isinstance(n, COMPREHENSIONS):
+            targets = {x.id for g in n.generators for x in ast.walk(g.target) if isinstance(x, ast.Name)}
+            visit(n.generators[0].iter, scopes)          # evaluated in the enclosing scope
+            inner = scopes + [targets]
+            for i, g in enumerate(n.generators):
+                if i:
+                    visit(g.iter, inner)
+                for c in g.ifs:
+                    visit(c, inner)
+            for e in ([n.key, n.value] if isinstance(n, ast.DictComp) else [n.elt]):
+                visit(e, inner)
+            return
         if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name):
-            out.append(("attr", n.value.id, n.attr))
-            attr_bases.add(id(n.value))
-    for n in ast.walk(node):
-        if isinstance(n, ast.Name) and id(n) not in attr_bases:
-            out.append(("name", n.id))
+            if not local(n.value.id):
+                out.append(("attr", n.value.id, n.attr))
+            return
+        if isinstance(n, ast.Name):
+            if not local(n.id):
+                out.append(("name", n.id))
+            return
+        for c in ast.iter_child_nodes(n):
+            visit(c, scopes)
+
+    visit(node, [])
     return out
 
 
@@ -218,13 +318,17 @@ class CodeIndex:
                 nodes = mod.defs[n]
                 parts[f"{m}.{n}"] = sha256_json([node_hash(x) for x in nodes])
                 for x in nodes:
+                    local = mod.local_imports(x)
+                    for imp in local.values():              # a third-party package imported here is used here
+                        if not self.is_local(imp[1]) and not (imp[0] == "from" and self.is_local(f"{imp[1]}.{imp[2]}")):
+                            _external(imp[1], external)
                     if _dynamic_uses(x):
                         stack.append((m, None))
                     for base in _getattr_on(x):
-                        imp = mod.imports.get(base)
+                        imp = local.get(base) or mod.imports.get(base)
                         if imp and imp[0] == "mod":
                             stack.append((imp[1], None))
-                    stack += self._resolve(mod, _refs(x), external)
+                    stack += self._resolve(mod, _refs(x), external, local)
             elif n in mod.imports:
                 stack += self._resolve(mod, [("name", n)], external)
             else:
@@ -233,15 +337,17 @@ class CodeIndex:
                 stack += [(s, n) for s in mod.stars]
         return parts, effects, sorted(external)
 
-    def _resolve(self, mod, refs, external):
-        """Turn the names used in `mod` into (module, name) pairs to visit; record third-party modules."""
+    def _resolve(self, mod, refs, external, local=None):
+        """Turn the names used in `mod` into (module, name) pairs to visit; record third-party modules. `local`: the
+        imports inside the definition being followed, which take precedence over the module's names."""
         out = []
         for r in refs:
             base = r[1]
-            if base in mod.defs:
+            imp = (local or {}).get(base)
+            if imp is None and base in mod.defs:
                 out.append((mod.name, base))
                 continue
-            imp = mod.imports.get(base)
+            imp = imp or mod.imports.get(base)
             if imp is None:
                 if mod.stars:
                     out += [(s, base) for s in mod.stars]

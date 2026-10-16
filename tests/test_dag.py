@@ -122,6 +122,48 @@ class CodeHashTests(unittest.TestCase):
     def test_dynamic_access_takes_the_whole_module(self):
         self.assertIn("helpers.unrelated", self.closure("d")[0])
 
+    def test_local_names_and_local_imports(self):
+        write(self.dir / "scoped.py", """
+            import numpy as np
+
+
+            def total():
+                return 1
+
+
+            def uses_local(xs):
+                total = 0
+                for x in xs:
+                    total += x
+                return total + sum(y for y in xs) + (lambda total: total)(1)
+
+
+            def imports_inside():
+                import helpers as hh
+                from helpers import f
+                import scipy.stats
+                return hh.g(1) + f(2)
+
+
+            def closure():
+                total = 3
+                def inner():
+                    return total
+                return inner()
+
+
+            def global_use():
+                global total
+                return total()
+            """)
+        idx = CodeIndex([self.dir])
+        self.assertEqual(set(idx.closure("scoped", "uses_local")[0]), {"scoped.uses_local"})
+        parts, _, ext = idx.closure("scoped", "imports_inside")
+        self.assertEqual(set(parts), {"scoped.imports_inside", "helpers.g", "helpers.f", "helpers.SCALE"})
+        self.assertEqual(ext, ["scipy"])
+        self.assertEqual(set(idx.closure("scoped", "closure")[0]), {"scoped.closure"})
+        self.assertEqual(set(idx.closure("scoped", "global_use")[0]), {"scoped.global_use", "scoped.total"})
+
     def test_module_side_effects_count(self):
         _, before, _ = self.closure("a")
         write(self.dir / "helpers.py", HELPERS + '\nimport os\nos.environ["X"] = "1"\n')

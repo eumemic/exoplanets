@@ -15,6 +15,7 @@
    "triceratops": 58
   },
   "c_reason_empty": 2443,
+  "centroid_flagged_counted": 17,
   "counted": {
    "allsky": 586,
    "earlier": 58,
@@ -63,6 +64,8 @@
    "missing_with_fpp": 4
   },
   "fpp_not_run": 684,
+  "from_research": 114,
+  "hosts": 573,
   "l1_low_fa_score": 31,
   "lfa": {
    "low_band": 342,
@@ -74,12 +77,19 @@
    "by_triceratops": 1105,
    "total": 1114
   },
+  "lower_confidence": 629,
+  "median_fpp": {
+   "default": 0.043,
+   "gaia": 0.0155
+  },
+  "median_radius": 3.075,
   "nofit": {
    "text": "1,042 `likely nearby FP`, 137 `C`, 114 `likely EB` and 1 `reported`",
    "total": 1294
   },
   "papers_empty": 2988,
   "reported_as_empty": 2977,
+  "reported_ctoi": 10,
   "rows": {
    "allsky": 2990,
    "earlier": 68
@@ -89,6 +99,7 @@
    "nb": 1573,
    "snr9": 855
   },
+  "smaller_than_4": 384,
   "tier": {
    "A": 22,
    "B": 292,
@@ -108,6 +119,14 @@
    "total": 252
   }
  },
+ "classifier": {
+  "baseline_false_alarms": 308.46387754156706,
+  "clean_low": 395,
+  "cut": 0.8,
+  "expected_false_alarms": 9.173646915734336,
+  "purity": 0.92159276140398,
+  "selected": 117
+ },
  "earlier": {
   "binary_empty": 67,
   "c_reason_empty": 58,
@@ -116,6 +135,93 @@
   "cs_neighbour_empty": 10,
   "fpp_empty": 6,
   "rv_empty": 52
+ },
+ "false_alarms": {
+  "bands": {
+   "hi": {
+    "clean": {
+     "expected": 96.07891267688154,
+     "inverted": 19,
+     "real": 726
+    },
+    "close_nb": {
+     "expected": 202.2713951092243,
+     "inverted": 40,
+     "real": 1294
+    },
+    "no_image": {
+     "expected": 5.056784877730608,
+     "inverted": 1,
+     "real": 24
+    },
+    "offset": {
+     "expected": 2164.3039276687,
+     "inverted": 428,
+     "real": 7918
+    }
+   },
+   "low": {
+    "clean": {
+     "expected": 313.52066241929765,
+     "inverted": 62,
+     "real": 382
+    },
+    "close_nb": {
+     "expected": 273.0663833974528,
+     "inverted": 54,
+     "real": 448
+    },
+    "no_image": {
+     "expected": 0.0,
+     "inverted": 0,
+     "real": 9
+    },
+    "offset": {
+     "expected": 2169.3607125464305,
+     "inverted": 429,
+     "real": 2652
+    }
+   }
+  },
+  "expected": {
+   "AB": 27.36273023384287,
+   "L1": 8.781610722754237,
+   "N": 10.11297470255979
+  },
+  "inverted_stars": 798769,
+  "mes_bins": [
+   {
+    "bin": "lt10",
+    "fraction": 0.459707716157328,
+    "hi": 10,
+    "inverted": 11,
+    "lo": null,
+    "real": 121
+   },
+   {
+    "bin": "10_12",
+    "fraction": 0.1613867514169343,
+    "hi": 12,
+    "inverted": 6,
+    "lo": 10,
+    "real": 188
+   },
+   {
+    "bin": "ge12",
+    "fraction": 0.024253164881201956,
+    "hi": null,
+    "inverted": 2,
+    "lo": 12,
+    "real": 417
+   }
+  ],
+  "scale": 5.056784877730608,
+  "stars": 4039203,
+  "triceratops_inverted": {
+   "pass": 5,
+   "pass_mes10": 1,
+   "tested": 24
+  }
  },
  "findability": {
   "below_9": {

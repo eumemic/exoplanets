@@ -331,30 +331,11 @@
    "code": {
     "effects": {
      "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-     "doc_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "dag.markers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "env": {
-     "dists": {
-      "numpy": {
-       "version": "2.5.3"
-      },
-      "pandas": {
-       "version": "2.3.3"
-      },
-      "python-dateutil": {
-       "version": "2.9.0.post0"
-      },
-      "pytz": {
-       "version": "2026.5"
-      },
-      "six": {
-       "version": "1.17.0"
-      },
-      "tzdata": {
-       "version": "2026.5"
-      }
-     },
+     "dists": {},
      "python": "3.12.13"
     },
     "parts": {
@@ -364,24 +345,20 @@
      "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
-     "doc_numbers.C_REASONS": "3438b8415677a75af9589c2605773346ee625fddd9af6990ea8292047e229219",
-     "doc_numbers.SETS": "03b2573a166a7ddcd805fff193beabb7e11b97f0bda5a6ca1249a5af2a079f38",
-     "doc_numbers.TIER_ORDER": "270ae88f8210d39f863ee0b67da473560369c1773e19589af6ddaf52fe3d1ab5",
-     "doc_numbers.by_tier": "b173d4728dec5502af13006de4266a8aaaffedeee66539c7d5af9bf0169f5768",
-     "doc_numbers.compute": "b86c54d6ee8efdf22c60368b69bb820c24a5400445d4293aaa9b0b8835db3f98",
-     "doc_numbers.slug": "132c277ea578e120dba6b91526c57dc3f01b04c8595d88c631635ca717a1e1b8",
-     "doc_numbers.tier_values": "66897ca781634385cca38c8dd198469b64814ea89fb9aafe7c005a5ff0e5d405",
-     "doc_numbers.validation": "cc038494c58e11e554f641db66d4acc2a0739b51798ce6c5ad2ce8def8acb1da",
-     "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
+     "dag.markers.BLOCK": "23dbdfa914f14385382e6e60e47964cba2a9440280169747cfa7899079572bcd",
+     "dag.markers.INLINE": "7e3f9b22a94b30ff067f85212a5b54944c6613b622056b53d6d3e30ce5e1cfd6",
+     "dag.markers.WORDS": "518e17be6b43e6381e2874e475fad41c85e69592549499a268b321bd58e77354",
+     "dag.markers.fill": "4d2eabc011ecf6f7c0fac8e538a5e739547ca6e767178828460ed6f2d7740638",
+     "dag.markers.lookup": "c2e22048208e32b46b4b0535d362933b35e6b31fbe85cfe59fc2fd380435d962",
+     "dag.markers.render": "577aa4c7d5ecae047ed64b7785e3f10892ed5f94349c6fb4a0326aace206ce1a",
      "rules.DOCS": "28ed58ccad880bdad135e4335621d30d80e28b9e92be8bee4585fd050972a916",
-     "rules.documents": "9da449ad4719b547e8307195aff6d92a275ee1ca1c3fd69f1ccff85fd71e6a8f",
-     "rules.numbers": "c8b15bc44287d68cebe47d2dd3b136086b4cc52bb2abce0c700dc1076e3fef89"
+     "rules.documents": "9da449ad4719b547e8307195aff6d92a275ee1ca1c3fd69f1ccff85fd71e6a8f"
     }
    },
    "inputs": {
     "README.md (template)": "b5ca14020484ed4154766a11dcaf1e27513920b7378cc3cc5964cc740aeeae6a",
     "results_public/README.md (template)": "a1de7ffe7b059f0501d81b4d61c9457573d9cfbeaf9be8fe8757ab961c6631ff",
-    "results_public/numbers.json": "6e187fcfe94e9c29365e09d27a08f089e4e486f83bbff0480258ab7e083d7818",
+    "results_public/numbers.json": "366453fcbd76bc4f0f8d9a833219c569bdb2d663bea8c344833d32123850eada",
     "validation/findability.md (template)": "11fedfa455c2fe7f7ff81dad9604914e307c90528cc85d0a41f1aaef22af4cd4"
    },
    "outputs": {
@@ -390,7 +367,7 @@
     "validation/findability.md": "73a02c3fea44e24b5cf03ee5a001bb1373d9a83e5bd7ef7faad7dabf53373dc4"
    },
    "params": {},
-   "stamp": "fc9c206df2d2efd6776569ae13abeb003b8d223606684f5a4a237e060bdd26ad"
+   "stamp": "dec43484244e010d28cc9c947225e7f0f2918c4ba5a998320f6cff6f8223b262"
   },
   "earlier_folders": {
    "code": {
@@ -468,7 +445,7 @@
    "code": {
     "effects": {
      "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-     "doc_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "doc_numbers": "230900dd1d30a0982596ae90a7dc0413656ef092724b325a066ea02ce0d49c0d",
      "findability": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
@@ -502,6 +479,8 @@
      "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
+     "doc_numbers.FIRST": "230900dd1d30a0982596ae90a7dc0413656ef092724b325a066ea02ce0d49c0d",
+     "doc_numbers.RESEARCH": "230900dd1d30a0982596ae90a7dc0413656ef092724b325a066ea02ce0d49c0d",
      "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
      "findability.CUTS": "f5b414711f09b2b597f761ef04a0832c6c87dfae319b1bbec432a0a4d99eb529",
      "findability.numbers": "80848acd40d92e034d738e0cf152f69c244cb1c0aa0d0ce3fe0ec0c904ce1cab",
@@ -518,7 +497,7 @@
     "validation/findability.json": "70bf323774735aa9347d657c6fa55379b82fbd52d610f605c684cfaf35870b1a"
    },
    "params": {},
-   "stamp": "823064dcd5a39b513295bc7f32408955de01ba896393546e2e529a1b4753118a"
+   "stamp": "a0be0599c198e912e887909c0a065ed4065a88227afc10422a49b22ff1bb67af"
   },
   "findability_transits": {
    "code": {
@@ -529,17 +508,32 @@
     },
     "env": {
      "dists": {
+      "astropy": {
+       "version": "8.0.1"
+      },
+      "astropy-iers-data": {
+       "version": "0.2026.10.5.1.0.7"
+      },
       "numpy": {
        "version": "2.5.3"
       },
+      "packaging": {
+       "version": "26.3"
+      },
       "pandas": {
        "version": "2.3.3"
+      },
+      "pyerfa": {
+       "version": "2.0.1.5"
       },
       "python-dateutil": {
        "version": "2.9.0.post0"
       },
       "pytz": {
        "version": "2026.5"
+      },
+      "pyyaml": {
+       "version": "6.0.3"
       },
       "six": {
        "version": "1.17.0"
@@ -582,7 +576,7 @@
      "N"
     ]
    },
-   "stamp": "7b16d12e5e5c46e186df603e2cac9d2ac47db73bde4e1be1a340a70c1c64b0f2"
+   "stamp": "6fa86549aa76ea3e5cc08525506469dedccf1feca5daa2a7e3c2bbea253b2a46"
   },
   "folders": {
    "code": {
@@ -715,7 +709,8 @@
    "code": {
     "effects": {
      "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-     "doc_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "doc_numbers": "230900dd1d30a0982596ae90a7dc0413656ef092724b325a066ea02ce0d49c0d",
+     "findability": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "env": {
@@ -749,15 +744,21 @@
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
      "doc_numbers.C_REASONS": "3438b8415677a75af9589c2605773346ee625fddd9af6990ea8292047e229219",
+     "doc_numbers.FIRST": "230900dd1d30a0982596ae90a7dc0413656ef092724b325a066ea02ce0d49c0d",
+     "doc_numbers.INV": "c55670b0ad2e1b413e5df486c03c377a7b9c7c6c96e988982b723a1843625e38",
+     "doc_numbers.RESEARCH": "230900dd1d30a0982596ae90a7dc0413656ef092724b325a066ea02ce0d49c0d",
      "doc_numbers.SETS": "03b2573a166a7ddcd805fff193beabb7e11b97f0bda5a6ca1249a5af2a079f38",
      "doc_numbers.TIER_ORDER": "270ae88f8210d39f863ee0b67da473560369c1773e19589af6ddaf52fe3d1ab5",
      "doc_numbers.by_tier": "b173d4728dec5502af13006de4266a8aaaffedeee66539c7d5af9bf0169f5768",
-     "doc_numbers.compute": "b86c54d6ee8efdf22c60368b69bb820c24a5400445d4293aaa9b0b8835db3f98",
+     "doc_numbers.compute": "38b4e9e503bd40c0292f29846ea3aef41791ae491134f4343820b8d29f27d3d9",
+     "doc_numbers.false_alarms": "0f140054d5c0b0563774c174a0f6a6abcf8ea5cd9192e3dd91a978e6a7be24d8",
+     "doc_numbers.funnel": "39d4e543d5e5f9fba773a7311d2baba9cdd170e8adcc8f4581470da6b9a6d2ac",
      "doc_numbers.slug": "132c277ea578e120dba6b91526c57dc3f01b04c8595d88c631635ca717a1e1b8",
      "doc_numbers.tier_values": "66897ca781634385cca38c8dd198469b64814ea89fb9aafe7c005a5ff0e5d405",
      "doc_numbers.validation": "cc038494c58e11e554f641db66d4acc2a0739b51798ce6c5ad2ce8def8acb1da",
      "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
-     "rules.numbers": "c8b15bc44287d68cebe47d2dd3b136086b4cc52bb2abce0c700dc1076e3fef89"
+     "findability.recheck_numbers": "687f8e14c0e82fc9315c0a557ccdea6ccddad0261ceae24defb8c857a02a9f14",
+     "rules.numbers": "c7d64ce9ce9f7c43b3fddccaf7cb66b5e095b2b7a797c46be5ff3609e2f247c6"
     }
    },
    "inputs": {
@@ -767,11 +768,13 @@
     "results_public/funnel_allsky.csv": "77d8675aac765e237fd4301569308b3e7eaba5bd2650f01b6550b0a19bc95caa",
     "results_public/products/triceratops.csv": "e3eb390529f377e4fdf7601a7d38a25967b9d210fb531ad18a6e4f53581822f9",
     "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694",
+    "validation/false_alarm_classifier_scores_star.csv.gz": "d9a6d31e7856939085b28e9401ff5803515c5c7fa3d0a8a7e53b3c5e809ec46d",
     "validation/findability.json": "70bf323774735aa9347d657c6fa55379b82fbd52d610f605c684cfaf35870b1a",
-    "validation/spoc_2min_recheck.csv": "dbf4a72f87ad41eaa2121093ef702a291b19fcf9ec09fcce1d0feb0181a20276"
+    "validation/spoc_2min_recheck.csv": "dbf4a72f87ad41eaa2121093ef702a291b19fcf9ec09fcce1d0feb0181a20276",
+    "validation/triceratops_inverted_close_neighbour.csv": "1276ac0ebec1d060a9c36c2a9275a3630b646000d96768ad551ef3a6856a3591"
    },
    "outputs": {
-    "results_public/numbers.json": "6e187fcfe94e9c29365e09d27a08f089e4e486f83bbff0480258ab7e083d7818"
+    "results_public/numbers.json": "366453fcbd76bc4f0f8d9a833219c569bdb2d663bea8c344833d32123850eada"
    },
    "params": {
     "catalog.counted_allsky": [
@@ -796,36 +799,17 @@
     "tiers.centroid_neighbour_p": 0.01,
     "tiers.centroid_reject_p": 0.001
    },
-   "stamp": "2fe4fe2391e198bfea716bddb0468da12c45607a3727d7a833758bb18ea94c5a"
+   "stamp": "0e046f839e296e879b80e2d8859432b0b391ebfbbe5d5cd937b1d08512f40b68"
   },
   "prose_claims": {
    "code": {
     "effects": {
      "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-     "doc_numbers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "dag.markers": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "env": {
-     "dists": {
-      "numpy": {
-       "version": "2.5.3"
-      },
-      "pandas": {
-       "version": "2.3.3"
-      },
-      "python-dateutil": {
-       "version": "2.9.0.post0"
-      },
-      "pytz": {
-       "version": "2026.5"
-      },
-      "six": {
-       "version": "1.17.0"
-      },
-      "tzdata": {
-       "version": "2026.5"
-      }
-     },
+     "dists": {},
      "python": "3.12.13"
     },
     "parts": {
@@ -835,27 +819,18 @@
      "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
-     "doc_numbers.C_REASONS": "3438b8415677a75af9589c2605773346ee625fddd9af6990ea8292047e229219",
-     "doc_numbers.SETS": "03b2573a166a7ddcd805fff193beabb7e11b97f0bda5a6ca1249a5af2a079f38",
-     "doc_numbers.TIER_ORDER": "270ae88f8210d39f863ee0b67da473560369c1773e19589af6ddaf52fe3d1ab5",
-     "doc_numbers.by_tier": "b173d4728dec5502af13006de4266a8aaaffedeee66539c7d5af9bf0169f5768",
-     "doc_numbers.compute": "b86c54d6ee8efdf22c60368b69bb820c24a5400445d4293aaa9b0b8835db3f98",
-     "doc_numbers.slug": "132c277ea578e120dba6b91526c57dc3f01b04c8595d88c631635ca717a1e1b8",
-     "doc_numbers.tier_values": "66897ca781634385cca38c8dd198469b64814ea89fb9aafe7c005a5ff0e5d405",
-     "doc_numbers.validation": "cc038494c58e11e554f641db66d4acc2a0739b51798ce6c5ad2ce8def8acb1da",
-     "doc_numbers.write": "9183c8a39cb4c4b157e79c32e3ac1a62f42c42eec8a5d7d2b90ca77bb6727c85",
+     "dag.markers.lookup": "c2e22048208e32b46b4b0535d362933b35e6b31fbe85cfe59fc2fd380435d962",
      "rules.CLAIMS": "466e7b0819efe48fd9a21a198fda851310826ea326ceec18e679db3928e2301c",
-     "rules.numbers": "c8b15bc44287d68cebe47d2dd3b136086b4cc52bb2abce0c700dc1076e3fef89",
      "rules.prose_claims": "401176753e153fae60ed34cbeca2258185af27fcc9145c4e3132f222b402c079"
     }
    },
    "inputs": {
-    "results_public/numbers.json": "6e187fcfe94e9c29365e09d27a08f089e4e486f83bbff0480258ab7e083d7818"
+    "results_public/numbers.json": "366453fcbd76bc4f0f8d9a833219c569bdb2d663bea8c344833d32123850eada"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "88d02cf64d45a9c55b55f9ee875446d0d1a133bcd77e83b158014bbf87895fac"
+   "stamp": "ef23acec21c93459d48c1a2f3cdbe96e2383b30960dccf2773835a349269f851"
   },
   "registry": {
    "code": {
@@ -957,6 +932,7 @@
   "spoc_measured": {
    "code": {
     "effects": {
+     "catalog_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "findability": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
@@ -985,6 +961,8 @@
      "python": "3.12.13"
     },
     "parts": {
+     "catalog_checks._phase_min": "3d68f4f9853a327030c7214ea910c98beca0da7416e6c88e60f0cf58285855eb",
+     "catalog_checks.same_ephemeris": "a2b58878849d267de990d15fb1c7fabd087d63d2c66d2624076eb8624a4d1d78",
      "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
      "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
      "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
@@ -1009,7 +987,7 @@
     "freshness.phase_min": 0.5
    },
    "result": "passed",
-   "stamp": "6e516cc2117abd89da4e05e8083ad1b30ed135aedbf69501c44e5e805487a83c"
+   "stamp": "a2252c278fde84356ce4e88b7f15159dc3d21932c9b0340c942296d455032135"
   },
   "spoc_recheck": {
    "code": {
