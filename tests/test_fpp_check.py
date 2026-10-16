@@ -13,13 +13,14 @@ GOOD = [[1, "TP", 0.9], [1, "EB", 0.05], [1, "BEB", 0.01], [2, "NEB", 0.04]]
 
 
 class FppCheckTests(unittest.TestCase):
-    def run_check(self, probs, n_runs=10, time=None):
+    def run_check(self, probs, n_runs=10, time=None, survivors=None):
         d = Path(tempfile.mkdtemp())
         (d / "folds").mkdir()
         with open(d / "runs.jsonl", "w") as fh:
             for k in range(n_runs):
                 fh.write(json.dumps(dict(key="tic1_P3.0000", mode="d", k=k, probs=probs)) + "\n")
-        (d / "tic1_P3.0000_fpp.json").write_text(json.dumps(dict(FPP_mean=0.1)))
+        (d / "tic1_P3.0000_fpp.json").write_text(json.dumps(dict(FPP_mean=0.1) if survivors is None else
+                                                                dict(FPP_mean=0.1, molusc_survivors=survivors)))
         t = np.arange(-0.05, 0.05, 2 / 1440) + 1e-4 if time is None else time
         np.savez(d / "folds" / "tic1_P3.0000.npz", time=t, flux=np.ones_like(t), flux_err=np.ones_like(t) * 1e-3,
                  cadence_s=np.int64(120))
@@ -43,6 +44,10 @@ class FppCheckTests(unittest.TestCase):
 
     def test_too_few_runs_fail(self):
         self.assertEqual(self.run_check(GOOD, n_runs=9).returncode, 1)
+
+    def test_cut_off_molusc_file_fails(self):
+        self.assertEqual(self.run_check(GOOD, survivors=140000).returncode, 0)
+        self.assertEqual(self.run_check(GOOD, survivors=5702).returncode, 1)
 
     def test_unbinned_fold_fails(self):
         t = np.sort(np.random.default_rng(0).uniform(-0.05, 0.05, 400))

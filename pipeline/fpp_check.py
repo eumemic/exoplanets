@@ -5,6 +5,7 @@ something went wrong, so each final result (with several directories, later ones
     population TRICERATOPS skips them all without an error (runs.jsonl keeps every scenario above 1e-6);
   - no degenerate run: scenarios without names, as when calc_probs stops early for a target without a mass, radius,
     Teff or parallax and leaves every scenario equally likely;
+  - MOLUSC survivors not far below the usual range (a run cut off part way leaves a short file);
   - at most one point per phase bin in the fold (export_fold.py --single-cadence: 2-minute and 200-second data binned to
     their cadence, longer cadences to --phase-bin-min), which needs the signal list for the durations.
 Usage: python fpp_check.py DIR [DIR ...] --list LIST.csv [--list ...] [--expect KEYS.txt] [--runs 10] [--phase-bin-min 2]
@@ -30,6 +31,8 @@ def main():
     ap.add_argument("--expect", help="file of keys that must have a result")
     ap.add_argument("--runs", type=int, default=10)
     ap.add_argument("--phase-bin-min", type=float, default=2.0)
+    ap.add_argument("--min-survivors", type=int, default=20000,
+                    help="fewest MOLUSC survivors (of 200,000 simulated companions; 30,000-180,000 when complete)")
     a = ap.parse_args()
     lst = pd.concat([pd.read_csv(f) for f in a.list]).drop_duplicates("key", keep="last").set_index("key")
     src = {}
@@ -49,9 +52,11 @@ def main():
                 degenerate.add(r["key"])
             if any(s in BLENDED and v > 0 for _, s, v in r["probs"]):
                 blended[r["key"]] += 1
-    bad_runs, no_blended, unbinned = [], [], []
+    bad_runs, no_blended, unbinned, few_companions = [], [], [], []
     for k, d in sorted(src.items()):
         j = json.load(open(os.path.join(d, f"{k}_fpp.json")))
+        if "molusc_survivors" in j and j["molusc_survivors"] < a.min_survivors:
+            few_companions.append((k, j["molusc_survivors"]))
         if runs[k]["d"] != a.runs or ("FPP_m_mean" in j and runs[k]["m"] != a.runs):
             bad_runs.append((k, dict(runs[k])))
         if not blended[k] and k not in degenerate:
@@ -69,9 +74,10 @@ def main():
     print("no blended-star scenario in any run:", no_blended or "none")
     print("degenerate (target not evaluated):", sorted(degenerate) or "none")
     print("folds with more than one point per phase bin:", unbinned or "none")
+    print("MOLUSC survivors below", a.min_survivors, "(a cut-off file):", few_companions or "none")
     if a.expect:
         print("expected keys without a result:", missing or "none")
-    sys.exit(1 if bad_runs or no_blended or degenerate or unbinned or missing else 0)
+    sys.exit(1 if bad_runs or no_blended or degenerate or unbinned or few_companions or missing else 0)
 
 
 if __name__ == "__main__":

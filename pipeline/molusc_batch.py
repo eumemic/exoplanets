@@ -138,15 +138,22 @@ def main():
         with open(os.path.join(out, f"tic{tic}.log"), "w") as log:
             print(f"tests: RUWE {'yes' if ruwe_ok else 'no (G, BP-RP or solution type)'}, Gaia contrast "
                   f"{'yes' if gaia_ok else 'no (mass above the BHAC15 grid)'}; age {age or 5.0} Gyr", file=log, flush=True)
-            subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, env=ENV)
-        if not os.path.exists(kept):
+            rc = subprocess.run(cmd, stdout=log, stderr=subprocess.STDOUT, env=ENV).returncode
+        if rc != 0 or not os.path.exists(kept):
+            # a run that stopped part way (on 15 October 2026 a full disk cut 49 files to ~6,000 of ~140,000 survivors)
+            # leaves a partial file, which must not pass as the survivors
+            if os.path.exists(kept):
+                os.remove(kept)
             return tic, "failed"
         k = pd.read_csv(kept)
         # what TRICERATOPS uses: survivors with periastron beyond 10 au
         used = int((k["semi-major axis(AU)"] * (1 - k["eccentricity"]) > 10).sum())
         pd.Series(dict(tic=tic, generated=a.n, survivors=len(k), used=used, ruwe_test=bool(ruwe_ok), gaia_test=bool(gaia_ok),
                        age_gyr=age or 5.0, ruwe=float(g["ruwe"]))).to_json(os.path.join(out, f"tic{tic}_molusc.json"))
-        k.to_csv(kept + ".gz", index=False)    # pandas (and so TRICERATOPS) reads it compressed
+        # pandas (and so TRICERATOPS) reads it compressed; written under another name and renamed, so that the "done"
+        # check above never meets a partial file
+        k.to_csv(kept + ".gz.tmp", index=False, compression="gzip")
+        os.replace(kept + ".gz.tmp", kept + ".gz")
         os.remove(kept)
         return tic, "ok"
 

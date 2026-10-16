@@ -34,6 +34,13 @@ class SilentFailureTests(unittest.TestCase):
             fh.write("Mact,logg\n1,4.5\n")
         self.assertTrue(fc.has_population(SimpleNamespace(trilegal_fname=fh.name)))
 
+    def test_cut_off_population_file_is_refused(self):
+        import tempfile
+        from types import SimpleNamespace
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as fh:
+            fh.write("Mact,logg,logTe,[M/H],TESS,J,H,Ks\n0.8,4.6,3.7,0.0,12.1,11.2,10.7,10.6\n0.5,4.8,3.6\n")
+        self.assertFalse(fc.has_population(SimpleNamespace(trilegal_fname=fh.name)))
+
     def test_target_without_parallax_is_refused(self):
         import tempfile
         from types import SimpleNamespace

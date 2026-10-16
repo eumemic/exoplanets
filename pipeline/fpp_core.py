@@ -173,9 +173,17 @@ def auto_nsamples(exptime):
 
 
 def has_population(target):
-    """Whether the target has the field-star population file that calc_probs's blended-star scenarios need."""
+    """Whether the target has a complete field-star population file, which calc_probs's blended-star scenarios need.
+    A write cut off (e.g. by a full disk) leaves a short last row, with empty trailing columns."""
     f = getattr(target, "trilegal_fname", None)
-    return isinstance(f, str) and os.path.isfile(f) and os.path.getsize(f) > 0
+    if not (isinstance(f, str) and os.path.isfile(f) and os.path.getsize(f) > 0):
+        return False
+    import pandas as pd
+    try:
+        d = pd.read_csv(f)
+    except Exception:
+        return False
+    return len(d) > 0 and not d.isna().any().any()
 
 
 def n_scenarios(target):
