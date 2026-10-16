@@ -7,8 +7,8 @@ entry is used (the batches run before the store keep their order). A catalog row
 the same TIC and the closest period within a relative difference of match_rel; keys left over (older periods from before
 a refit) are not used. A used result must pass the checks of fpp_check.py; a result in which TRICERATOPS never evaluated
 the target (every scenario equally likely, as for a target without a TIC parallax) is kept as degenerate, with its
-values empty. A newer result that fails the checks is not used: the signal's latest result that passes them is, and
-the rejected ones are listed in triceratops_rejected.csv. Column store is the entry's key, batch the batch that computed it, legacy is yes for a result
+values empty. A result that fails the checks is not used: the signal's latest result that passes them is (none, if
+none does: tri_plan.py then lists the row as pending), and the rejected ones are listed in triceratops_rejected.csv. Column store is the entry's key, batch the batch that computed it, legacy is yes for a result
 imported from a batch that did not keep all of its inputs, and lightcurves the hash of the light-curve list its fold was
 made from (lcindex.list_hash; empty for a fold that did not record it, made from the searched list), and code the hashes
 of the code and packages of its stages (stage_code.py; empty for a legacy result).
@@ -69,7 +69,7 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
         if k in owner:
             raise ValueError(f"TRICERATOPS result {k} matches two catalog rows: {owner[k]} and {row}")
         use[row], owner[k] = k, row
-    rows, problems, rejected = [], [], []
+    rows, rejected = [], []
     for row, key in use.items():
         for skey, req, res in ranked[key]:
             batch, j, sig = res["batch"], res["fpp"], req.get("signal") or res.get("signal")
@@ -83,14 +83,9 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
                                             min_survivors, phase_bin_min, tic=int(req["tic"]))
             if not found:
                 break
-            if req.get("legacy"):               # a legacy result is the oldest: there is nothing to fall back on
-                problems += [f"{key} ({batch}): {x}" for x in found]
-                break
             rejected.append(dict(key=key, batch=batch, store=skey, problems="; ".join(found)))
         else:
             continue                            # no result passes the checks: the row has none (tri_plan lists it)
-        if found:
-            continue
         gaia = "FPP_m_mean" in j
         stages = {k: _request(store, k, res.get(f)) for k, f in (("fold", "fold_key"), ("tri_setup", "setup_key"),
                                                                   ("molusc", "molusc_key")) if res.get(f)}
@@ -109,8 +104,6 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
             legacy="yes" if req.get("legacy") else "",
             lightcurves=lcindex.list_hash(fold_req["lightcurves"]) if fold_req.get("lightcurves") else "",
             code="" if req.get("legacy") else stage_code.of_requests(dict(stages, tri=req))))
-    if problems:
-        raise ValueError(f"{len(problems)} TRICERATOPS results fail the checks:\n" + "\n".join(problems[:50]))
     with open(out_csv, "w", newline="") as fh:
         w = csv.DictWriter(fh, COLUMNS, lineterminator="\n")
         w.writeheader()

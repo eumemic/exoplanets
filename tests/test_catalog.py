@@ -192,9 +192,15 @@ class TriceratopsTableTests(unittest.TestCase):
         for kw, msg in ((dict(runs=9), "runs"), (dict(probs=(("TP", 0.9), ("EB", 0.1))), "blended"),
                         (dict(survivors=8000), "MOLUSC"), (dict(cadence=1800, spacing_min=0.5), "phase bin")):
             root = Path(tempfile.mkdtemp())
-            with self.assertRaises(ValueError) as cm:
-                self.run_build(root, [self.batch(root, "b1", **kw)])
-            self.assertIn(msg, str(cm.exception))
+            self.batch(root, "b1", **kw)
+            with open(root / "batches.csv", "w") as fh:
+                fh.write("batch,order,finished_utc,purpose\nb1,0,,\n")
+            tri_store.import_batches(store.Store(root / "store"), root, root / "batches.csv")
+            rows = tt.build(root / "store", [("candidates_allsky", "5", "3.0")], root / "out.csv",
+                            rejected_csv=root / "rejected.csv")
+            self.assertEqual(rows, [])                       # the row has no result: tri_plan lists it as pending
+            with open(root / "rejected.csv") as fh:
+                self.assertIn(msg, next(csv.DictReader(fh))["problems"])
 
     def test_a_superseded_result_failing_a_check_is_not_used_or_checked(self):
         root = Path(tempfile.mkdtemp())
