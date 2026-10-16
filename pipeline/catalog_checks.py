@@ -10,6 +10,9 @@ none). Run by the checks in rules.py.
   full-sky folders in candidates/allsky/ and the earlier searches' in candidates/).
 - markdown_tables: every table in a document has as many cells in each row as in its header (GitHub does not show a
   table whose delimiter row differs).
+- fits_match_catalog: the catalog's fitted columns (b, and P_d and T14_h for the full sky, Rp_Re for the earlier
+  searches) equal the medians of the transit_fit.json in each candidate's folder, at the catalog's precision, so a
+  refit cannot leave the catalog's values behind.
 """
 import csv
 import math
@@ -126,4 +129,21 @@ def folders_complete(root, base, catalog_csv, triceratops_csv, table, required, 
                 problems.append(f"{r['candidate_id']}: triceratops_gaia.json is not the result the catalog uses")
         elif os.path.exists(g):
             problems.append(f"{r['candidate_id']}: triceratops_gaia.json without a TRICERATOPS result in the catalog")
+    return problems
+
+
+def fits_match_catalog(root, allsky_csv, earlier_csv):
+    import json
+    problems = []
+    for base, path, cols in (("candidates/allsky", allsky_csv, (("b", "b", 2), ("P_d", "P", 6), ("T14_h", "T14_h", 2))),
+                             ("candidates", earlier_csv, (("b", "b", 2), ("Rp_Re", "Rp", 2)))):
+        for r in _rows(path):
+            f = os.path.join(root, base, r["candidate_id"], "transit_fit.json")
+            if not r["b"] or not os.path.exists(f):
+                continue
+            with open(f) as fh:
+                j = json.load(fh)
+            for col, key, nd in cols:
+                if key in j and abs(_f(r[col]) - round(j[key][1], nd)) > 1.01 * 10 ** -nd:
+                    problems.append(f"{r['candidate_id']}: {col} {r[col]} in the catalog, {j[key][1]:.{nd}f} in {base}/{r['candidate_id']}/transit_fit.json")
     return problems

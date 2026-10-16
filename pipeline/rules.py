@@ -35,16 +35,16 @@ def triceratops_table(ctx):
              match_rel=ctx.param("triceratops.match_period_rel"))
 
 
-@rule(inputs=["results_public/products/centroid_batches.csv", "results_cloud/t10/list.csv", "results_cloud/t10/stars.csv",
-              "results_cloud/t10/cs/*.json", "results_public/products/measurements_allsky.csv",
-              "results_public/products/measurements_earlier.csv"],
+@rule(inputs=[f"{STORE}/centroid/*/*/request.json", f"{STORE}/centroid/*/*/result.json", f"{STORE}/centroid/*/*/*.json",
+              "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
       outputs=["results_public/products/centroids.csv"], params=["triceratops.match_period_rel"])
 def centroid_table(ctx):
+    """The per-sector centroid measurement each catalog row uses, from the store (centroid_table.py, centroid_store.py)."""
     rows = [(t, r["TIC"], r["P_d"]) for t, f in (("candidates_allsky", "measurements_allsky.csv"),
                                                  ("tiers_earlier_candidates", "measurements_earlier.csv"))
             for r in cat.read_rows(ctx.input(f"results_public/products/{f}"))]
-    ct.build(ctx.input("results_public/products/centroid_batches.csv"), ctx.root / "results_cloud", rows,
-             ctx.output("results_public/products/centroids.csv"), match_rel=ctx.param("triceratops.match_period_rel"))
+    ct.build(ctx.root / STORE, rows, ctx.output("results_public/products/centroids.csv"),
+             match_rel=ctx.param("triceratops.match_period_rel"))
 
 
 @rule(inputs=["results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv",
@@ -212,6 +212,14 @@ def folders(ctx):
                  ctx.input("results_public/products/triceratops.csv"), ctx.root / STORE,
                  ctx.param("catalog.folder_tiers_allsky"))
     print(f"folders: {n}")
+
+
+@check(inputs=["candidates/allsky/*/transit_fit.json", "candidates/*/transit_fit.json", "results_public/candidates_allsky.csv",
+               "results_public/tiers_earlier_candidates.csv"])
+def fits_match_catalog(ctx):
+    problems = cc.fits_match_catalog(ctx.root, ctx.input("results_public/candidates_allsky.csv"),
+                                     ctx.input("results_public/tiers_earlier_candidates.csv"))
+    assert not problems, f"{len(problems)} catalog values differ from the candidates' fits:\n" + "\n".join(problems[:40])
 
 
 @check(inputs=["candidates/allsky", "results_public/candidates_allsky.csv", "results_public/products/triceratops.csv"],

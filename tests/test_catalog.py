@@ -17,6 +17,7 @@ import catalog_checks as cc  # noqa: E402
 import centroid_table as ctab  # noqa: E402
 import tri_plan as tp  # noqa: E402
 import triceratops_table as tt  # noqa: E402
+import centroid_store  # noqa: E402
 import store  # noqa: E402
 import tri_store  # noqa: E402
 from dag.params import load  # noqa: E402
@@ -293,6 +294,13 @@ class FreshnessTests(unittest.TestCase):
         self.assertFalse(cat.needs_triceratops(dict(b="0.95", ruwe="1"), P, "tiers_earlier_candidates"))
 
 
+class CloudWorkerTests(unittest.TestCase):
+    def test_lock_pins_are_read_by_name_and_version(self):
+        import cloud_worker
+        text = "Foo_Bar==3.9.2\n# a comment\nbaz==1.0 ; python_version < '4'\ntransitDiffImage @ git+https://x\n"
+        self.assertEqual(cloud_worker.pins(text), {"foo-bar": "3.9.2", "baz": "1.0"})
+
+
 class CentroidTableTests(unittest.TestCase):
     def test_measurements_become_catalog_columns_and_artifacts_are_not_neighbours(self):
         root = Path(tempfile.mkdtemp())
@@ -306,7 +314,8 @@ class CentroidTableTests(unittest.TestCase):
         (d / "cs" / "tic5_P3.0000.json").write_text(json.dumps(dict(key="tic5_P3.0000", sectors=secs, stars=stars)))
         (d / "stars.csv").write_text("key,tic,disposition\ntic5_P3.0000,5,\ntic5_P3.0000,6,\ntic5_P3.0000,7,ARTIFACT\n")
         (root / "batches.csv").write_text("batch,order,finished_utc,purpose\nb1,1,,\n")
-        rows = ctab.build(root / "batches.csv", root, [("candidates_allsky", "5", "3.0")], root / "out.csv")
+        centroid_store.import_batches(store.Store(root / "store"), root, root / "batches.csv")
+        rows = ctab.build(root / "store", [("candidates_allsky", "5", "3.0")], root / "out.csv")
         r = rows[0]
         self.assertEqual((r["cs_sectors"], r["cs_neighbour"]), (3, 6))            # TIC 7 is an artifact
         self.assertLess(float(r["cs_p_target"]), 0.001)

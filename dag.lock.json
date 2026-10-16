@@ -131,7 +131,7 @@
    },
    "inputs": {
     "results_public/overrides.csv": "83350a8c69ffb1f2f0d4b815f25b73c35e66ed796995076b9b6a7b06454bdfe1",
-    "results_public/products/centroids.csv": "4aa72fd431f08aaeda3a50c442b8188360931a86aa30f082f4a15bae16934736",
+    "results_public/products/centroids.csv": "e68c53c85c8523ca588014cce905ecae75613cd1059be031d6f83ad903f00689",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
     "results_public/products/measurements_earlier.csv": "e777c95acb700d68fc7a9b7bf5e72fd3541d1c8ea525fc340cc56688da943b6d",
     "results_public/products/triceratops.csv": "fc19189eb5c64cbea641a35da799d50d39fb19559ba01ecfc69716f21664ac48"
@@ -170,7 +170,7 @@
     "tiers.ruwe_max": 1.4,
     "tiers.system_min": 2
    },
-   "stamp": "667752ba7275f7773a54a89190fb9dfa8134dafcfb8063c7466f14d10c9801d5"
+   "stamp": "61c4dd7f8acee2566e795d70bc1baac29049cca9b445b58956ffd1a04bd1ae58"
   },
   "centroid_inputs_current": {
    "code": {
@@ -199,7 +199,7 @@
     }
    },
    "inputs": {
-    "results_public/products/centroids.csv": "4aa72fd431f08aaeda3a50c442b8188360931a86aa30f082f4a15bae16934736",
+    "results_public/products/centroids.csv": "e68c53c85c8523ca588014cce905ecae75613cd1059be031d6f83ad903f00689",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8"
    },
    "outputs": {},
@@ -210,16 +210,19 @@
     "freshness.phase_min": 0.5
    },
    "result": "passed",
-   "stamp": "b6b0fabc8b54b4585c4852bd1fd8b5fda2fc9c99a2c950210dfdb493d29e9b99"
+   "stamp": "2c32f59e25af3a74cb9849c12dbf325a5fc39794f3eff96ac149ffdec8877def"
   },
   "centroid_table": {
    "code": {
     "effects": {
      "catalog": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "centroid_store": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "centroid_table": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "centroid_test": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
      "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+     "dag.hashing": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "store": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
     },
     "env": {
      "dists": {
@@ -249,10 +252,11 @@
     },
     "parts": {
      "catalog.read_rows": "3cfead4ed8dbc6774d9a63bc9dcacced2176cdbdf6a714b09da1dd7d0b9ccdb8",
-     "centroid_table.COLUMNS": "dc6269349b4da6a025e264edc790d67a477b8b5598ad4da42220bbdd5b15ab9f",
+     "centroid_store.latest": "ba00785050dfcd267a4d7e99c9bb4eedd5ab8e208f830c19f40434ed71810604",
+     "centroid_table.COLUMNS": "e03dabf1cfb6d6002ec316b30f5ce17b061580ed7197b70c4cd26b1d0b678f81",
      "centroid_table._g2": "57201f6b401ab21347996111d602b7bb11c4f58ff268312aac57e6b0b570ac10",
      "centroid_table._r1": "08be24a8f5acbfb02ed896726389ae7b2719c946ee8c632022a2fdf70262cc5b",
-     "centroid_table.build": "f095d8e8cd85729d3e7d48253ebca1be1d3747006840ea9252582a4537dd5c3a",
+     "centroid_table.build": "63db306444fa001afc54a4686442a2367f4573f42dd6abeb9dcebc225a098d63",
      "centroid_test.FLOOR": "4ac9b4edf8e9633d1fc67a6d21887cca28c7cc6f023221a15953d18b0ed60f78",
      "centroid_test.MAX_OFFSET": "6d0e146c3e9c78b98e8657614f1b49e76437d34b7355268c56b88fe89e247256",
      "centroid_test.PHANTOM": "a7e08eb542d58d246382082b87f4da27827c22daf5d870df7c3d50ff1207354f",
@@ -265,24 +269,31 @@
      "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
-     "rules.centroid_table": "1f76e969abc905240b5efd9e210dd7eb81258cc5ca033beccde4386949caac1e"
+     "dag.hashing._canon": "409638e40e32f213deb057e9fc086e80e6cd524df86b003d5087ee9d21d8ba1c",
+     "dag.hashing.canonical_json": "773e92dcb2ee68c7a77bb8c94b47050bc7cd31e8c15b4456d4d3c8804890b50c",
+     "dag.hashing.sha256_bytes": "8fb354c31c13f13d5ce0c2a169834685c926eea1d21679fb6618e520c21cf6d6",
+     "dag.hashing.sha256_json": "f0c332a7c8280edbfce71e55cebb398dc64a1799a7d11f329010611218dfbd82",
+     "rules.STORE": "0bf9ef2c583c26238722fc8c1fb6d31418d873303c843c6c86253e2a387b9018",
+     "rules.centroid_table": "0926b94ddd52f7b641bd73359b8e46b54cafef054519b8c02ba0f6a404734f38",
+     "store.ROOT": "4f3f0499fd86a6c853238889cf32bb7ff7dcc7ad1b2392a9117da8175b60a61a",
+     "store.Store": "dc848444353b4e2ab522df3accbbd081112aba7b2b04646064561906ccd9fc3c",
+     "store.key_of": "4b86820d299b78fc074a4ef9d52d35dda95c62c448f570d5da5226a511555504"
     }
    },
    "inputs": {
-    "results_cloud/t10/cs/*.json": "e9fbc308237a55d784228fd7f16ea27ef154a58480f4da73ca345646c814bc9c",
-    "results_cloud/t10/list.csv": "c38add8096d77dd2991cec446e7c60ebe892017c237c4894e1adab16d8d00bd7",
-    "results_cloud/t10/stars.csv": "d527a05c7c84184ce75e28f0ddd6084535824a592adc2a1b85424cd81d322c0c",
-    "results_public/products/centroid_batches.csv": "100db43a25a97a877b96215f378d0a5511f3f17505d725ceb69ad86e554e6c2e",
+    "results_cloud/store/centroid/*/*/*.json": "08260e2830212341bb4ca9046182c2ef148eb81a7787de6eed6c0d9730fb1ce5",
+    "results_cloud/store/centroid/*/*/request.json": "284fd935fe026f91cf34e87c26939cbda532167bae52ed812c0ebea57f186926",
+    "results_cloud/store/centroid/*/*/result.json": "a870e816aae5883796ab468cb8790381070ed88ccdf279213cd0d839e062a9e8",
     "results_public/products/measurements_allsky.csv": "47bb2eb9f2a070431caacf607bb61d7d2219c7dbc08ce4a8ff647357c3ac34b8",
     "results_public/products/measurements_earlier.csv": "e777c95acb700d68fc7a9b7bf5e72fd3541d1c8ea525fc340cc56688da943b6d"
    },
    "outputs": {
-    "results_public/products/centroids.csv": "4aa72fd431f08aaeda3a50c442b8188360931a86aa30f082f4a15bae16934736"
+    "results_public/products/centroids.csv": "e68c53c85c8523ca588014cce905ecae75613cd1059be031d6f83ad903f00689"
    },
    "params": {
     "triceratops.match_period_rel": 0.002
    },
-   "stamp": "88164d3eb195ed011fbc86d5a318d0dcd889837b2df3fe00fd44260dea3ad0d9"
+   "stamp": "5df7dc193367b137ec32737a9267fb0dcf34bcb4180c7915542a68d312def926"
   },
   "counted_measured_centroids": {
    "code": {
@@ -579,6 +590,41 @@
    },
    "stamp": "6fa86549aa76ea3e5cc08525506469dedccf1feca5daa2a7e3c2bbea253b2a46"
   },
+  "fits_match_catalog": {
+   "code": {
+    "effects": {
+     "catalog_checks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "dag.context": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+     "rules": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "env": {
+     "dists": {},
+     "python": "3.12.13"
+    },
+    "parts": {
+     "catalog_checks._f": "8df0c40c0304216fb016c1b0d4985aedeb85ba96e1b844fdc1cc57254ba71e62",
+     "catalog_checks._rows": "ee0de6a3b9adf3cc82125af25a5ce68e3d4089f24fcba75b3507dab42d3d8456",
+     "catalog_checks.fits_match_catalog": "ac0e8e8ced8f907a1e34996182590f69b619bda3ee0cd7423dda6aee21bd0295",
+     "dag.context.GLOB": "1a8e2b6053afe0abe39f97afb63e0a3d37ad61a5fb7decf27152836cf99a5f9e",
+     "dag.context.RunContext": "7bb464e41f6da10646d7d7d202af10439a6b65865803a33287854712d17a424c",
+     "dag.context._match": "3c93c642a0c7ada7e82d7e3164baedf14a287c24f9bac659700b1abfc6fd236b",
+     "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
+     "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
+     "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
+     "rules.fits_match_catalog": "e05a576569857c95c5e567e1801c414f247055e1c9c1f794789de503204d789b"
+    }
+   },
+   "inputs": {
+    "candidates/*/transit_fit.json": "ae8f491ce84591bbcd937c67f8b2ab41aa3c8e287103644e5b19e33a4c7e616f",
+    "candidates/allsky/*/transit_fit.json": "b7ced7b090130a70092fd2cb70c8f4b7268550605f31bc1b0df61fbfb4fcfc83",
+    "results_public/candidates_allsky.csv": "cb77f7c9dada4711d6ba23e1b69050d51749287087c994a3e86390411a2bc72c",
+    "results_public/tiers_earlier_candidates.csv": "936a303ded6051834eb45e67b88278b5bb9770e5b16e6d54183214c11bd30694"
+   },
+   "outputs": {},
+   "params": {},
+   "result": "passed",
+   "stamp": "9a74b26b6632899fb74630e822764f7c99d2b01c357e37c5ee6d5a682e1c3062"
+  },
   "folders": {
    "code": {
     "effects": {
@@ -699,13 +745,13 @@
    "inputs": {
     "README.md": "ccc91cb6253ba1be18e4a0d285c024300a7efa6e9676526b7e26be4c792bd42f",
     "results_public/README.md": "b3c396e883f6fe8412ed10fea11e3668a11908f3f475676e1c529249210ddcf8",
-    "results_public/products/README.md": "f7159fb5381bc732a5eaee30663b33f6987bc3eff77d7d589e4fc516ddddfe91",
+    "results_public/products/README.md": "2b62f4e39ec24643815527c60da297a142ec0737ce6f5209798241fd2c5ad0e0",
     "validation/findability.md": "73a02c3fea44e24b5cf03ee5a001bb1373d9a83e5bd7ef7faad7dabf53373dc4"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "9f1cf855a668075ca0397f4d695610129790eb0ad4257214b92a7677ae410553"
+   "stamp": "17233e8daaf94d727fc743afc5a81d85eba634ed7315cfa1e5c9681f3cdf1475"
   },
   "numbers": {
    "code": {

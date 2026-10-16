@@ -47,7 +47,7 @@ def log(msg):
 def put(url, data, tries=4):
     for i in range(tries):
         try:
-            req = urllib.request.Request(url, data=data, method="PUT")
+            req = urllib.request.Request(url, data=data, method="PUT", headers={"Content-Type": "application/octet-stream"})
             with urllib.request.urlopen(req, timeout=120) as r:
                 if r.status in (200, 204):
                     return True
@@ -66,19 +66,25 @@ def _norm(n):
     return re.sub(r"[-_.]+", "-", n).lower()
 
 
+def pins(text):
+    """{normalised name: version} of the name==version lines of a lock file (other lines, such as a git URL, are
+    left out)."""
+    lines = (x.split(";")[0].strip() for x in text.splitlines())
+    return {_norm(n): v.strip() for n, v in (a.split("==", 1) for a in lines if "==" in a and not a.startswith("#"))}
+
+
 def check_env():
     """{lock file: its sha256 if every pin is installed at that version, else 'mismatch: ...'}."""
     out = {}
     for lock, venv in VENVS.items():
         text = open(os.path.join(EXO, lock)).read()
-        pins = dict(_norm(a).split("==") for a in (x.split(";")[0].strip() for x in text.splitlines())
-                    if "==" in a and not a.startswith("#"))
+        pins_ = pins(text)
         got = json.loads(subprocess.run(
             [os.path.join(EXO, venv, "bin", "python"), "-c",
              "import importlib.metadata as m, json; print(json.dumps({d.metadata['Name']: d.version for d in m.distributions()}))"],
             capture_output=True, text=True, check=True).stdout)
         got = {_norm(k): v for k, v in got.items()}
-        bad = [f"{k} {v} (installed {got.get(k)})" for k, v in pins.items() if got.get(k) != v]
+        bad = [f"{k} {v} (installed {got.get(k)})" for k, v in pins_.items() if got.get(k) != v]
         out[lock] = hashlib.sha256(text.encode()).hexdigest() if not bad else "mismatch: " + ", ".join(bad[:10])
     return out
 

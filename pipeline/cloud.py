@@ -61,6 +61,13 @@ def aws():
     return boto3.Session(profile_name=AWS["profile"], region_name=AWS["region"])
 
 
+def s3client():
+    """S3 with SigV4 presigned URLs, which sign only the host: a SigV2 URL also signs the Content-Type, and an upload
+    whose client sets another one (urllib sends application/x-www-form-urlencoded) is refused."""
+    from botocore.config import Config
+    return aws().client("s3", config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}))
+
+
 # snapshots ----------------------------------------------------------------------------------------------------------
 def star_rows(tics):
     ids = set(tics)
@@ -257,15 +264,24 @@ def kit(p, d, s3, hours):
     return tgz
 
 
-def user_data(kit_url, limit_min):
+def user_data(kit_url, boot_url, limit_min):
+    """The instance's start: a hard stop at the time limit, the kit, the worker as a systemd unit of its own (a process
+    left behind by cloud-init's last stage can be stopped with it), and the boot log uploaded for diagnosis."""
     return f"""#!/bin/bash
-# batch instance (pipeline/cloud.py): hard stop at the time limit; the worker shuts the instance down when it ends
+exec > /var/log/exo-batch-boot.log 2>&1
+set -x
 shutdown -h +{limit_min}
-sudo -u ec2-user -i bash -c 'cd ~ && curl -fsS -o kit.tgz "{kit_url}" && cd exo && rm -rf pipeline batch && tar xzf ~/kit.tgz && (nohup .venv/bin/python pipeline/cloud_worker.py batch > ~/worker.out 2>&1 &)'
+sudo -u ec2-user curl -fsS --retry 5 -o /home/ec2-user/kit.tgz "{kit_url}"
+sudo -u ec2-user bash -c 'cd ~/exo && rm -rf pipeline batch && tar xzf ~/kit.tgz'
+systemd-run --unit=exo-batch --uid=ec2-user --gid=ec2-user --working-directory=/home/ec2-user/exo \\
+  --setenv=HOME=/home/ec2-user /home/ec2-user/exo/.venv/bin/python pipeline/cloud_worker.py batch
+sleep 20
+systemctl status exo-batch --no-pager
+curl -sS -X PUT -T /var/log/exo-batch-boot.log "{boot_url}"
 """
 
 
-def launch(p, d, kit_url, limit_min, itype):
+def launch(p, d, kit_url, boot_url, limit_min, itype):
     ec2 = aws().client("ec2")
     r = ec2.run_instances(
         ImageId=AWS["ami"], InstanceType=itype, KeyName=AWS["key"], MinCount=1, MaxCount=1,
@@ -274,7 +290,7 @@ def launch(p, d, kit_url, limit_min, itype):
                                                                        InstanceInterruptionBehavior="terminate")),
         InstanceInitiatedShutdownBehavior="terminate",
         BlockDeviceMappings=[dict(DeviceName="/dev/xvda", Ebs=dict(VolumeSize=60, VolumeType="gp3", DeleteOnTermination=True))],
-        UserData=user_data(kit_url, limit_min),
+        UserData=user_data(kit_url, boot_url, limit_min),
         TagSpecifications=[dict(ResourceType="instance", Tags=[dict(Key="project", Value="exoplanets"),
                                                                dict(Key="batch", Value=p["id"]),
                                                                dict(Key="Name", Value=f"exo-{p['id']}")])])
@@ -301,7 +317,7 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
     {key: {store, problems}}."""
     d = os.path.join(BATCHES, bid)
     p = json.load(open(os.path.join(d, "plan.json")))
-    s3 = aws().client("s3")
+    s3 = s3client()
     prefix = f"batches/{bid}/items/"
     done_path = os.path.join(d, "ingested.json")
     done = json.load(open(done_path)) if os.path.exists(done_path) else {}
@@ -335,14 +351,16 @@ def run(bid, hours=None, store_root=st.ROOT):
         raise SystemExit(f"batch {bid} was launched already (instance.json); use ingest")
     itype = p["estimate"]["instance"]
     limit_h = hours or p["estimate"]["limit_hours"]
-    s3 = aws().client("s3")
+    s3 = s3client()
     tgz = kit(p, d, s3, limit_h + 2)
     s3.upload_file(tgz, AWS["bucket"], f"batches/{bid}/kit.tgz")
     kit_url = _presign(s3, "get_object", f"batches/{bid}/kit.tgz", 1)
-    iid = launch(p, d, kit_url, int(limit_h * 60), itype)
+    boot_url = _presign(s3, "put_object", f"batches/{bid}/logs/boot.log", 1)
+    iid = launch(p, d, kit_url, boot_url, int(limit_h * 60), itype)
     t0 = time.time()
-    print(f"batch {bid}: launched {iid} ({itype}) at {datetime.now().astimezone().strftime('%H:%M %Z')}; limit {limit_h} h",
-          flush=True)
+    from zoneinfo import ZoneInfo
+    pt = datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%H:%M %Z")
+    print(f"batch {bid}: launched {iid} ({itype}) at {pt}; limit {limit_h} h", flush=True)
     keys = {x["item"]["key"] for x in p["items"]}
     last_beat, status = t0, "running"
     try:
