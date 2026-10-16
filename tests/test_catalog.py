@@ -306,6 +306,21 @@ class TriceratopsTableTests(unittest.TestCase):
                                             remote_archive="s3://b/k.big.tgz")
         self.assertIn("the new target setup differs from the one the result ran on", problems)
 
+    def test_a_setup_made_again_by_new_code_makes_the_result_current(self):
+        import stage_code
+        root = Path(tempfile.mkdtemp())
+        self.run_build(root, [self.batch(root, "b1")])
+        s = store.Store(root / "store")
+        d, plan_item = self.cloud_item(root)
+        key, _ = tri_store.ingest_item(s, d, plan_item, "bX", 10 ** 9)
+        req, res, _ = s.get("tri", key)
+        sreq = s.get("tri_setup", res["setup_key"])[0]
+        s.put("tri_setup", dict(sreq, code="c-new"), dict(content=req["setup"]))     # the same content, made by new code
+        now = {"tri_setup": stage_code.short("c-new", sreq["env"])}
+        rows = tt.build(root / "store", [("candidates_allsky", "5", "3.0")], root / "out.csv", code_now=now)
+        self.assertEqual(stage_code.changed(rows[0]["code"], dict(now, **{k: v for k, v in (
+            x.split("=") for x in rows[0]["code"].split()) if k != "tri_setup"})), [])
+
     def test_contrast_curve_runs_are_stored_as_their_own_kind(self):
         root = Path(tempfile.mkdtemp())
         d, plan_item = self.cloud_item(root)

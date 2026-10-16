@@ -37,7 +37,8 @@ def stage_code(ctx):
 
 @rule(inputs=[f"{STORE}/tri/*/*/request.json", f"{STORE}/tri/*/*/result.json", f"{STORE}/tri/*/*/check.json",
               f"{STORE}/fold/*/*/fold.npz", f"{STORE}/fold/*/*/request.json", f"{STORE}/tri_setup/*/*/request.json",
-              f"{STORE}/molusc/*/*/request.json",
+              f"{STORE}/tri_setup/*/*/result.json", f"{STORE}/tri_setup/*/*/check.json", f"{STORE}/molusc/*/*/request.json",
+              "results_public/products/stage_code.json",
               "results_public/products/measurements_allsky.csv", "results_public/products/measurements_earlier.csv"],
       outputs=["results_public/products/triceratops.csv", "results_public/products/triceratops_rejected.csv"],
       params=["triceratops.*"])
@@ -50,7 +51,8 @@ def triceratops_table(ctx):
     tt.build(ctx.root / STORE, rows, ctx.output("results_public/products/triceratops.csv"), runs=ctx.param("triceratops.runs"),
              min_survivors=ctx.param("triceratops.min_survivors"), phase_bin_min=ctx.param("triceratops.phase_bin_min"),
              match_rel=ctx.param("triceratops.match_period_rel"),
-             rejected_csv=ctx.output("results_public/products/triceratops_rejected.csv"))
+             rejected_csv=ctx.output("results_public/products/triceratops_rejected.csv"),
+             code_now=json.loads(ctx.input("results_public/products/stage_code.json").read_text()))
 
 
 @rule(inputs=[f"{STORE}/centroid/*/*/request.json", f"{STORE}/centroid/*/*/result.json", f"{STORE}/centroid/*/*/*.json",

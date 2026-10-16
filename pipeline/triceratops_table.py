@@ -51,10 +51,16 @@ def _ranked(store):
 
 
 def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase_bin_min=2.0, match_rel=0.002,
-          rejected_csv=None):
-    """catalog_rows: [(table, TIC, P_d)] with TIC and P_d as written in the measurement tables."""
+          rejected_csv=None, code_now=None):
+    """catalog_rows: [(table, TIC, P_d)] with TIC and P_d as written in the measurement tables; code_now: {kind: hash}
+    (stage_code.json). A result depends on its target setup's content, not on which code made it: where a setup with
+    that content made by the code now is stored, the code column names that one."""
     store = st.Store(store_root)
     ranked = _ranked(store)
+    setups = collections.defaultdict(list)          # setup content -> requests of the setups that have it
+    if code_now:
+        for _, (sreq, sres, _) in store.entries("tri_setup").items():
+            setups[sres.get("content")].append(sreq)
     latest = {sk: v[0] for sk, v in ranked.items()}  # signal key -> (store key, request, result)
     by_tic = collections.defaultdict(list)
     for k in latest:
@@ -90,6 +96,10 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
         gaia = "FPP_m_mean" in j
         stages = {k: _request(store, k, res.get(f)) for k, f in (("fold", "fold_key"), ("tri_setup", "setup_key"),
                                                                   ("molusc", "molusc_key")) if res.get(f)}
+        now = [r for r in setups.get(req.get("setup"), []) if r.get("code") and code_now
+               and stage_code.short(r["code"], r["env"]) == code_now.get("tri_setup")]
+        if now and not req.get("legacy"):
+            stages["tri_setup"] = now[0]
         fold_req = stages.get("fold") or {}
         rows.append(dict(
             table=row[0], TIC=row[1], P_d=row[2], key=key, batch=batch, period=sig["period"], t0_btjd=sig["t0_btjd"],
