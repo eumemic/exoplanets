@@ -519,7 +519,7 @@ def main():
                 subprocess.run([os.path.join(EXO, ".venv", "bin", "python"), script, os.path.join(B, "stars.parquet"),
                                 "--gaia", os.path.join(B, "gaia.csv"), "--molusc", os.path.join(B, "molusc_code"),
                                 "--out", os.path.join(R, out), "--n", "200000", "--procs",
-                                str(min(40, max(2, len({it["tic"] for it in items}))))],
+                                str(min(max(2, (os.cpu_count() or 4) - 2), max(2, len({it["tic"] for it in items}))))],
                                cwd=PIPE, env=dict(ENV, EXO_MOLUSC_SAMPLE=str(sample)),
                                stdout=open(os.path.join(HOME, "molusc.log"), "a"), stderr=subprocess.STDOUT)
         mol = threading.Thread(target=molusc_all)
