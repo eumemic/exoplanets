@@ -1172,14 +1172,15 @@
      "dag.hashing.sha256_bytes": "8fb354c31c13f13d5ce0c2a169834685c926eea1d21679fb6618e520c21cf6d6",
      "dag.hashing.sha256_json": "f0c332a7c8280edbfce71e55cebb398dc64a1799a7d11f329010611218dfbd82",
      "fpp_check.BLENDED": "fb734edfc3215e0997471a75ca397f52b16c14cb9ba6900953dded89a4ed8618",
+     "fpp_check.gate": "431eb35f356a06ce3fd394b7469e2ee68fbaeef84b25adb2ae71ce044df8e4c1",
      "rules.STORE": "0bf9ef2c583c26238722fc8c1fb6d31418d873303c843c6c86253e2a387b9018",
      "rules.triceratops_table": "fa6a924712dc0b19ce463916d00799a055f5a54dc4029fccce2ca224ff3e3405",
      "store.ROOT": "4f3f0499fd86a6c853238889cf32bb7ff7dcc7ad1b2392a9117da8175b60a61a",
      "store.Store": "dc848444353b4e2ab522df3accbbd081112aba7b2b04646064561906ccd9fc3c",
      "store.key_of": "4b86820d299b78fc074a4ef9d52d35dda95c62c448f570d5da5226a511555504",
-     "tri_store.latest": "6a373d3c079a6748859d49e1c1fc46a5ed88c9a5b959134d80227e42229852a2",
+     "tri_store.latest": "41d8749514a053f30f1597460228435022a7d1317d831cd66420094207b91745",
      "triceratops_table.COLUMNS": "647b9cdc6a55ac5a74b45dc4dcb69c8e832d11bd79392b4aa90f43614006ee57",
-     "triceratops_table.build": "811120b864b30da23e76e0169df6207ffae1a913cd4bb31d90d06e84993b04d0"
+     "triceratops_table.build": "1b2070b142172fec38f2588d8eedb9fdf1b902beb1ca3915f3b61d074ebcac4b"
     }
    },
    "inputs": {
@@ -1198,7 +1199,7 @@
     "triceratops.phase_bin_min": 2.0,
     "triceratops.runs": 10
    },
-   "stamp": "cce5ff4b1e9d840fa174ff437e9560410ec34620dc5779ca2479d5dc1f44c041"
+   "stamp": "a5acc16a2d35dd642c23bdf4c5845efd88cc5ea839e0938511ba0e6d45a72181"
   }
  },
  "version": 1

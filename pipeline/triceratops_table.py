@@ -46,38 +46,18 @@ def build(store_root, catalog_rows, out_csv, runs=10, min_survivors=20000, phase
     rows, problems = [], []
     for row, key in use.items():
         skey, req, res = latest[key]
-        batch, j, sig = res["batch"], res["fpp"], req["signal"]
+        batch, j, sig = res["batch"], res["fpp"], req.get("signal") or res.get("signal")
         if sig is None:
             problems.append(f"{key} ({batch}): not in the batch's list.csv")
             continue
-        n_runs, blended, deg = collections.Counter(), 0, False
-        for r in res["runs"]:
-            if "error" in r:
-                continue
-            n_runs[r["mode"]] += 1
-            names = [s for _, s, _ in r["probs"]]
-            if not names or "" in names:
-                deg = True
-            if any(s in fpp_check.BLENDED and v > 0 for _, s, v in r["probs"]):
-                blended += 1
-        gaia = "FPP_m_mean" in j
-        if not deg:
-            if n_runs["d"] != runs or (gaia and n_runs["m"] != runs):
-                problems.append(f"{key} ({batch}): runs {dict(n_runs)}, expected {runs} per mode")
-            if not blended:
-                problems.append(f"{key} ({batch}): no blended-star scenario in any run (no field-star population)")
-            if gaia and j.get("molusc_survivors", 0) < min_survivors:
-                problems.append(f"{key} ({batch}): {j.get('molusc_survivors')} MOLUSC survivors (a cut-off file)")
         if res["fold_key"] is None:
             problems.append(f"{key} ({batch}): no fold")
             continue
         f = np.load(os.path.join(store.path("fold", res["fold_key"]), "fold.npz"))
-        cad = int(f["cadence_s"])
-        width = cad / 86400 if cad < 540 else phase_bin_min / 1440
-        dur = float(sig["duration_h"]) / 24
-        edges = np.arange(-3 * dur, 3 * dur + 1e-9, width)
-        if np.bincount(np.digitize(f["time"], edges)).max() > 1:
-            problems.append(f"{key} ({batch}): more than one point per phase bin in the fold")
+        found, deg = fpp_check.gate(j, res["runs"], f["time"], int(f["cadence_s"]), sig["duration_h"], runs, min_survivors,
+                                    phase_bin_min)
+        problems += [f"{key} ({batch}): {x}" for x in found]
+        gaia = "FPP_m_mean" in j
         rows.append(dict(
             table=row[0], TIC=row[1], P_d=row[2], key=key, batch=batch, period=sig["period"], t0_btjd=sig["t0_btjd"],
             duration_h=sig["duration_h"], depth_ppm=sig["depth_ppm"], masks=sig["masks"], drop=sig["drop"],

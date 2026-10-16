@@ -7,9 +7,11 @@ default companion prior. MOLUSC simulates a companion for every draw, so this as
 
 MOLUSC (github.com/woodml/MOLUSC, v.20220321) is run unchanged except that (1) its two ESA Gaia archive
 queries per star are answered from one bulk Gaia DR3 query by source_id (columns as in gaiadr3.gaia_source,
-the same astrometry as the EDR3 table it queries), and (2) scipy.interpolate.interp2d, removed in SciPy 1.14,
-is replaced by an equivalent bilinear interpolator with nearest-value extrapolation. Its command-line mode also
-needs Application.star_jitter, which only the GUI sets (-1 means no stellar-jitter test).
+the same astrometry as the EDR3 table it queries), (2) scipy.interpolate.interp2d, removed in SciPy 1.14,
+is replaced by an equivalent bilinear interpolator with nearest-value extrapolation, and (3) its call
+np.random.seed() (seeded from the clock) seeds NumPy from the star instead (molusc_seed), so a rerun draws the same
+companions. Its command-line mode also needs Application.star_jitter, which only the GUI sets (-1 means no
+stellar-jitter test).
 
 Usage: python molusc_batch.py STARS.parquet --gaia GAIA.csv --molusc DIR --out DIR [--n 200000] [--procs 32]
 STARS needs ID, GAIA_DR3 (or GAIA) and mass; GAIA.csv is the bulk query (source_id, ra, dec, parallax, ...);
@@ -59,6 +61,12 @@ def interp2d(x, y, z, kind="linear"):
     return ev
 
 
+def molusc_seed(tic):
+    """The seed of a star's MOLUSC draws."""
+    import hashlib
+    return int.from_bytes(hashlib.sha256(f"molusc|{int(tic)}".encode()).digest()[:4], "little")
+
+
 def one(tic, row, mass, n, out, molusc_dir, ruwe, gaia, age):
     """Runs MOLUSC for one star in this process (called through a subprocess per star)."""
     import types
@@ -89,6 +97,8 @@ def one(tic, row, mass, n, out, molusc_dir, ruwe, gaia, age):
 
     M.Gaia = OneStarGaia()
     M.Application.star_jitter = -1             # set only by the GUI; the command-line checks read it
+    _seed = np.random.seed                     # MOLUSC calls np.random.seed() before drawing: give it the star's seed
+    np.random.seed = lambda s=None: _seed(molusc_seed(tic) if s is None else s)
     ra = Angle(row["ra"], u.deg).to_string(unit=u.hourangle, sep="hms", precision=3)
     dec = Angle(row["dec"], u.deg).to_string(unit=u.deg, sep="dms", precision=2, alwayssign=True)
     sys.argv = ["BinaryStarGUI.py", "--age", str(age)] + (["--gaia"] if gaia else []) + (["--ruwe"] if ruwe else []) + \

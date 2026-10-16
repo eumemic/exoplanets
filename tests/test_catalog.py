@@ -211,6 +211,50 @@ class TriceratopsTableTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             s.put("tri", req, dict(res, seq=99))
 
+    def cloud_item(self, root, runs=10, env="E2"):
+        """An item as cloud_worker.py uploads it, and its plan entry."""
+        import gzip
+        d = root / "item"
+        (d / "cuts").mkdir(parents=True)
+        src = root / self.batch(root, "src", runs=runs)
+        (d / "fold.npz").write_bytes((src / "folds" / "tic5_P3.0000.npz").read_bytes())
+        (d / "fpp.json").write_text((src / "tic5_P3.0000_fpp.json").read_text())
+        (d / "runs.jsonl").write_text((src / "runs.jsonl").read_text())
+        (d / "state.pkl").write_bytes(b"state")
+        (d / "population.csv").write_text("pop")
+        (d / "cuts" / "tess-s0001.fits").write_bytes(b"cut")
+        (d / "molusc.csv.gz").write_bytes(gzip.compress(b"a,b\n1,2\n"))
+        (d / "molusc.json").write_text(json.dumps(dict(survivors=100000)))
+        (d / "item.json").write_text(json.dumps(dict(commit="abc", sectors="1,2", check={},
+                                                    env={"requirements.txt": "E1", "requirements-triceratops.txt": env})))
+        it = dict(key="tic5_P3.0000", tic="5", period="3.000000", t0="1500.0", duration_h="2.0", depth_ppm="500", masks="", drop="")
+        gaia = {c: 1.0 for c in ("source_id", "ra", "dec", "parallax", "parallax_error", "phot_g_mean_mag", "bp_rp", "ruwe",
+                                 "astrometric_params_solved", "astrometric_n_good_obs_al", "astrometric_chi2_al")}
+        plan_item = dict(item=it, fold_request=tri_store.fold_request(it, [[1, "SPOC", 120.0, "u"]], "c", "E1"),
+                         molusc_request=tri_store.molusc_request(5, gaia, 0.8, "m", "c", "E1"), commit="abc",
+                         code={k: "c" for k in tri_store.STAGE_CODE},
+                         env=dict(fold="E1", tri_setup="E2", molusc="E1", tri="E2"))
+        return d, plan_item
+
+    def test_an_ingested_result_replaces_the_legacy_one_and_a_failing_one_is_kept_aside(self):
+        root = Path(tempfile.mkdtemp())
+        self.run_build(root, [self.batch(root, "b1")])
+        s = store.Store(root / "store")
+        d, plan_item = self.cloud_item(root)
+        key, problems = tri_store.ingest_item(s, d, plan_item, "bX", 10 ** 9)
+        self.assertEqual(problems, [])
+        self.assertEqual(len(s.keys("tri_setup")), 1)
+        self.assertEqual(len(s.keys("molusc")), 1)
+        rows = tt.build(root / "store", [("candidates_allsky", "5", "3.0")], root / "out.csv")
+        self.assertEqual((rows[0]["batch"], rows[0]["store"], rows[0]["legacy"]), ("bX", key, ""))
+        root2 = Path(tempfile.mkdtemp())                               # packages that differ from the lock
+        self.run_build(root2, [self.batch(root2, "b1")])
+        d, plan_item = self.cloud_item(root2, env="E9")
+        key, problems = tri_store.ingest_item(store.Store(root2 / "store"), d, plan_item, "bX", 10 ** 9)
+        self.assertTrue(problems)
+        rows = tt.build(root2 / "store", [("candidates_allsky", "5", "3.0")], root2 / "out.csv")
+        self.assertEqual(rows[0]["batch"], "b1")
+
     def test_degenerate_results_are_kept_without_values(self):
         root = Path(tempfile.mkdtemp())
         rows = self.run_build(root, [self.batch(root, "b1", probs=(("", 1 / 18), ("", 1 / 18)))])

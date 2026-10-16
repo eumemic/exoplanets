@@ -24,6 +24,37 @@ import pandas as pd
 BLENDED = {"DTP", "DEB", "DEBx2P", "BTP", "BEB", "BEBx2P"}
 
 
+def gate(fpp, runs, fold_time, cadence_s, duration_h, n_runs=10, min_survivors=20000, phase_bin_min=2.0):
+    """The checks of one signal's result: fpp (its <key>_fpp.json), runs (its runs.jsonl records), the fold's times and
+    cadence, and the signal's duration. Returns (problems, degenerate); a degenerate result (the target not evaluated)
+    skips the checks on the runs, since it is kept without values."""
+    n, blended, degenerate = collections.Counter(), 0, False
+    for r in runs:
+        if "error" in r:
+            continue
+        n[r["mode"]] += 1
+        names = [s for _, s, _ in r["probs"]]
+        if not names or "" in names:
+            degenerate = True
+        if any(s in BLENDED and v > 0 for _, s, v in r["probs"]):
+            blended += 1
+    problems = []
+    gaia = "FPP_m_mean" in fpp
+    if not degenerate:
+        if n["d"] != n_runs or (gaia and n["m"] != n_runs):
+            problems.append(f"runs {dict(n)}, expected {n_runs} per mode")
+        if not blended:
+            problems.append("no blended-star scenario in any run (no field-star population)")
+        if gaia and fpp.get("molusc_survivors", 0) < min_survivors:
+            problems.append(f"{fpp.get('molusc_survivors')} MOLUSC survivors (a cut-off file)")
+    width = cadence_s / 86400 if cadence_s < 540 else phase_bin_min / 1440
+    dur = float(duration_h) / 24
+    edges = np.arange(-3 * dur, 3 * dur + 1e-9, width)
+    if np.bincount(np.digitize(fold_time, edges)).max() > 1:
+        problems.append("more than one point per phase bin in the fold")
+    return problems, degenerate
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("dirs", nargs="+")
