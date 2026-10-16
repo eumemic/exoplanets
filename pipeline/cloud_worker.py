@@ -103,9 +103,21 @@ def _gate(fpp_path, runs, fold_npz, duration_h):
     return dict(passed=not problems, problems=problems, degenerate=deg)
 
 
+def _sha(path):
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
+def _gz_sha(path):
+    import gzip
+    with gzip.open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
 def pack(item, R, jobs, info, urls, base=True, cc=()):
-    """Check, pack and upload one signal: its fold, target setup, MOLUSC file and, as planned, its runs (base) and the
-    runs with each contrast curve (cc: labels; job key <key>__<label>). Returns True if it was uploaded."""
+    """Check, pack and upload one signal: a small archive the ingest reads (fold, results, runs, item.json with the
+    checks and the hashes of the large files) and a large one that stays in the bucket (target setup with its
+    field-star population and trimmed cutouts, MOLUSC file). Returns True if both were uploaded."""
     sys.path.insert(0, PIPE)
     key, tic = item["key"], int(item["tic"])
     t2 = os.path.join(R, "t2")
@@ -114,19 +126,33 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
     done = [(lab, jk) for lab, jk in variants if os.path.exists(os.path.join(t2, f"{jk}_fpp.json"))]
     if not (done and job):
         return False
-    d = os.path.join(R, "items", key)
-    shutil.rmtree(d, ignore_errors=True)
-    os.makedirs(os.path.join(d, "cuts"))
+    d, big = os.path.join(R, "items", key), os.path.join(R, "items", key + ".big")
+    for x in (d, big):
+        shutil.rmtree(x, ignore_errors=True)
+    os.makedirs(d)
+    os.makedirs(os.path.join(big, "cuts"))
     shutil.copyfile(os.path.join(t2, "folds", f"{key}.npz"), os.path.join(d, "fold.npz"))
-    shutil.copyfile(os.path.join(t2, "states", f"{tic}_{job['sectors'].replace(',', '-')}.pkl"), os.path.join(d, "state.pkl"))
+    shutil.copyfile(os.path.join(t2, "states", f"{tic}_{job['sectors'].replace(',', '-')}.pkl"), os.path.join(big, "state.pkl"))
     pops = sorted(glob.glob(os.path.join(t2, "cache", str(tic), "*gaia_background.csv")))
     if pops:
-        shutil.copyfile(pops[0], os.path.join(d, "population.csv"))
+        shutil.copyfile(pops[0], os.path.join(big, "population.csv"))
     for c in sorted(glob.glob(os.path.join(t2, "cuts", f"tic{tic}", "*.fits"))):
-        shutil.copyfile(c, os.path.join(d, "cuts", os.path.basename(c)))
-    for src, dst in ((f"tic{tic}_kept.csv.gz", "molusc.csv.gz"), (f"tic{tic}_molusc.json", "molusc.json")):
-        if os.path.exists(os.path.join(R, "molusc", src)):
-            shutil.copyfile(os.path.join(R, "molusc", src), os.path.join(d, dst))
+        shutil.copyfile(c, os.path.join(big, "cuts", os.path.basename(c)))
+    molusc = None
+    if os.path.exists(os.path.join(R, "molusc", f"tic{tic}_kept.csv.gz")):
+        shutil.copyfile(os.path.join(R, "molusc", f"tic{tic}_kept.csv.gz"), os.path.join(big, "molusc.csv.gz"))
+        molusc = _gz_sha(os.path.join(big, "molusc.csv.gz"))
+    if os.path.exists(os.path.join(R, "molusc", f"tic{tic}_molusc.json")):
+        shutil.copyfile(os.path.join(R, "molusc", f"tic{tic}_molusc.json"), os.path.join(d, "molusc.json"))
+    # the setup's content: the hashes of its files by name, as tri_store.ingest_item defines it
+    sfiles = {"state.pkl": os.path.join(big, "state.pkl")}
+    if pops:
+        sfiles["population.csv"] = os.path.join(big, "population.csv")
+    for c in sorted(glob.glob(os.path.join(big, "cuts", "*.fits"))):
+        sfiles[f"cut_{os.path.basename(c)}"] = c
+    files = {n: dict(sha256=_sha(p), size=os.path.getsize(p)) for n, p in sfiles.items()}
+    from dag.hashing import sha256_json
+    setup_content = sha256_json([files[n]["sha256"] for n in sorted(files)])
     lines = [json.loads(x) for x in open(os.path.join(t2, "runs.jsonl"))]
     checks = {}
     for lab, jk in done:
@@ -138,11 +164,14 @@ def pack(item, R, jobs, info, urls, base=True, cc=()):
             fh.writelines(json.dumps(r) + "\n" for r in runs)
         checks[lab or "base"] = _gate(os.path.join(out, "fpp.json"), runs, os.path.join(d, "fold.npz"), item["duration_h"])
     json.dump(dict(info, key=key, tic=tic, sectors=job["sectors"], base=any(lab == "" for lab, _ in done),
-                   cc=[lab for lab, _ in done if lab], check=checks), open(os.path.join(d, "item.json"), "w"))
-    arc = os.path.join(R, "items", f"{key}.tgz")
-    with tarfile.open(arc, "w:gz") as tf:
-        tf.add(d, arcname=".")
-    ok = put(urls["items"][key], open(arc, "rb").read())
+                   cc=[lab for lab, _ in done if lab], check=checks, setup_files=files, setup_content=setup_content,
+                   molusc_content=molusc, remote=True), open(os.path.join(d, "item.json"), "w"))
+    ok = True
+    for src, url in ((big, urls["big"][key]), (d, urls["items"][key])):      # the large archive first
+        arc = src + ".tgz"
+        with tarfile.open(arc, "w:gz") as tf:
+            tf.add(src, arcname=".")
+        ok = put(url, open(arc, "rb").read()) and ok
     bad = {k: v["problems"] for k, v in checks.items() if v["problems"]}
     log(f"{key}: {'uploaded' if ok else 'UPLOAD FAILED'} ({', '.join(lab or 'base' for lab, _ in done)})"
         + (f"; checks: {bad}" if bad else ""))
@@ -218,7 +247,8 @@ def main():
         STATE["stage"] = "folds, setups and MOLUSC"
         mol = subprocess.Popen([os.path.join(EXO, ".venv", "bin", "python"), "molusc_batch.py", os.path.join(B, "stars.parquet"),
                                 "--gaia", os.path.join(B, "gaia.csv"), "--molusc", os.path.join(B, "molusc_code"),
-                                "--out", os.path.join(R, "molusc"), "--n", "200000", "--procs", "2"],
+                                "--out", os.path.join(R, "molusc"), "--n", "200000", "--procs",
+                                str(min(40, max(2, len({it["tic"] for it in items}))))],
                                cwd=PIPE, env=ENV, stdout=open(os.path.join(HOME, "molusc.log"), "a"), stderr=subprocess.STDOUT)
         rc = run(["fpp_fleet.py", os.path.join(R, "list.csv"), "--stars", os.path.join(B, "stars.parquet"), "--out",
                   os.path.join(R, "t2"), "--procs", str(nproc), "--molusc", os.path.join(R, "molusc")], "fleet.log")
@@ -226,13 +256,16 @@ def main():
         log(f"fleet prep exit {rc}; MOLUSC exit {mol.returncode}")
         jobs = {r["key"]: r for r in csv.DictReader(open(os.path.join(R, "t2", "jobs.csv")))}
         STATE["stage"] = "runs"
-        for i, x in enumerate(plan["items"]):          # one signal at a time, so each is uploaded when its runs end
-            it, key = x["item"], x["item"]["key"]
-            if key not in jobs:
-                continue
-            base, cc = x.get("base_runs", True), x.get("cc") or []
-            rows = ([dict(jobs[key], cc="", cc_filt="")] if base else []) + [
-                dict(jobs[key], key=f"{key}__{c['label']}", cc=os.path.join(B, "cc", c["file"]), cc_filt=c["filt"]) for c in cc]
+        # several signals per fpp_pool call (about three runs per process), each uploaded when its call ends
+        per = max(1, (3 * nproc) // (2 * plan["runs"]))
+        todo = [x for x in plan["items"] if x["item"]["key"] in jobs]
+        for i in range(0, len(todo), per):
+            chunk, rows = todo[i:i + per], []
+            for x in chunk:
+                key, base, cc = x["item"]["key"], x.get("base_runs", True), x.get("cc") or []
+                rows += ([dict(jobs[key], cc="", cc_filt="")] if base else []) + [
+                    dict(jobs[key], key=f"{key}__{c['label']}", cc=os.path.join(B, "cc", c["file"]), cc_filt=c["filt"])
+                    for c in cc]
             if not rows:
                 continue
             cj = os.path.join(R, "t2", f"jobs_{i}.csv")
@@ -242,8 +275,10 @@ def main():
                 w.writerows(rows)
             run(["fpp_pool.py", "run", cj, "--out", os.path.join(R, "t2"), "--procs", str(nproc), "--runs",
                  str(plan["runs"])], "runs.log", py=".venv-trice")
-            ok = pack(it, R, jobs, info, urls, base=base, cc=[c["label"] for c in cc])
-            (STATE["uploaded"] if ok else STATE["failed"]).append(key)
+            for x in chunk:
+                ok = pack(x["item"], R, jobs, info, urls, base=x.get("base_runs", True),
+                          cc=[c["label"] for c in x.get("cc") or []])
+                (STATE["uploaded"] if ok else STATE["failed"]).append(x["item"]["key"])
         STATE["failed"] += [it["key"] for it in items if it["key"] not in jobs]
         STATE["stage"] = "centroids"
         return_after_centroids(cs_proc, plan, R, info, urls)

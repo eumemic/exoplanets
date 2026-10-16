@@ -181,11 +181,13 @@ def molusc_request(tic, gaia_row, mass, molusc_code, code, env, draws=200000):
                 draws=draws, seed=molusc_batch.molusc_seed(tic), molusc=molusc_code, code=code, env=env)
 
 
-def setup_request(tic, sectors, depth_ppm, cutouts, code, env):
-    """The target setup: TRICERATOPS queries the TIC around the star and the field-star population when it is set up,
-    so those answers are outputs (stored with the entry), and cutouts are the trimmed FFI cutouts' content."""
+def setup_request(tic, sectors, depth_ppm, star, code, env):
+    """The target setup of a star, its sectors (the fold's three most informative with cutouts) and the signal's depth:
+    star is the hash of its TIC row in the batch's snapshot. TRICERATOPS queries the TIC around the star and the
+    field-star population when it is set up, and the cutouts are cut from the TESS cubes, so all three are outputs,
+    stored with the entry; a later batch can reuse the entry instead of querying again."""
     return dict(kind="tri_setup", tic=int(tic), sectors=str(sectors), depth_ppm=str(depth_ppm), nearby_max_arcsec=30,
-                cutouts=cutouts, code=code, env=env)
+                star=star, code=code, env=env)
 
 
 def tri_request(item, fold, setup, molusc, runs, draws, code, env):
@@ -206,16 +208,27 @@ if __name__ == "__main__":
     main()
 
 
+def put_setup(store, req, res, files=None):
+    """A target setup made twice from the same request can differ (TRICERATOPS's queries of the TIC and the field-star
+    population are answered at setup time), so a second version is kept under the request with its content added;
+    the runs cite the content of the version they used."""
+    try:
+        return store.put("tri_setup", req, res, files=files)
+    except ValueError:
+        return store.put("tri_setup", dict(req, variant=res["content"]), res, files=files)
+
+
 def _gz_content(path):
     import gzip
     with gzip.open(path, "rb") as fh:
         return st.sha256_bytes(fh.read())
 
 
-def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000, phase_bin_min=2.0):
+def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000, phase_bin_min=2.0, remote_archive=None):
     """Store one finished item of a cloud batch (cloud.py): d is its unpacked archive (cloud_worker.py), plan_item the
-    plan's entry for it (the signal row, the fold and MOLUSC requests, and the code and package hashes). Every entry is
-    written; each run entry's check.json (tri, and tri_cc for each contrast curve) says whether the result passed
+    plan's entry for it (the signal row, the fold and MOLUSC requests, the star's TIC-row hash, and the code and package
+    hashes); remote_archive is where the item's large files stay (the bucket), when the worker kept them there. Every
+    entry is written; each run entry's check.json (tri, and tri_cc for each contrast curve) says whether the result passed
     fpp_check.gate and was made with the planned code and packages. Returns (the first run entry's key, problems)."""
     import numpy as np
     import fpp_check
@@ -231,22 +244,35 @@ def ingest_item(store, d, plan_item, batch, seq, n_runs=10, min_survivors=20000,
     with open(first) as fh:
         j = json.load(fh)
     fold_npz = os.path.join(d, "fold.npz")
+    with np.load(fold_npz) as fz:
+        ranked = [int(x) for x in fz["sectors_ranked"]] if "sectors_ranked" in fz.files else []
     fres = dict(content=st.npz_content(fold_npz), exptime_min=j.get("exptime_min"), n_points=j.get("n_points"),
-                sectors=j.get("sectors"))
+                sectors=j.get("sectors"), sectors_ranked=ranked)
     fold_key = store.put("fold", plan_item["fold_request"], fres, files={"fold.npz": fold_npz})
-    cuts = sorted(glob.glob(os.path.join(d, "cuts", "*.fits")))
-    sfiles = {"state.pkl": os.path.join(d, "state.pkl")}
-    if os.path.exists(os.path.join(d, "population.csv")):
-        sfiles["population.csv"] = os.path.join(d, "population.csv")
-    sfiles.update({f"cut_{os.path.basename(c)}": c for c in cuts})
-    sreq = setup_request(it["tic"], info["sectors"], it["depth_ppm"], st.sha256_json([st.file_content(c) for c in cuts]),
-                         plan_item["code"]["tri_setup"], plan_item["env"]["tri_setup"])
-    scontent = st.sha256_json([st.file_content(sfiles[k]) for k in sorted(sfiles)])
-    setup_key = store.put("tri_setup", sreq, dict(content=scontent, population="population.csv" in sfiles), files=sfiles)
+    sreq = setup_request(it["tic"], info["sectors"], it["depth_ppm"], plan_item.get("star"), plan_item["code"]["tri_setup"],
+                         plan_item["env"]["tri_setup"])
+    remote = info.get("remote") and remote_archive
+    if remote:                                      # the large files stayed in the bucket; the instance hashed them
+        scontent = info["setup_content"]
+        setup_key = put_setup(store, sreq, dict(content=scontent, population="population.csv" in info["setup_files"],
+                                                remote=dict(archive=remote_archive, files=info["setup_files"])))
+    else:
+        cuts = sorted(glob.glob(os.path.join(d, "cuts", "*.fits")))
+        sfiles = {"state.pkl": os.path.join(d, "state.pkl")}
+        if os.path.exists(os.path.join(d, "population.csv")):
+            sfiles["population.csv"] = os.path.join(d, "population.csv")
+        sfiles.update({f"cut_{os.path.basename(c)}": c for c in cuts})
+        scontent = st.sha256_json([st.file_content(sfiles[k]) for k in sorted(sfiles)])
+        setup_key = put_setup(store, sreq, dict(content=scontent, population="population.csv" in sfiles), files=sfiles)
     molusc = molusc_key = None
-    kept = os.path.join(d, "molusc.csv.gz")
-    if os.path.exists(kept) and plan_item.get("molusc_request"):
-        minfo = json.load(open(os.path.join(d, "molusc.json"))) if os.path.exists(os.path.join(d, "molusc.json")) else {}
+    minfo = json.load(open(os.path.join(d, "molusc.json"))) if os.path.exists(os.path.join(d, "molusc.json")) else {}
+    if plan_item.get("molusc_request") and remote and info.get("molusc_content"):
+        molusc = info["molusc_content"]
+        molusc_key = store.put("molusc", plan_item["molusc_request"], dict(content=molusc, survivors=minfo.get("survivors"),
+                                                                          info=minfo, remote=dict(archive=remote_archive,
+                                                                                                  member="molusc.csv.gz")))
+    elif plan_item.get("molusc_request") and os.path.exists(os.path.join(d, "molusc.csv.gz")):
+        kept = os.path.join(d, "molusc.csv.gz")
         molusc = _gz_content(kept)
         molusc_key = store.put("molusc", plan_item["molusc_request"], dict(content=molusc, survivors=minfo.get("survivors"),
                                                                           info=minfo), files={"molusc.csv.gz": kept})

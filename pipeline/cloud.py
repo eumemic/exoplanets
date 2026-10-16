@@ -219,7 +219,12 @@ def centroid_rows(keys=None):
     return rows
 
 
-def tri_items(keys, cc, base):
+def star_hash(row):
+    """The hash of a star's TIC row as the batch's snapshot has it."""
+    return st.sha256_json({k: (v.item() if hasattr(v, "item") else v) for k, v in row.items()})
+
+
+def tri_items(keys, cc, base, rerun_legacy=False):
     """The TRICERATOPS signals of a batch with the requests of their fold and MOLUSC stages, and the snapshots the
     instance reads: (items, stars, gaia, manifest, reuse)."""
     rows = list(pd.read_csv(PLAN_CSV, dtype=str, keep_default_na=False).to_dict("records"))
@@ -234,6 +239,8 @@ def tri_items(keys, cc, base):
             if set(more) != rest:
                 raise SystemExit(f"no catalog row has the key: {sorted(rest - set(more))}")
             sel += list(more.values())
+    elif rerun_legacy:                              # every result in use that is legacy, to be computed again
+        sel = [r for r in rows if r["status"] == "legacy"]
     else:
         sel = [r for r in rows if r["status"] in ("pending", "stale")]
     if not sel:
@@ -269,12 +276,31 @@ def tri_items(keys, cc, base):
         cs = curves(tic) if cc else []
         if not base and not cs:
             raise SystemExit(f"{it['key']}: --no-base, and no contrast curve for TIC {tic}")
-        out.append(dict(item=it, fold_request=freq, molusc_request=mreq, base_runs=base, cc=cs))
+        out.append(dict(item=it, fold_request=freq, molusc_request=mreq, base_runs=base, cc=cs,
+                        star=star_hash(star.drop(labels=["GAIA_DR3"]).to_dict())))
     return out, stars, gaia, man, dict(reuse, code=code, env=env)
 
 
-def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids=False):
-    """A batch: TRICERATOPS signals, or (centroids) per-sector centroid measurements. Writes its plan.json."""
+def split(out, parts):
+    """Signals in parts of about equal cost, every star's signals in one part (its target setup and MOLUSC are made
+    once): the cost of a signal is its legacy result's points times scenarios where there is one."""
+    cost = {}
+    for r in pd.read_csv(os.path.join(ROOT, "results_public", "products", "triceratops.csv")).itertuples():
+        cost[r.key] = float(r.n_points) * float(r.n_scenarios)
+    stars = {}
+    for x in out:
+        stars.setdefault(int(x["item"]["tic"]), []).append(x)
+    load = [[0.0, []] for _ in range(parts)]
+    for tic, xs in sorted(stars.items(), key=lambda kv: -sum(cost.get(x["item"]["key"], 5000.0) for x in kv[1])):
+        part = min(load, key=lambda p: p[0])
+        part[0] += sum(cost.get(x["item"]["key"], 5000.0) * (1 + len(x["cc"])) for x in xs)
+        part[1] += xs
+    return [p[1] for p in load if p[1]]
+
+
+def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids=False, rerun_legacy=False, parts=1):
+    """A batch: TRICERATOPS signals, or (centroids) per-sector centroid measurements; with parts > 1, that many
+    batches (one instance each). Writes plan.json for each."""
     if git("status", "--porcelain", "--", "pipeline", "requirements.txt", "requirements-triceratops.txt"):
         raise SystemExit("pipeline/ or a lock file has uncommitted changes: the kit ships a commit, so commit first")
     commit = git("rev-parse", "HEAD")
@@ -286,11 +312,25 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids
             print("nothing to measure: every counted candidate has a current per-sector centroid measurement")
             return None
     else:
-        out, stars, gaia, man, extra = tri_items(keys, cc, base)
+        out, stars, gaia, man, extra = tri_items(keys, cc, base, rerun_legacy)
         if not out:
             print("nothing to run: no row of triceratops_plan.csv is pending or stale")
             return None
-    bid = "b" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        if parts > 1:
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+            plans = []
+            for k, part in enumerate(split(out, parts)):
+                tics = {int(x["item"]["tic"]) for x in part}
+                plans.append(_write_plan(f"b{stamp}p{k}", commit, itype, runs, part, [], stars[stars.ID.isin(tics)],
+                                         gaia, man[man.tic.isin(tics)], extra))
+            total = sum(p["estimate"]["usd"] or 0 for p in plans)
+            print(f"{len(plans)} batches, about ${total:.2f} in all; launch each with: python cloud.py run ID --approve")
+            return plans
+    return _write_plan("b" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S"), commit, itype, runs, out, cs_out, stars,
+                       gaia, man, extra)
+
+
+def _write_plan(bid, commit, itype, runs, out, cs_out, stars, gaia, man, extra):
     d = os.path.join(BATCHES, bid)
     os.makedirs(d)
     if out:
@@ -298,10 +338,10 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids
         gaia.to_csv(os.path.join(d, "gaia.csv"), index=False)
         man.to_parquet(os.path.join(d, "manifest.parquet"))
     price, vc = spot_price(itype), VCPUS.get(itype, 16)
-    # measured: two TRICERATOPS signals in ~5 min on 16 vCPUs, nine contrast-curve variants in ~10 min; a run takes 20-90 s
-    # of one core; a centroid measurement ~1-3 min per signal on one core (t10: 12 signals in ~4 min with 6 processes)
+    # measured: 270 signals (5,400 runs) took 34 min on 64 vCPUs on 15 October (about 0.4 core-minutes a run, with
+    # MOLUSC and the setups alongside); a centroid measurement ~1-3 min per signal on one core (12 in ~4 min with 6)
     variants = sum(int(x["base_runs"]) + len(x["cc"]) for x in out)
-    hours = (15 + variants * 2 * runs * 1.0 / max(1, vc - 1) + len(cs_out) * 2.0 / 6) / 60
+    hours = (15 + variants * 2 * runs * 0.4 / max(1, vc - 1) + len(cs_out) * 2.0 / 6) / 60
     est = dict(instance=itype, spot_usd_per_h=price, hours=round(hours, 2), usd=round(price * hours, 2) if price else None,
                limit_hours=round(max(1.0, 3 * hours), 1))
     p = dict(id=bid, commit=commit, created=datetime.now(timezone.utc).isoformat(timespec="seconds"), runs=runs,
@@ -310,11 +350,13 @@ def plan(keys=None, itype="c8g.4xlarge", runs=10, cc=False, base=True, centroids
     with open(os.path.join(d, "plan.json"), "w") as fh:
         json.dump(p, fh, indent=1)
     print(f"batch {bid}: {len(out)} TRICERATOPS signals, {len(cs_out)} centroid measurements, commit {commit[:7]}")
-    for x in out:
+    for x in out[:10]:
         it = x["item"]
         print(f"  {it['key']}: P {it['period']} d, T14 {it['duration_h']} h, depth {it['depth_ppm']} ppm"
               + (f", drop {it['drop']}" if it['drop'] else "") + ("" if x["base_runs"] else "; no runs without a curve")
               + "".join(f"; {c['label']} ({c['filt']})" for c in x["cc"]))
+    if len(out) > 10:
+        print(f"  ... and {len(out) - 10} more signals on {len({x['item']['tic'] for x in out})} stars in all")
     for x in cs_out:
         r = x["item"]
         print(f"  {r['key']} (tier {r['tier']}): centroids in sectors {r['sectors']}")
@@ -334,6 +376,8 @@ def kit(p, d, s3, hours):
     prefix = f"batches/{p['id']}/"
     urls = dict(items={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}items/{x['item']['key']}.tgz", hours)
                        for x in p["items"]},
+                big={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}items/{x['item']['key']}.big.tgz", hours)
+                     for x in p["items"]},
                 cs={x["item"]["key"]: _presign(s3, "put_object", f"{prefix}cs/{x['item']['key']}.tgz", hours)
                     for x in p.get("centroids", [])},
                 heartbeat=_presign(s3, "put_object", f"{prefix}heartbeat.json", hours),
@@ -451,6 +495,8 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
     objs = s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=prefix).get("Contents", []) + \
         s3.list_objects_v2(Bucket=AWS["bucket"], Prefix=f"batches/{bid}/cs/").get("Contents", [])
     for o in objs:
+        if o["Key"].endswith(".big.tgz"):           # the large files stay in the bucket
+            continue
         cs = "/cs/" in o["Key"]
         key = os.path.basename(o["Key"])[:-4]
         rec = f"cs:{key}" if cs else key
@@ -468,7 +514,8 @@ def ingest(bid, store_root=st.ROOT, quiet=False):
             tkey, problems = centroid_store.ingest_item(store, idir, item, bid, int(time.time()))
         else:
             item = dict(by_key[key], code=p["code"], env=p["env"], commit=p["commit"])
-            tkey, problems = tri_store.ingest_item(store, idir, item, bid, int(time.time()), n_runs=p["runs"])
+            tkey, problems = tri_store.ingest_item(store, idir, item, bid, int(time.time()), n_runs=p["runs"],
+                                                   remote_archive=f"s3://{AWS['bucket']}/{o['Key'][:-4]}.big.tgz")
         key = rec
         done[key] = dict(store=tkey, problems=problems)
         with open(done_path, "w") as fh:
@@ -544,12 +591,15 @@ def main():
     ap.add_argument("--cc", action="store_true", help="add runs with each contrast curve of the star")
     ap.add_argument("--no-base", action="store_true", help="only the runs with contrast curves")
     ap.add_argument("--centroids", action="store_true", help="a batch of per-sector centroid measurements")
+    ap.add_argument("--rerun-legacy", action="store_true", help="every legacy result in use, computed again")
+    ap.add_argument("--parts", type=int, default=1, help="split into this many batches (one instance each)")
     ap.add_argument("--hours", type=float)
     ap.add_argument("--approve", action="store_true")
     ap.add_argument("--store", default=st.ROOT, help="store to ingest into (a trial can use its own)")
     a = ap.parse_args()
     if a.cmd == "plan":
-        plan([k for k in a.keys.split(",") if k] or None, a.type, a.runs, a.cc, not a.no_base, a.centroids)
+        plan([k for k in a.keys.split(",") if k] or None, a.type, a.runs, a.cc, not a.no_base, a.centroids, a.rerun_legacy,
+             a.parts)
     elif a.cmd == "run":
         if not a.approve:
             p = json.load(open(os.path.join(BATCHES, a.id, "plan.json")))
