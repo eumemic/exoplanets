@@ -1230,7 +1230,7 @@
     }
    },
    "inputs": {
-    "results_cloud/store/fold/*/*/fold.npz": "8116372915e403a0becffdc221fe7fee64779c708af44930702810586b29ea7f",
+    "results_cloud/store/fold/*/*/fold.npz": "bb5746de7a3aa40c4e7d0a364ca5a04f8bd7a611404a765bd09aff56ebe1b4c6",
     "results_cloud/store/tri/*/*/check.json": "c0951af5323aaffd63303fe66b0f5cbd5c766030a515c728d4b23bd7e953b96c",
     "results_cloud/store/tri/*/*/request.json": "581e0b79bf2b5a2719048393cd43b64a5cadaeb32082fecb60b213223e699236",
     "results_cloud/store/tri/*/*/result.json": "62231279e007793c6b4674a612ab758499f1a280306f3a1ff7b7bf0cc0d61d34",
@@ -1246,7 +1246,7 @@
     "triceratops.phase_bin_min": 2.0,
     "triceratops.runs": 10
    },
-   "stamp": "b32c3837de298534dae5948b89205cb140d12c0c4a62474b06c4c090044ab475"
+   "stamp": "f59ac8886282f3d479f396e847747984ef8ae03ab34757e3b9af899e913353c8"
   }
  },
  "version": 1
