@@ -568,10 +568,12 @@ def main():
                     tic = int(x["item"]["tic"])
                     files = [os.path.join(R, "molusc", f"tic{tic}_kept.csv.gz")] + [
                         os.path.join(R, f"molusc_s{i}", f"tic{tic}_kept.csv.gz") for i in range(1, n_samples)]
-                    if not all(os.path.exists(f) for f in files):
-                        log(f"{key}: {sum(map(os.path.exists, files))} of {n_samples} MOLUSC samples; not run")
+                    have = sum(map(os.path.exists, files))
+                    if 0 < have < n_samples:
+                        log(f"{key}: {have} of {n_samples} MOLUSC samples; not run")
                         continue
-                    jobs[key] = dict(jobs[key], molusc=";".join(files))
+                    # a star MOLUSC cannot simulate (no Gaia row or mass) has the default-prior runs only, as before
+                    jobs[key] = dict(jobs[key], molusc=";".join(files) if have else "")
                 rows += ([dict(jobs[key], cc="", cc_filt="")] if base else []) + [
                     dict(jobs[key], key=f"{key}__{c['label']}", cc=os.path.join(B, "cc", c["file"]), cc_filt=c["filt"])
                     for c in cc]
