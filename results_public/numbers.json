@@ -6,15 +6,15 @@
   },
   "c_reason": {
    "centroid": 1,
-   "grazing": 148,
+   "grazing": 147,
    "mes": 183,
-   "no_fit": 1,
+   "no_fit": 2,
    "no_parallax": 6,
    "no_result": 0,
-   "ruwe": 155,
+   "ruwe": 154,
    "triceratops": 58
   },
-  "c_reason_empty": 2438,
+  "c_reason_empty": 2439,
   "centroid_flagged_counted": 17,
   "counted": {
    "allsky": 587,
@@ -74,10 +74,10 @@
   "lnfp": {
    "by_both": 77,
    "by_centroids": 86,
-   "by_triceratops": 1099,
-   "total": 1108
+   "by_triceratops": 1100,
+   "total": 1109
   },
-  "lower_confidence": 634,
+  "lower_confidence": 633,
   "median_fpp": {
    "default": 0.043,
    "gaia": 0.015
@@ -96,27 +96,27 @@
   },
   "set": {
    "low": 562,
-   "nb": 1573,
-   "snr9": 855
+   "nb": 1571,
+   "snr9": 857
   },
   "smaller_than_4": 384,
   "tier": {
    "A": 22,
-   "B": 292,
-   "C": 552,
+   "B": 294,
+   "C": 551,
    "L": 72,
    "L1": 112,
-   "N": 161,
+   "N": 159,
    "likely_EB": 315,
    "likely_false_alarm": 343,
-   "likely_nearby_FP": 1108,
-   "other": 1779,
+   "likely_nearby_FP": 1109,
+   "other": 1780,
    "reported": 13
   },
   "validation": {
-   "allsky": 229,
-   "earlier": 26,
-   "total": 255
+   "allsky": 226,
+   "earlier": 28,
+   "total": 254
   }
  },
  "classifier": {
@@ -184,7 +184,7 @@
    }
   },
   "expected": {
-   "AB": 27.499863820378604,
+   "AB": 27.548370150141007,
    "L1": 8.781610722754237,
    "N": 10.11297470255979
   },

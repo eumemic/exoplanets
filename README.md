@@ -15,7 +15,26 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **TRICERATOPS recomputed, every input recorded (16 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** Every TRICERATOPS
+- **Five MOLUSC samples per star (18 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** The ten TRICERATOPS runs
+  with Gaia limits of each signal now use five samples of simulated companions from MOLUSC, two runs each, instead of one
+  sample for all ten (`triceratops.molusc_samples` in `pipeline/params.toml`). With one sample, the Gaia-limited FPP of
+  224 counted candidates near the validation thresholds varied between samples by about as much as the standard error of
+  the ten-run mean (median ratio 0.85), and 37 of them met the thresholds with some samples and not others; averaging
+  over five samples reduces that dependence. The default-prior FPPs are unchanged; the Gaia-limited ones change by 0.9%
+  at the median and by more than a factor of 3 for 14 signals, all with FPPs below 0.15. No candidate enters or leaves
+  the counted tiers.
+  <!--n:catalog.validation.total-->254<!--/n--> counted candidates meet the validation thresholds apart from high-resolution imaging, against
+  255: 8 enter and 9 leave, all with an FPP that moved by 0.003–0.013 across 0.015. Among the uncounted signals, 3
+  become likely nearby false positives and 2 tier C, as their FPP or NFPP crossed 0.5 or 0.1. The vetting and pixel
+  follow-up of each signal are stored results too (`results_public/products/vetting.csv`), so a redelivered light
+  curve or a change to their code marks them out of date. A signal is no longer in the neighbour set when the only TIC
+  entries within 15″ bright enough to cause its dip are galaxies or their cores, which moves TIC 625507 and
+  TIC 278708716 from tier N to tier B (issue #2). At low SNR the per-sector centroids of a signal from a neighbour are
+  pulled toward the target, by about a quarter of the separation, so the per-sector test then overstates the evidence
+  against a neighbour ([details](validation/centroid_sectors.md)); this does not change the counted tiers.
+  <!--n:catalog.counted.allsky-->587<!--/n--> full-sky candidates and <!--n:catalog.counted.earlier-->58<!--/n--> from the earlier searches
+  ([inputs and rules](results_public/products/README.md)).
+- **TRICERATOPS recomputed, every input recorded (16 October 2026): 645 candidates.** Every TRICERATOPS
   result the tiers use was computed again on AWS and stored under a hash of everything that determines it: the light
   curves and the fold, the target setup, the file of simulated companions from MOLUSC (now seeded), the seeds of the
   runs, the code and the packages. The default-prior FPPs reproduce the earlier ones to 12 significant digits, except
@@ -30,7 +49,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   signals; issue #2). The per-sector centroid test no longer takes a galaxy as the neighbour that fits (3 signals
   measured again). TIC 288979445 (C to B) and TIC 397216278 (likely nearby false positive to N) enter the counted tiers,
   and TIC 158505607 leaves (B to C: its Gaia-limited FPP went from 0.495 to 0.506, against the bar of 0.5); 5 likely
-  nearby false positives become tier C. <!--n:catalog.validation.total-->255<!--/n--> counted candidates meet the validation thresholds apart from
+  nearby false positives become tier C. 255 counted candidates meet the validation thresholds apart from
   high-resolution imaging, against 252: 12 enter and 9 leave, 18 of them with an FPP that moved by less than 0.01 across
   0.015, the largest change being TIC 211405734 of the earlier searches (0.0008 to 0.018). The transit fits behind the
   fitted columns are stored results too (`results_public/products/fits.csv`); the fit of TIC 201862011 had not
@@ -39,7 +58,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   Sectors 99–104 timing, marks the results made from it out of date, as does a change to the code that made them. A
   change to a cheap stage reruns TRICERATOPS only where that stage's output changes: the fixes above reran 33 signals
   and kept the other 2,296 results.
-  <!--n:catalog.counted.allsky-->587<!--/n--> full-sky candidates and <!--n:catalog.counted.earlier-->58<!--/n--> from the earlier searches
+  587 full-sky candidates and 58 from the earlier searches
   ([inputs and rules](results_public/products/README.md)).
 - **Candidate tables built from their inputs (16 October 2026): 644 candidates.** The two candidate tables had
   been built once, on 11 October, and then edited in place by each later release. They are now rebuilt from their
@@ -89,7 +108,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   time, but each signal's TRICERATOPS input had combined every sector (30-minute, 10-minute, 200-second and 2-minute
   data), binned to 5 minutes and modelled with a 10-minute exposure. For some deep signals this made the FPP far too
   small: TIC 160420269 (17 R⊕) had FPP below 1e-7 where its 200-second data alone give about 0.4 (found by Antoine
-  Rabtsevich, [issue #1](https://github.com/eumemic/exoplanets/issues/1)). All 1,299 signals with Gaia-limited
+  Olivier, [issue #1](https://github.com/eumemic/exoplanets/issues/1)). All 1,299 signals with Gaia-limited
   TRICERATOPS runs were rerun on the transits of one cadence, the one whose in-transit points carry the most
   information, modelled with that cadence's exposure (10- and 30-minute data binned in phase to 2 minutes), with ten
   runs with the default priors and ten with the Gaia limits as before. The median `FPP_gc` of the counted candidates is
@@ -649,15 +668,15 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 2 go to tier C. 13 more, at p < 0.01, stay counted with `centroid_flag` set. Details:
 [`validation/centroid_sectors.md`](validation/centroid_sectors.md).
 
-| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) | TRICERATOPS corrections (15 October) | Tables built from their inputs (16 October) | TRICERATOPS recomputed (16 October) |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 | 22 | 22 | <!--n:catalog.tier.A-->22<!--/n--> |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 | 292 | 292 | <!--n:catalog.tier.B-->292<!--/n--> |
-| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 | 160 | 160 | <!--n:catalog.tier.N-->161<!--/n--> |
-| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 | 112 | 112 | <!--n:catalog.tier.L1-->112<!--/n--> |
-| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 | 529 | 547 | <!--n:catalog.tier.C-->552<!--/n--> |
-| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 | 72 | 72 | <!--n:catalog.tier.L-->72<!--/n--> |
-| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 | 1,803 | 1,785 | <!--n:catalog.tier.other\|,-->1,779<!--/n--> |
+| Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) | TRICERATOPS corrections (15 October) | Tables built from their inputs (16 October) | TRICERATOPS recomputed (16 October) | Five MOLUSC samples (18 October) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 | 22 | 22 | 22 | <!--n:catalog.tier.A-->22<!--/n--> |
+| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 | 292 | 292 | 292 | <!--n:catalog.tier.B-->294<!--/n--> |
+| N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 | 160 | 160 | 161 | <!--n:catalog.tier.N-->159<!--/n--> |
+| L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 | 112 | 112 | 112 | <!--n:catalog.tier.L1-->112<!--/n--> |
+| C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 | 529 | 547 | 552 | <!--n:catalog.tier.C-->551<!--/n--> |
+| L (SNR 7.5–9, MES ≥ 9; not counted) | – | 56 | 56 | 56 | 56 | 59 | 72 | 72 | 71 | 71 | 71 | 72 | 72 | 72 | 72 | <!--n:catalog.tier.L-->72<!--/n--> |
+| likely EB, likely nearby FP, likely false alarm, reported (not counted) | 142 | 1,431 | 1,427 | 1,443 | 1,443 | 1,437 | 1,771 | 1,781 | 1,781 | 1,784 | 1,788 | 1,813 | 1,803 | 1,785 | 1,779 | <!--n:catalog.tier.other\|,-->1,780<!--/n--> |
 
 All <!--n:catalog.rows.allsky|,-->2,990<!--/n--> signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,

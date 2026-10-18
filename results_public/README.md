@@ -67,13 +67,13 @@ of these labels, spelled exactly as shown. The rules that assign them are in `pi
 | `tier` | Definition | Counted as a candidate | Rows in `candidates_allsky.csv` |
 |---|---|---|---|
 | `A` | Several counted candidates on the star | yes | <!--n:catalog.tier.A-->22<!--/n--> |
-| `B` | A single candidate on the star | yes | <!--n:catalog.tier.B-->292<!--/n--> |
-| `N` | A TIC star within 15″ could produce the dip; the TRICERATOPS and centroid probabilities combined give FPP < 0.5 and NFPP < 0.1, with MES ≥ 10, a transit fit and the same binary, grazing and RUWE checks as tier B | yes | <!--n:catalog.tier.N-->161<!--/n--> |
+| `B` | A single candidate on the star | yes | <!--n:catalog.tier.B-->294<!--/n--> |
+| `N` | A TIC star within 15″ could produce the dip; the TRICERATOPS and centroid probabilities combined give FPP < 0.5 and NFPP < 0.1, with MES ≥ 10, a transit fit and the same binary, grazing and RUWE checks as tier B | yes | <!--n:catalog.tier.N-->159<!--/n--> |
 | `L1` | SNR 7.5–9, selected by the false-alarm classifier (`fa_score_h` ≥ 0.80); passes TRICERATOPS and the per-sector centroid test | yes | <!--n:catalog.tier.L1-->112<!--/n--> |
-| `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, no TRICERATOPS result, no transit fit, or a centroid offset in all sectors; listed but not counted (reason in `c_reason`) | no | <!--n:catalog.tier.C-->552<!--/n--> |
+| `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, no TRICERATOPS result, no transit fit, or a centroid offset in all sectors; listed but not counted (reason in `c_reason`) | no | <!--n:catalog.tier.C-->551<!--/n--> |
 | `L` | SNR 7.5–9, MES ≥ 9, not selected as tier L1 | no | <!--n:catalog.tier.L-->72<!--/n--> |
 | `likely EB` | Likely binary: a binary catalog lists the target, a matching eclipsing binary is nearby, or the fitted radius exceeds 20 R⊕; the Gaia RV binaries also carry it | no | <!--n:catalog.tier.likely_EB-->315<!--/n--> |
-| `likely nearby FP` | Likely nearby false positive: there is evidence that the signal comes from a nearby star. Either the signal is in set `neighbour<15"` (a capable TIC star within 15″) and its TRICERATOPS result fails the bar (<!--n:catalog.lnfp.by_triceratops\|,-->1,099<!--/n--> rows), or its per-sector centroids reject the target and fit a capable neighbour (<!--n:catalog.lnfp.by_centroids-->86<!--/n--> rows; <!--n:catalog.lnfp.by_both-->77<!--/n--> have both). A neighbour-set signal without a TRICERATOPS result is tier C, not this | no | <!--n:catalog.tier.likely_nearby_FP\|,-->1,108<!--/n--> |
+| `likely nearby FP` | Likely nearby false positive: there is evidence that the signal comes from a nearby star. Either the signal is in set `neighbour<15"` (a capable TIC star within 15″) and its TRICERATOPS result fails the bar (<!--n:catalog.lnfp.by_triceratops\|,-->1,100<!--/n--> rows), or its per-sector centroids reject the target and fit a capable neighbour (<!--n:catalog.lnfp.by_centroids-->86<!--/n--> rows; <!--n:catalog.lnfp.by_both-->77<!--/n--> have both). A neighbour-set signal without a TRICERATOPS result is tier C, not this | no | <!--n:catalog.tier.likely_nearby_FP\|,-->1,109<!--/n--> |
 | `likely false alarm` | Set `SNR 7.5-9` with MES below 9 and not selected as tier L1 (<!--n:catalog.lfa.low_band-->342<!--/n--> rows), and TIC 141937667 (13.36 d), whose signal came from the QLP orbit-edge systematic (an override; [details](../validation/qlp_orbit_edges.md)). The false-alarm classifier note uses the label for signals that fall below its score cut | no | <!--n:catalog.lfa.total-->343<!--/n--> |
 | `reported` | A matching signal is already reported elsewhere: in the literature check, in a paper found through NASA ADS, or as a community TOI with a single transit or another period ([details](../validation/ctoi_matches.md)); `reported_as` says where | no | <!--n:catalog.tier.reported-->13<!--/n--> |
 
@@ -88,14 +88,15 @@ rows of candidates that later left the counted tiers, with their current tier, s
 
 | `set` | Meaning | Rows |
 |---|---|---|
-| `SNR>=9` | Search SNR ≥ 9, passed LEO-Vetter and the cuts, with no centroid offset or capable TIC neighbour within 15″ | <!--n:catalog.set.snr9-->855<!--/n--> |
+| `SNR>=9` | Search SNR ≥ 9, passed LEO-Vetter and the cuts, with no centroid offset or capable TIC neighbour within 15″ | <!--n:catalog.set.snr9-->857<!--/n--> |
 | `SNR 7.5-9` | The same for search SNR 7.5 to 9 | <!--n:catalog.set.low-->562<!--/n--> |
-| `neighbour<15"` | Signals rejected only by the close-neighbour check, or without a usable difference image, then assessed with TRICERATOPS and the centroid likelihood ratio | <!--n:catalog.set.nb\|,-->1,573<!--/n--> |
+| `neighbour<15"` | Signals rejected only by the close-neighbour check, or without a usable difference image, then assessed with TRICERATOPS and the centroid likelihood ratio | <!--n:catalog.set.nb\|,-->1,571<!--/n--> |
 
-Of the 855 rows of `SNR>=9`, 733 come from the first pass: the 726 clean signals counted in the README's table of
-pixel-check outcomes plus the 7 signals that moved from tier N to tier B on 13 October when TIC artifacts were removed
-([details](../validation/tic_artifacts.md)). The QLP re-search added 122 rows of `SNR>=9`, 180 of `SNR 7.5-9` and 262 of
-`neighbour<15"` (column `search`).
+Of the 857 rows of `SNR>=9`, 735 come from the first pass: the 726 clean signals counted in the README's table of
+pixel-check outcomes, the 7 signals that moved from tier N to tier B on 13 October when TIC artifacts were removed
+([details](../validation/tic_artifacts.md)), and 2 that moved from tier N to tier B on 16 October because every TIC entry
+within 15″ bright enough to cause their dip is a galaxy or a galaxy's core (`products/vetting.csv`). The QLP re-search
+added 122 rows of `SNR>=9`, 180 of `SNR 7.5-9` and 262 of `neighbour<15"` (column `search`).
 
 ### Flag columns
 
@@ -134,13 +135,13 @@ meets several criteria: the first that applies, in the order below (the order of
 
 | Value | Rows | Meaning |
 |---|---|---|
-| `grazing` | <!--n:catalog.c_reason.grazing-->148<!--/n--> | Impact parameter `b` ≥ 0.9 |
-| `RUWE > 1.4` | <!--n:catalog.c_reason.ruwe-->155<!--/n--> | Gaia RUWE of the target above 1.4 |
+| `grazing` | <!--n:catalog.c_reason.grazing-->147<!--/n--> | Impact parameter `b` ≥ 0.9 |
+| `RUWE > 1.4` | <!--n:catalog.c_reason.ruwe-->154<!--/n--> | Gaia RUWE of the target above 1.4 |
 | `MES < 10` | <!--n:catalog.c_reason.mes-->183<!--/n--> | `MES` below 10 |
 | `no TRICERATOPS result (no TIC parallax)` | <!--n:catalog.c_reason.no_parallax-->6<!--/n--> | TRICERATOPS cannot evaluate the target, because the TIC gives no parallax, so the bar cannot be passed |
 | `no TRICERATOPS result` | <!--n:catalog.c_reason.no_result-->0<!--/n--> | TRICERATOPS has not been run, or its run failed |
 | `TRICERATOPS FPP >= 0.5 or NFPP >= 0.1` | <!--n:catalog.c_reason.triceratops-->58<!--/n--> | Fails the TRICERATOPS bar (FPP < 0.5 and NFPP < 0.1) |
-| `no transit fit` | <!--n:catalog.c_reason.no_fit-->1<!--/n--> | The signal passes every other check but has no transit fit, so grazing cannot be ruled out |
+| `no transit fit` | <!--n:catalog.c_reason.no_fit-->2<!--/n--> | The signal passes every other check but has no transit fit, so grazing cannot be ruled out |
 | `centroid offset in all sectors` | <!--n:catalog.c_reason.centroid-->1<!--/n--> | The per-sector centroids reject the target at p < 0.001 and no catalogued star fits |
 
 ## `candidates_allsky.csv`
@@ -258,7 +259,7 @@ candidate has them; <!--n:catalog.fpp_g.missing_with_fpp-->4<!--/n--> uncounted 
 | `fa_score_h` | The hold-out score that tier L1 is selected on (cut 0.80), from models trained without the stars of the second inverted sample. Both scores come from the classifier retrained after the QLP re-search where the signal has a row in its table, and from the previous one otherwise | 0–1 | never empty |
 | `set` | Group the signal came from; values in [The `set` column](#the-set-column) | text | never empty |
 | `tier` | Reliability tier; values in [Tier labels](#tier-labels) | text | never empty |
-| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (<!--n:catalog.c_reason_empty\|,-->2,438<!--/n--> rows) |
+| `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (<!--n:catalog.c_reason_empty\|,-->2,439<!--/n--> rows) |
 | `reported_as` | Where a signal labelled `reported` was reported: a CTOI (with its period, or `single transit`), a K2 candidate, or an ADS bibcode | text | not tier `reported` (<!--n:catalog.reported_as_empty\|,-->2,977<!--/n--> rows) |
 | `fa_flag` | Low classifier score; see [Flag columns](#flag-columns) | text | no flag |
 | `desert_flag` | Neptunian desert; see [Flag columns](#flag-columns) | text | no flag |

@@ -4,7 +4,7 @@
 
 TRICERATOPS models every light-curve point with one exposure time. Until now each signal's fold combined every sector
 (30-minute, 10-minute, 200-second and 2-minute data), binned to 5 minutes and modelled with a 10-minute exposure
-(`pipeline/export_fold.py`, `pipeline/fpp.py`). Antoine Rabtsevich ([issue #1](https://github.com/eumemic/exoplanets/issues/1))
+(`pipeline/export_fold.py`, `pipeline/fpp.py`). Antoine Olivier ([issue #1](https://github.com/eumemic/exoplanets/issues/1))
 found FPP 0.06–0.90 for TIC 160420269 (17 R⊕), where the catalog had FPP below 1e-10. Rerunning that signal three
 ways reproduced his values only with consistent input: the catalog's fold gave FPP about 1e-7; its five 200-second
 sectors, binned the same way and modelled with a 200-second exposure, 0.54; the same sectors unbinned, 0.37.
@@ -33,6 +33,9 @@ exposure, and TRICERATOPS models each point with one sub-exposure per 2 minutes 
 (apertures, neighbours, flux ratios) uses the three sectors of that cadence with the most in-transit information.
 Everything else is as before: ten runs of 2×10⁵ draws with the default priors and ten with the Gaia limits (MOLUSC
 companions, EB scenarios dropped where Gaia RVs exclude them), a 3×3-pixel aperture, nearby-star scenarios within 30″.
+The fold covers ±3 transit durations. For comparison with an independent rerun (issue #1), the fold of TIC
+320503836's 15.69 d signal is in [`triceratops_single_cadence_tic320503836.csv`](triceratops_single_cadence_tic320503836.csv)
+(phase from mid-transit in days, flux, error).
 
 ## How it ran
 
