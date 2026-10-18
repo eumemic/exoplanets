@@ -17,7 +17,8 @@ Objects of Interest (TOIs) after masking the known TOIs.
 
 - **Five MOLUSC samples per star (18 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** The ten TRICERATOPS runs
   with Gaia limits of each signal now use five samples of simulated companions from MOLUSC, two runs each, instead of one
-  sample for all ten (`triceratops.molusc_samples` in `pipeline/params.toml`). With one sample, the Gaia-limited FPP of
+  sample for all ten (`triceratops.molusc_samples` in `pipeline/params.toml`;
+  [details](results_public/products/README.md)). With one sample, the Gaia-limited FPP of
   224 counted candidates near the validation thresholds varied between samples by about as much as the standard error of
   the ten-run mean (median ratio 0.85), and 37 of them met the thresholds with some samples and not others; averaging
   over five samples reduces that dependence. The default-prior FPPs are unchanged; the Gaia-limited ones change by 0.9%
