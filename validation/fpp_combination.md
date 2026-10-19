@@ -59,3 +59,22 @@ As of 15 October 2026 both are done. The transit fit gives b = 0.11 and 3.06 R�
 mean offset 10.9″) reject the target (p = 1.7 × 10⁻⁵) and fit TIC 46806773, 10.8″ away (p = 0.99), so under the
 centroid rule it stays a likely nearby false positive, with `centroid_flag` p < 0.001. Its values after the
 single-cadence TRICERATOPS rerun are `FPP_gc` 0.005 and `NFPP_gc` 0.0064.
+
+## The neighbour likelihood at low SNR (18 October 2026)
+
+The neighbour hypothesis of BF uses the offsets of TOI planets in the same MES range, shifted to the neighbour's
+separation in a random direction. On issue #2 the per-sector centroids of signals from neighbours turned out to be
+pulled toward the target at low SNR ([`centroid_sectors.md`](centroid_sectors.md)); if BF's offset were pulled the same
+way, BF would favour the target and `NFPP_c` would be too low. On the 202 signals caused by TOIs on neighbouring stars
+(calibration set of [`centroid_sectors.md`](centroid_sectors.md)), the model predicts the measured offsets: in each MES
+range the median measured offset is 0.99–1.01 times the model's, and the model puts on average 0.47 ± 0.02 of its
+probability below the measured offset for MES < 20 (0.52 for MES 7.1–12; 0.5 if calibrated). Fitted as a pull of the
+neighbour's position toward the target by a fraction f, the offsets give f ≈ 0.02, with 95% upper limits of 0.06 for
+neighbours within 15″ and 0.16 at 15–30″ for MES < 20. BF uses the offset in the best-quality sector, where the pull
+seen in the per-sector test, which comes from sectors with little signal, does not appear.
+
+Recomputing BF for the 406 counted rows whose inputs are available (29 others lack them) with f = 0.02 moves one
+candidate across NFPP 0.1 (TIC 288979445, 0.099 to 0.103) and takes two at NFPP 0.0010 off the validation level. With
+the upper limits, 6 counted candidates, all at NFPP 0.07–0.099, cross NFPP 0.1 (TIC 253576811, 288979445, 289089130,
+343262577, 397216278 and 410449566) and 7 leave the validation level. The catalog keeps BF as calibrated; the tiers of
+these candidates depend on the neighbour model at that level.
