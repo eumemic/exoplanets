@@ -30,7 +30,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   follow-up of each signal are stored results too (`results_public/products/vetting.csv`), so a redelivered light
   curve or a change to their code marks them out of date. A signal is no longer in the neighbour set when the only TIC
   entries within 15″ bright enough to cause its dip are galaxies or their cores, which moves TIC 625507 and
-  TIC 278708716 from tier N to tier B (issue #2). At low SNR the per-sector centroids of a signal from a neighbour are
+  TIC 278708716 from tier N to tier B (Josh Gold, issue #2). At low SNR the per-sector centroids of a signal from a neighbour are
   pulled toward the target, by about a quarter of the separation, so the per-sector test then overstates the evidence
   against a neighbour ([details](validation/centroid_sectors.md)); this does not change the counted tiers.
   <!--n:catalog.counted.allsky-->587<!--/n--> full-sky candidates and <!--n:catalog.counted.earlier-->58<!--/n--> from the earlier searches
@@ -47,7 +47,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   own neighbour (it remains a likely nearby false positive); 6 signals on stars with a second signal in the same
   sectors had used the other signal's setup; and galaxies, which the TIC lists as extended sources and often again as a
   point source without a parallax, now host no nearby-star scenarios, while their light stays in the aperture (26
-  signals; issue #2). The per-sector centroid test no longer takes a galaxy as the neighbour that fits (3 signals
+  signals; Josh Gold, issue #2). The per-sector centroid test no longer takes a galaxy as the neighbour that fits (3 signals
   measured again). TIC 288979445 (C to B) and TIC 397216278 (likely nearby false positive to N) enter the counted tiers,
   and TIC 158505607 leaves (B to C: its Gaia-limited FPP went from 0.495 to 0.506, against the bar of 0.5); 5 likely
   nearby false positives become tier C. 255 counted candidates meet the validation thresholds apart from
@@ -150,7 +150,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   p = 0.004 for the star as the source and p < 0.001 for each capable neighbour, so the row carries `centroid_flag`, as
   do three other L1 candidates. 607 full-sky candidates and 58 from the earlier searches.
 - **Website (13 October 2026).** [eumemic.github.io/exoplanets](https://eumemic.github.io/exoplanets/) has an abstract
-  of the search, a candidate explorer, a transit planner and the methods (first built in PR #8). Every number on it is
+  of the search, a candidate explorer, a transit planner and the methods (first built by ahrazzle, PR #8). Every number on it is
   computed from the tables in this repository when the site is built on each push to `main`: the candidate tables,
   the predictions, the validation tables, the dated notes here, and a new table of stage counts of the search,
   [`results_public/funnel_allsky.csv`](results_public/funnel_allsky.csv), written by `pipeline/funnel.py` from the
@@ -166,7 +166,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   gained QLP light curves, so we searched them again. A pilot found that QLP's corrected flux in Sectors 94–104 dips or
   rises for several hours at the start and end of each orbit, which mimics transits at ~13 days; we now drop the first
   day and the last half day of each orbit's QLP data in those sectors. QLP Sectors 74–79, re-delivered by MAST as
-  version 2, were also missing from our light-curve index (issue #9, PR #12) and are now included. The re-search found
+  version 2, were also missing from our light-curve index (ahrazzle, issue #9, PR #12) and are now included. The re-search found
   302 new clean signals and 262 new signals whose only pixel flag is a capable neighbour within 15″. After the same
   checks as before, 120 are counted (6 A, 51 B, 25 N, 38 L1); none is reported in ADS or Zenodo. The false-alarm
   classifier was retrained with the re-searched signals and tier L1 re-selected (6 leave, 28 join). The binary check
@@ -174,7 +174,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   TIC 141937667 (13.36 d), which drew 59% of its signal from orbit edges and disappears with the mask, is now a likely
   false alarm. 613 full-sky candidates and 58 from the earlier searches
   ([details](validation/qlp_orbit_edges.md), [classifier](validation/false_alarm_classifier.md#retraining-after-the-qlp-re-search-13-october-2026)).
-- **Tier L1 re-selected, and a data gap found (13 October 2026): 533 candidates.** An outside contributor showed
+- **Tier L1 re-selected, and a data gap found (13 October 2026): 533 candidates.** An outside contributor, ahrazzle, showed
   that the false-alarm classifier's validation let signals from the same star appear in training and evaluation
   (PR #4, merged). With validation grouped by star, 8 tier L1 candidates fall below the 0.80 score cut and leave; 11
   signals that now reach it pass the L1 checks (TRICERATOPS with Gaia limits, per-sector centroids) and join:
@@ -1050,6 +1050,14 @@ Archive, and of the VizieR catalogue access tool and the CDS XMatch service (CDS
 literature check uses the RAVEN (Lafarga et al. 2026) and T16 (Roth et al. 2026)
 catalogues and arXiv. Software: astropy, numpy, scipy, numba, lightkurve, wotan, batman, emcee,
 LEO-Vetter, transit-diffImage, tess-point, astrocut, TRICERATOPS and MOLUSC.
+
+Outside contributors whose issues or pull requests lead to a change in the pipeline or the published results are
+credited in the release note of that release, by the name they give (or their GitHub handle), with a link to the
+issue or pull request. So far: ahrazzle (issues #3, #5 and #9–#11; pull requests #4, #6–#8 and #12–#17: the false-alarm
+classifier's validation by star, QLP light curves with missing uncertainties and other product versions, the Gaia
+epoch of the binary check, independent event checks, the website, the data dictionary, the tests and CI, and the
+repository guide), Antoine Olivier (issue #1: the single-cadence TRICERATOPS input) and Josh Gold (killercatfish;
+issue #2: TOI-913, galaxies in the TIC and the per-sector centroids).
 
 Method inspired by Pavel Rabtsevich's TIC 4206066 study. Built with Claude Code (Anthropic).
 
