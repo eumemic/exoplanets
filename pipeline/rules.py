@@ -283,7 +283,7 @@ def numbers(ctx):
     doc_numbers.write(ctx.output("results_public/numbers.json"), out)
 
 
-DOCS = ("README.md", "results_public/README.md", "validation/findability.md")
+DOCS = ("README.md", "results_public/README.md", "validation/findability.md", "REVIEWING.md")
 
 
 @rule(inputs=["results_public/numbers.json"], outputs=list(DOCS), inplace={d: "template" for d in DOCS})

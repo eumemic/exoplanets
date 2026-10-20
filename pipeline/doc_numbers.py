@@ -105,6 +105,7 @@ def compute(allsky_csv, earlier_csv, ephemerides_csv, predictions_csv, funnel_cs
     fb_, _ = tier_values(both)
     out["catalog"].update({
         "median_fpp": {"default": float(both.FPP_c.median()), "gaia": float(fb_.median())},
+        "fpp_sum": float(fb_.sum()),                # the astrophysical false positives the FPPs imply
         "reported_ctoi": int(((a.tier == "reported") & a.reported_as.fillna("").str.startswith("CTOI")).sum()),
         "centroid_flagged_counted": int(both.centroid_flag.fillna("").str.endswith("p < 0.01").sum()),
         "from_research": int((ca.search == RESEARCH).sum()),
@@ -162,6 +163,7 @@ def false_alarms(funnel_csv, tri_inverted_csv, scores_csv, allsky_csv, P):
           "baseline_false_alarms": n_fa}
     fa["expected"] = {"AB": exp_ab, "N": tri_pass * stars / f[INV[0]]["all"]["stars"],
                       "L1": exp_cl / sel * int((a.tier == "L1").sum())}
+    fa["expected_total"] = sum(fa["expected"].values())
     return {"false_alarms": fa, "classifier": cl}
 
 

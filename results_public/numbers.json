@@ -64,6 +64,7 @@
    "missing_with_fpp": 4
   },
   "fpp_not_run": 684,
+  "fpp_sum": 36.670199,
   "from_research": 114,
   "hosts": 574,
   "l1_low_fa_score": 31,
@@ -188,6 +189,7 @@
    "L1": 8.781610722754237,
    "N": 10.11297470255979
   },
+  "expected_total": 46.44295557545503,
   "inverted_stars": 798769,
   "mes_bins": [
    {

@@ -411,23 +411,25 @@
      "dag.markers.fill": "4d2eabc011ecf6f7c0fac8e538a5e739547ca6e767178828460ed6f2d7740638",
      "dag.markers.lookup": "c2e22048208e32b46b4b0535d362933b35e6b31fbe85cfe59fc2fd380435d962",
      "dag.markers.render": "577aa4c7d5ecae047ed64b7785e3f10892ed5f94349c6fb4a0326aace206ce1a",
-     "rules.DOCS": "28ed58ccad880bdad135e4335621d30d80e28b9e92be8bee4585fd050972a916",
+     "rules.DOCS": "f987ceb37c727d0149072fa8bdcc492fbcfb0cac97e7d29e5268311f77209dbf",
      "rules.documents": "9da449ad4719b547e8307195aff6d92a275ee1ca1c3fd69f1ccff85fd71e6a8f"
     }
    },
    "inputs": {
-    "README.md (template)": "72f853f08d57ef954c5457a9bb5e7b8d632102bca66f3c1a531ae2cdfea2f357",
+    "README.md (template)": "a49a427e8aad8f1b2283b3ac6852bd89cce9b0dd1ad4f69b85892722c9726ce0",
+    "REVIEWING.md (template)": "51a62288f4f9d98ce77ebd8e60577df3f051404134c3931c4c5c41c1e4c93d37",
     "results_public/README.md (template)": "852f3eb6848f93fc3b60d9175265efd383703b92098b163d9b1ed0860a8a0b7b",
-    "results_public/numbers.json": "557d1e656f31b6090080a3a458846206461d77f89a167c71e697de2af0e8b779",
+    "results_public/numbers.json": "6a3d99ed385b7dedf75598048e5af08abede2419bd2106395e74afa951907a2b",
     "validation/findability.md (template)": "11fedfa455c2fe7f7ff81dad9604914e307c90528cc85d0a41f1aaef22af4cd4"
    },
    "outputs": {
-    "README.md": "df28bb09cf2012deeb2bef91c2d9343f05704801b560cf0798818cb606efe623",
+    "README.md": "a4b8efab5e8dd75b764b2d61ae33b6aef0d7ba0a59b22a4376a9798bd1076669",
+    "REVIEWING.md": "9dcd25711d21f0f0c7704efa0f9b59a1bd49b31af0c1ad962eac3b57aaf8e882",
     "results_public/README.md": "005f614af65b1bc8c8f5d1d582ac2a144fdd4986e6dcba9d9c590e9f1ffddf0a",
     "validation/findability.md": "adca3bc39571ead8c9e058b793b494e3e5107206ff28bdfccfe31932716399a0"
    },
    "params": {},
-   "stamp": "aac61a72ca3fbb19c6c30da1f8c7ce7bb48ae6c9ca94fef4158a5f8ec3601aa8"
+   "stamp": "b3d2229e5b303fac31180bbeeaed32a7d9678efe4e6eda733c6db5ee8703a7ea"
   },
   "earlier_folders": {
    "code": {
@@ -1022,12 +1024,13 @@
      "dag.context.covers": "d51f8fe9a0b053dea90414bee62a6a6cc4734fde406e7bf8bc56611ce62457c3",
      "dag.context.is_glob": "41e6ae1e8531f18c7e38a857d02a3a116996be6bea226d2c7689260f4a483761",
      "dag.context.match": "5e525a2fd6dfe301cdad08f01178bc4f02325914bffd6678d9abfe35f7ae22d0",
-     "rules.DOCS": "28ed58ccad880bdad135e4335621d30d80e28b9e92be8bee4585fd050972a916",
+     "rules.DOCS": "f987ceb37c727d0149072fa8bdcc492fbcfb0cac97e7d29e5268311f77209dbf",
      "rules.markdown_tables": "73b0e21a03e4e3bebb56dff4b3de2e31c4e896f19afc02a88cb3e8132ce9ca19"
     }
    },
    "inputs": {
-    "README.md": "df28bb09cf2012deeb2bef91c2d9343f05704801b560cf0798818cb606efe623",
+    "README.md": "a4b8efab5e8dd75b764b2d61ae33b6aef0d7ba0a59b22a4376a9798bd1076669",
+    "REVIEWING.md": "9dcd25711d21f0f0c7704efa0f9b59a1bd49b31af0c1ad962eac3b57aaf8e882",
     "results_public/README.md": "005f614af65b1bc8c8f5d1d582ac2a144fdd4986e6dcba9d9c590e9f1ffddf0a",
     "results_public/products/README.md": "a486cb45cdbee7405a5ecd5d5e8ae1d45b770ae2fdcdc72ba550b5d5c0875236",
     "validation/findability.md": "adca3bc39571ead8c9e058b793b494e3e5107206ff28bdfccfe31932716399a0"
@@ -1035,7 +1038,7 @@
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "285dbe91a0fbb826be4dfefc8a7a1d1f9f874bb43126ab8800a545d48cf6a33e"
+   "stamp": "a8b7897473c3c1b4f16c54aac65ccdc1e2cdf42296c4fff09bd9d583abc65517"
   },
   "numbers": {
    "code": {
@@ -1082,8 +1085,8 @@
      "doc_numbers.SETS": "03b2573a166a7ddcd805fff193beabb7e11b97f0bda5a6ca1249a5af2a079f38",
      "doc_numbers.TIER_ORDER": "270ae88f8210d39f863ee0b67da473560369c1773e19589af6ddaf52fe3d1ab5",
      "doc_numbers.by_tier": "b173d4728dec5502af13006de4266a8aaaffedeee66539c7d5af9bf0169f5768",
-     "doc_numbers.compute": "38b4e9e503bd40c0292f29846ea3aef41791ae491134f4343820b8d29f27d3d9",
-     "doc_numbers.false_alarms": "0f140054d5c0b0563774c174a0f6a6abcf8ea5cd9192e3dd91a978e6a7be24d8",
+     "doc_numbers.compute": "8b9cb215c773ce6be956e1054cd8a7b65583a1676f42dbdfadb5c4df52ebb162",
+     "doc_numbers.false_alarms": "1df423cbc29d8fe4f7b32b7599a23499e55727686a24b4a7e2d8bcc0c3a2fbed",
      "doc_numbers.funnel": "39d4e543d5e5f9fba773a7311d2baba9cdd170e8adcc8f4581470da6b9a6d2ac",
      "doc_numbers.slug": "132c277ea578e120dba6b91526c57dc3f01b04c8595d88c631635ca717a1e1b8",
      "doc_numbers.tier_values": "66897ca781634385cca38c8dd198469b64814ea89fb9aafe7c005a5ff0e5d405",
@@ -1106,7 +1109,7 @@
     "validation/triceratops_inverted_close_neighbour.csv": "1276ac0ebec1d060a9c36c2a9275a3630b646000d96768ad551ef3a6856a3591"
    },
    "outputs": {
-    "results_public/numbers.json": "557d1e656f31b6090080a3a458846206461d77f89a167c71e697de2af0e8b779"
+    "results_public/numbers.json": "6a3d99ed385b7dedf75598048e5af08abede2419bd2106395e74afa951907a2b"
    },
    "params": {
     "catalog.counted_allsky": [
@@ -1131,7 +1134,7 @@
     "tiers.centroid_neighbour_p": 0.01,
     "tiers.centroid_reject_p": 0.001
    },
-   "stamp": "d2cbd61c1a5976e75b889441a0c161d15dcbc639f981d3cae951f98d20bedd58"
+   "stamp": "a273a8b9e92beca2e8c3a7cf8280c534d156abc5de71cd9933f4ff06914d98a8"
   },
   "prose_claims": {
    "code": {
@@ -1157,12 +1160,12 @@
     }
    },
    "inputs": {
-    "results_public/numbers.json": "557d1e656f31b6090080a3a458846206461d77f89a167c71e697de2af0e8b779"
+    "results_public/numbers.json": "6a3d99ed385b7dedf75598048e5af08abede2419bd2106395e74afa951907a2b"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "90bf957aaaeb96754865222e2d14acf0f5bc04f419e6de4c816d9595a29c1be3"
+   "stamp": "a401ab1097c05e7ca7b59cc4ae021a7793d4865f68604c361c9196239d1ac062"
   },
   "redo": {
    "code": {
@@ -1508,7 +1511,7 @@
     }
    },
    "inputs": {
-    "pipeline/*.py": "c73d1acc740ae045f5b7b1cc1fe05a2b8bfa14f7c1a43e2d5076dcb4d6bd0cff",
+    "pipeline/*.py": "d70245c970fe976dcbf519f6b284fad14f5192c5479c3784383eb9c224e1b09e",
     "pipeline/dag/*.py": "90dd57c460a4bf2d4591051e3db9365a7adc6aaeb14ece9dc0a3b13848b4cc05",
     "requirements-triceratops.txt": "8a49a071babea4d926345b104bc5ed737e2a6a7a3ce89e46e2bf35dbd234523a",
     "requirements.txt": "794fbf007b5eb8d97ecee0084cb0324f0ba041f583eec5bd1167dc0c6ba23e0d"
@@ -1517,7 +1520,7 @@
     "results_public/products/stage_code.json": "a640eb3d96262e2f2724dc2956b5b668fffe1d1d34c07075430364b6e2433b28"
    },
    "params": {},
-   "stamp": "5e84f7c5b43333a7c7c97fdecb8b697585e325a34cb96cb2bc7da565d1e54c8e"
+   "stamp": "e82a64e0317c98a3d541d4fdb435a5dff7f04824512cee2c4d482231d2e19b3b"
   },
   "tic_fields_complete": {
    "code": {

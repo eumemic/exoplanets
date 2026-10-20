@@ -7,7 +7,8 @@
   <a href="https://eumemic.github.io/exoplanets/candidates.html">Candidate explorer</a> &nbsp;&middot;&nbsp;
   <a href="https://eumemic.github.io/exoplanets/transits.html">Transit planner</a> &nbsp;&middot;&nbsp;
   <a href="https://eumemic.github.io/exoplanets/methods.html">Methods</a> &nbsp;&middot;&nbsp;
-  <a href="results_public/">Data</a>
+  <a href="results_public/">Data</a> &nbsp;&middot;&nbsp;
+  <a href="REVIEWING.md">For reviewers</a>
 </p>
 
 Independent searches of NASA TESS light curves for small transiting planets. The first combines
