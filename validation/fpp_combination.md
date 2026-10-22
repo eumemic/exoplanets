@@ -78,3 +78,23 @@ candidate across NFPP 0.1 (TIC 288979445, 0.099 to 0.103) and takes two at NFPP 
 the upper limits, 6 counted candidates, all at NFPP 0.07–0.099, cross NFPP 0.1 (TIC 253576811, 288979445, 289089130,
 343262577, 397216278 and 410449566) and 7 leave the validation level. The catalog keeps BF as calibrated; the tiers of
 these candidates depend on the neighbour model at that level.
+
+## Which neighbours the Bayes factor considers (22 October 2026)
+
+BF = L(offset | target) / max_k L(offset | neighbour k). For the 140 first-pass tier N signals the maximum is over the
+capable neighbours within 15″ (`results_cloud/glue/tier_recover.py`, kept by the build); for the second pass and tiers
+A, B and L1 it is over every star within 30″ to which TRICERATOPS gives a nearby-star scenario, plus the nearest
+capable neighbour. Applying the largest L_k to all of TRICERATOPS's nearby-star probability bounds the sum over
+neighbours, each weighted by its own L_k, from above only when the maximum covers every star that carries some of that
+probability. The 15″ set leaves out stars at 15–30″ and stars that would need an eclipse deeper than 50%.
+
+Taking the maximum instead over every star that the Gaia-limited runs (`probs_m_mean` in each stored result) give
+nearby-star probability, with the TIC positions, lowers BF for 71 of the 159 tier N candidates. With the new BF, none
+fails FPP_gc < 0.5 or NFPP_gc < 0.1 and the 36 at the validation level stay there; the recomputation reproduces the
+catalog's FPP_gc and NFPP_gc for all 159 with the old BF. The catalog keeps the old BF.
+
+Two tier N candidates have no usable difference image and so no BF: TIC 300309348 (14.03 d) and TIC 404160133
+(25.22 d). TRICERATOPS evaluates stars within 30″ only, and for these signals no single image excludes stars farther out.
+The per-sector centroids do ([`centroid_sectors.csv`](centroid_sectors.csv)): the mean offsets are 1.0″ over 7 sectors
+and 2.5″ over 3 sectors, the target fits (p = 0.31 and 0.61), and none of the 181 and 20 stars within 2′ bright enough
+to cause the dip fits.

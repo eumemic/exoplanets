@@ -121,12 +121,15 @@
   }
  },
  "classifier": {
-  "baseline_false_alarms": 308.46387754156706,
-  "clean_low": 395,
+  "baseline_false_alarms": 434.88349948483227,
+  "clean_low": 562,
   "cut": 0.8,
-  "expected_false_alarms": 9.173646915734336,
-  "purity": 0.92159276140398,
-  "selected": 117
+  "expected_false_alarms": 13.590109358901008,
+  "holdout_n": 32,
+  "holdout_pass": 1,
+  "inverted_clean_low": 86,
+  "purity": 0.9056242405631875,
+  "selected": 144
  },
  "earlier": {
   "binary_empty": 67,
@@ -186,10 +189,10 @@
   },
   "expected": {
    "AB": 27.548370150141007,
-   "L1": 8.781610722754237,
+   "L1": 10.570085056923007,
    "N": 10.11297470255979
   },
-  "expected_total": 46.44295557545503,
+  "expected_total": 48.231429909623806,
   "inverted_stars": 798769,
   "mes_bins": [
    {

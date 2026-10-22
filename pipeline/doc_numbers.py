@@ -125,10 +125,13 @@ def funnel(funnel_csv):
     return f
 
 
-def false_alarms(funnel_csv, tri_inverted_csv, scores_csv, allsky_csv, P):
+def false_alarms(funnel_csv, tri_inverted_csv, scores_csv, inverted_low_csv, allsky_csv, P):
     """Expected false alarms among the counted full-sky candidates, from the search of inverted light curves (the
-    first pass's measurement), and tier L1's selection by the false-alarm classifier at the 0.80 cut, as
-    fa_classifier.py computes it. {"false_alarms": ..., "classifier": ...}."""
+    first pass's measurement), and tier L1's selection by the false-alarm classifier at the 0.80 cut.
+
+    The catalog's SNR 7.5-9 set is the union of both passes, so its false alarms are the union of the inverted runs'
+    clean signals in that band (inverted_clean.py), and the fraction the cut lets through is measured on the second
+    inverted sample, which the selection models never saw. {"false_alarms": ..., "classifier": ...}."""
     f = funnel(funnel_csv)
     stars = f[FIRST]["all"]["stars"]
     inv_stars = sum(f[q]["all"]["stars"] for q in INV)
@@ -153,13 +156,17 @@ def false_alarms(funnel_csv, tri_inverted_csv, scores_csv, allsky_csv, P):
     fa["triceratops_inverted"] = {"tested": len(tri), "pass": int((tri["pass"] == "True").sum()), "pass_mes10": tri_pass}
     s = pd.read_csv(scores_csv, dtype={"inv_set": str})
     lo = s[s.band == "low"]
-    real_c = lo[(lo.label == "real") & (lo.cls == "clean")]
-    n_fa = int(((lo.label == "inverted") & (lo.cls == "clean")).sum()) * stars / inv_stars
-    i2 = lo[(lo.label == "inverted") & lo.inv_set.isin(["2", "2.0"])]
+    i2 = lo[(lo.label == "inverted") & (lo.cls == "clean") & lo.inv_set.isin(["2", "2.0"])]
+    inv = pd.read_csv(inverted_low_csv, dtype={"repeats": str})
+    n_inv = int(((inv["pass"] == "first") | inv.repeats.isna()).sum())
+    n_fa = n_inv * scale
     cut = 0.8
-    sel = int((real_c.score_h >= cut).sum())
-    exp_cl = n_fa * int((i2.score_h >= cut).sum()) / len(i2)
-    cl = {"cut": cut, "clean_low": len(real_c), "selected": sel, "expected_false_alarms": exp_cl, "purity": 1 - exp_cl / sel,
+    low_cat = a[a["set"] == "SNR 7.5-9"]
+    sel = int((low_cat.fa_score_h >= cut).sum())
+    passing = int((i2.score_h >= cut).sum())
+    exp_cl = n_fa * passing / len(i2)
+    cl = {"cut": cut, "clean_low": len(low_cat), "selected": sel, "inverted_clean_low": n_inv,
+          "holdout_pass": passing, "holdout_n": len(i2), "expected_false_alarms": exp_cl, "purity": 1 - exp_cl / sel,
           "baseline_false_alarms": n_fa}
     fa["expected"] = {"AB": exp_ab, "N": tri_pass * stars / f[INV[0]]["all"]["stars"],
                       "L1": exp_cl / sel * int((a.tier == "L1").sum())}

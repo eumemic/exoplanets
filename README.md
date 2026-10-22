@@ -16,7 +16,15 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **Five MOLUSC samples per star (18 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** The ten TRICERATOPS runs
+- **False alarms counted on both passes; mean NFPP published (22 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** No tier
+  changes. The expected false alarms in tier L1 are now computed on the union of both passes, as the catalog's SNR 7.5–9
+  set is ([details](validation/false_alarm_classifier.md)): about <!--n:false_alarms.expected.L1|.1f-->10.6<!--/n--> instead of 8.8, and
+  about <!--n:false_alarms.expected_total|.0f-->48<!--/n--> among the full-sky candidates in all. The catalogs gain `NFPP_mean` and
+  `NFPP_g_mean`, the mean NFPP of the runs that `FPP_c` and `FPP_gc` use, so both can be recomputed from the table. The
+  centroid Bayes factor of the first-pass tier N signals considers the capable neighbours within 15″, not every star
+  within 30″ that TRICERATOPS gives a scenario; widening it lowers the factor for 71 of the 159 but changes no tier
+  ([details](validation/fpp_combination.md)).
+- **Five MOLUSC samples per star (18 October 2026): 645 candidates.** The ten TRICERATOPS runs
   with Gaia limits of each signal now use five samples of simulated companions from MOLUSC, two runs each, instead of one
   sample for all ten (`triceratops.molusc_samples` in `pipeline/params.toml`;
   [details](results_public/products/README.md)). With one sample, the Gaia-limited FPP of
@@ -25,7 +33,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   over five samples reduces that dependence. The default-prior FPPs are unchanged; the Gaia-limited ones change by 0.9%
   at the median and by more than a factor of 3 for 14 signals, all with FPPs below 0.15. No candidate enters or leaves
   the counted tiers.
-  <!--n:catalog.validation.total-->254<!--/n--> counted candidates meet the validation thresholds apart from high-resolution imaging, against
+  254 counted candidates meet the validation thresholds apart from high-resolution imaging, against
   255: 8 enter and 9 leave, all with an FPP that moved by 0.003–0.013 across 0.015. Among the uncounted signals, 3
   become likely nearby false positives and 2 tier C, as their FPP or NFPP crossed 0.5 or 0.1. The vetting and pixel
   follow-up of each signal are stored results too (`results_public/products/vetting.csv`), so a redelivered light
@@ -34,7 +42,7 @@ Objects of Interest (TOIs) after masking the known TOIs.
   TIC 278708716 from tier N to tier B (Josh Gold, issue #2). At low SNR the per-sector centroids of a signal from a neighbour are
   pulled toward the target, by about a quarter of the separation, so the per-sector test then overstates the evidence
   against a neighbour ([details](validation/centroid_sectors.md)); this does not change the counted tiers.
-  <!--n:catalog.counted.allsky-->587<!--/n--> full-sky candidates and <!--n:catalog.counted.earlier-->58<!--/n--> from the earlier searches
+  587 full-sky candidates and 58 from the earlier searches
   ([inputs and rules](results_public/products/README.md)).
 - **TRICERATOPS recomputed, every input recorded (16 October 2026): 645 candidates.** Every TRICERATOPS
   result the tiers use was computed again on AWS and stored under a hash of everything that determines it: the light

@@ -177,3 +177,23 @@ centroids sit 15–38″ west of the star in all four sectors (p = 0.004 for the
 
 As of 15 October 2026 tier L1 has 112 candidates: TIC 296974573 (13.19 d) returned to tier L in the single-cadence
 TRICERATOPS rerun of 15 October (`FPP_gc` 0.59 after the corrections of the same day).
+
+## Expected false alarms in tier L1, both passes (22 October 2026)
+
+The numbers above judge the classifier on the retrained table, where a re-searched star's signals replace its first-pass
+ones: 117 of 395 clean signals selected. The catalog does not replace; its SNR 7.5–9 set is the union of both passes
+(562 clean signals, of which the 0.80 cut on `fa_score_h` selects 144). Until this release the expected number of false
+alarms in tier L1 (`false_alarms.expected.L1` in `results_public/numbers.json`, quoted in REVIEWING.md) mixed the two:
+the false alarms of the replacement table, the fraction of all sample-2 inverted rows (any pixel class) passing the cut,
+and the union's selection. It is now computed on the union throughout (`pipeline/doc_numbers.py`):
+
+- inverted clean signals at SNR 7.5–9 in the union of both passes:
+  [`inverted_clean_low.csv`](inverted_clean_low.csv), written by `pipeline/inverted_clean.py`: 62 from the first pass
+  and 29 from the re-search, 5 of which repeat a first-pass inverted signal that the catalog would hold (same star,
+  period within 0.5%, the rule by which the re-search leaves out signals already in the catalog), so 86, or about 435
+  after scaling by 5.06 to the stars searched;
+- the fraction passing the 0.80 cut: 1 of the 32 clean inverted signals of the second sample, which the selection
+  models never saw;
+- so about 13.6 false alarms among the 144 selected and, scaled to the 112 in tier L1, about 10.6 (purity about 91%).
+
+This raises the expected false alarms among the counted full-sky candidates from about 46 to about 48.

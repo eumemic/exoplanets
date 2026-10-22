@@ -45,16 +45,16 @@ import math
 
 from fpp_combine import combine
 
-TRI = ["FPP", "NFPP", "FPP_c", "NFPP_c", "FPP_g", "NFPP_g", "FPP_gc", "NFPP_gc"]
+TRI = ["FPP", "NFPP", "NFPP_mean", "FPP_c", "NFPP_c", "FPP_g", "NFPP_g", "NFPP_g_mean", "FPP_gc", "NFPP_gc"]
 ALLSKY = ["TIC", "P_d", "P_err", "T0_BJD", "Rp_Re", "b", "T14_h", "depth_ppm", "MES", "n_transits", "Tmag", "Teff", "Rstar",
           "dist_pc", "ruwe", "centroid_offset_arcsec", "nearest_capable_arcsec", "cs_sectors", "cs_offset_arcsec",
           "cs_pa_deg", "cs_p_target", "cs_neighbour", "cs_neighbour_sep_arcsec", "cs_p_neighbour", "centroid_flag",
           "binary_at_target", "eb_nearby_same_period", "papers_with_period", "zenodo_with_period", "host_tois", "FPP",
-          "NFPP", "BF", "FPP_c", "NFPP_c", "FPP_g", "NFPP_g", "FPP_gc", "NFPP_gc", "rv_flag", "fa_score", "fa_score_h",
-          "set", "tier", "c_reason", "reported_as", "fa_flag", "desert_flag", "search", "candidate_id"]
-EARLIER = ["TIC", "P_d", "Rp_Re", "b", "ruwe", "binary_at_target", "tier", "src", "FPP", "NFPP", "BF", "FPP_c", "NFPP_c",
-           "FPP_g", "NFPP_g", "FPP_gc", "NFPP_gc", "rv_flag", "c_reason", "cs_sectors", "cs_offset_arcsec", "cs_pa_deg",
-           "cs_p_target", "cs_neighbour", "cs_neighbour_sep_arcsec", "cs_p_neighbour", "centroid_flag", "candidate_id"]
+          "NFPP", "NFPP_mean", "BF", "FPP_c", "NFPP_c", "FPP_g", "NFPP_g", "NFPP_g_mean", "FPP_gc", "NFPP_gc", "rv_flag",
+          "fa_score", "fa_score_h", "set", "tier", "c_reason", "reported_as", "fa_flag", "desert_flag", "search", "candidate_id"]
+EARLIER = ["TIC", "P_d", "Rp_Re", "b", "ruwe", "binary_at_target", "tier", "src", "FPP", "NFPP", "NFPP_mean", "BF", "FPP_c",
+           "NFPP_c", "FPP_g", "NFPP_g", "NFPP_g_mean", "FPP_gc", "NFPP_gc", "rv_flag", "c_reason", "cs_sectors",
+           "cs_offset_arcsec", "cs_pa_deg", "cs_p_target", "cs_neighbour", "cs_neighbour_sep_arcsec", "cs_p_neighbour", "centroid_flag", "candidate_id"]
 DERIVED_ALLSKY = TRI + ["tier", "c_reason", "reported_as", "centroid_flag", "fa_flag", "desert_flag"]
 DERIVED_EARLIER = TRI + ["tier", "c_reason", "centroid_flag"]
 TRI_FAIL = "TRICERATOPS FPP >= 0.5 or NFPP >= 0.1"
@@ -99,20 +99,21 @@ def write_rows(path, columns, rows):
 
 # TRICERATOPS ---------------------------------------------------------------------------------------------------------
 def tri_values(res, bf):
-    """The eight catalog columns from a result: FPP is the mean of the runs and NFPP the largest; _c and _gc combine
-    them with the centroid Bayes factor (fpp_combine.py); _g and _gc use the Gaia-limited runs."""
+    """The ten catalog columns from a result: FPP is the mean of the runs and NFPP the largest, with NFPP_mean the mean
+    (FPP_c uses it); _c and _gc combine them with the centroid Bayes factor (fpp_combine.py); _g and _gc use the
+    Gaia-limited runs."""
     if res is None or res["degenerate"]:
         return {k: math.nan for k in TRI} | {"status": "none" if res is None else "degenerate"}
     f, nm, nx = num(res["FPP_mean"]), num(res["NFPP_mean"]), num(res["NFPP_max"])
     bf = bf if math.isfinite(bf) else None
-    out = {"FPP": f, "NFPP": nx}
+    out = {"FPP": f, "NFPP": nx, "NFPP_mean": nm}
     out["FPP_c"], out["NFPP_c"] = combine(f, nm, nx, bf)
     if res["FPP_g_mean"]:
         g, gm, gx = num(res["FPP_g_mean"]), num(res["NFPP_g_mean"]), num(res["NFPP_g_max"])
-        out["FPP_g"], out["NFPP_g"] = g, gx
+        out["FPP_g"], out["NFPP_g"], out["NFPP_g_mean"] = g, gx, gm
         out["FPP_gc"], out["NFPP_gc"] = combine(g, gm, gx, bf)
     else:
-        out.update(FPP_g=math.nan, NFPP_g=math.nan, FPP_gc=math.nan, NFPP_gc=math.nan)
+        out.update(FPP_g=math.nan, NFPP_g=math.nan, NFPP_g_mean=math.nan, FPP_gc=math.nan, NFPP_gc=math.nan)
     out["status"] = "ok"
     return out
 

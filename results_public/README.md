@@ -238,12 +238,14 @@ scenario), and their columns are empty.
 |---|---|---|---|
 | `FPP` | Mean FPP over the ten runs, default priors | probability | TRICERATOPS not run (<!--n:catalog.fpp_not_run-->684<!--/n--> rows), or the TIC gives the target no parallax (<!--n:catalog.fpp.no_parallax-->39<!--/n--> rows); none in tiers A, B, N or L1 |
 | `NFPP` | Largest NFPP over the ten runs, default priors | probability | as `FPP` |
-| `BF` | The centroid Bayes factor: how likely the measured centroid offset is if the transit is on the target, relative to a capable neighbour within 30″. In every row with `BF` > 1, `NFPP_c` ≤ `NFPP`; with `BF` < 1, `NFPP_c` ≥ `NFPP` | dimensionless | no ratio applied (<!--n:catalog.bf.empty-->984<!--/n--> rows, <!--n:catalog.bf.with_fpp-->295<!--/n--> of them with TRICERATOPS values, where `FPP_c` = `FPP` and `NFPP_c` = `NFPP`) |
-| `FPP_c` | `FPP` combined with the centroid ratio, using the mean NFPP of the same runs ([details](../validation/fpp_combination.md)) | probability | as `FPP` |
+| `NFPP_mean` | Mean NFPP over the same ten runs, which `FPP_c` uses | probability | as `FPP` |
+| `BF` | The centroid Bayes factor: how likely the measured centroid offset is if the transit is on the target, relative to the neighbour that would best explain it: for the first-pass tier N signals, the capable neighbours within 15″; for the others, every star within 30″ to which TRICERATOPS gives a nearby-star scenario ([details](../validation/fpp_combination.md)). In every row with `BF` > 1, `NFPP_c` ≤ `NFPP`; with `BF` < 1, `NFPP_c` ≥ `NFPP` | dimensionless | no ratio applied (<!--n:catalog.bf.empty-->984<!--/n--> rows, <!--n:catalog.bf.with_fpp-->295<!--/n--> of them with TRICERATOPS values, where `FPP_c` = `FPP` and `NFPP_c` = `NFPP`) |
+| `FPP_c` | `FPP` combined with the centroid ratio, using `NFPP_mean` ([details](../validation/fpp_combination.md)) | probability | as `FPP` |
 | `NFPP_c` | `NFPP` (the largest of the ten runs) combined with the centroid ratio | probability | as `FPP` |
 | `FPP_g` | `FPP` rerun with Gaia DR3 limits on companions (MOLUSC) and, for bright stars, Gaia epoch-RV limits on an eclipsing binary at the target | probability | not run (<!--n:catalog.fpp_g.empty-->727<!--/n--> rows: those without `FPP`, and <!--n:catalog.fpp_g.missing_with_fpp-->4<!--/n--> whose star has no Gaia DR3 row or mass for MOLUSC) |
 | `NFPP_g` | `NFPP` of the Gaia-constrained runs | probability | as `FPP_g` |
-| `FPP_gc` | `FPP_g` combined with the centroid ratio, using the mean NFPP of the same runs. The bar for counted candidates is `FPP_gc` < 0.5 and `NFPP_gc` < 0.1 | probability | as `FPP_g` |
+| `NFPP_g_mean` | `NFPP_mean` of the Gaia-constrained runs, which `FPP_gc` uses | probability | as `FPP_g` |
+| `FPP_gc` | `FPP_g` combined with the centroid ratio, using `NFPP_g_mean`. The bar for counted candidates is `FPP_gc` < 0.5 and `NFPP_gc` < 0.1 | probability | as `FPP_g` |
 | `NFPP_gc` | `NFPP_g` combined with the centroid ratio | probability | as `FPP_g` |
 | `rv_flag` | Gaia radial-velocity check; values in [Flag columns](#flag-columns) | text | no flag |
 
@@ -282,7 +284,7 @@ with the same checks as the full-sky catalog. Tiers `A` and `B` are counted. Col
 | `binary_at_target` | As in `candidates_allsky.csv` | no catalog entry (<!--n:earlier.binary_empty-->67<!--/n--> rows) |
 | `tier` | `A`, `B` or `C` | never empty |
 | `src` | The file in `results_public/` the signal was taken from (`candidates.csv`, `candidates_2026-10-08.csv`, `candidates_2026-10-08b.csv`, `candidates_2026-10-08c.csv`, `candidates_2026-10-08d.csv` or `followup_faint_t1.csv`) | never empty |
-| `FPP`, `NFPP`, `BF`, `FPP_c`, `NFPP_c`, `FPP_g`, `NFPP_g`, `FPP_gc`, `NFPP_gc` | As in `candidates_allsky.csv` | `FPP`, `NFPP`, `FPP_c`, `NFPP_c`, `FPP_g`, `NFPP_g`, `FPP_gc` and `NFPP_gc`: TRICERATOPS not run (<!--n:earlier.fpp_empty-->6<!--/n--> rows). `BF`: no ratio applied (42 rows) |
+| `FPP`, `NFPP`, `NFPP_mean`, `BF`, `FPP_c`, `NFPP_c`, `FPP_g`, `NFPP_g`, `NFPP_g_mean`, `FPP_gc`, `NFPP_gc` | As in `candidates_allsky.csv` | All but `BF`: TRICERATOPS not run (<!--n:earlier.fpp_empty-->6<!--/n--> rows). `BF`: no ratio applied (42 rows) |
 | `rv_flag` | As in `candidates_allsky.csv` | no flag (<!--n:earlier.rv_empty-->52<!--/n--> rows) |
 | `c_reason` | As in `candidates_allsky.csv` | not tier C (<!--n:earlier.c_reason_empty-->58<!--/n--> rows) |
 | `cs_sectors`, `cs_offset_arcsec`, `cs_pa_deg`, `cs_p_target` | As in `candidates_allsky.csv` | not measured or one sector (<!--n:earlier.cs_empty-->8<!--/n--> rows) |
@@ -516,7 +518,7 @@ a candidates table, so its `prefilter` is computed with the pre-filters and its 
   observed transits, chosen so that the epoch and period errors are uncorrelated. For the same candidate the two
   differ by hundreds of days (for example 763.8 d for TIC 137499615, P = 0.9919 d). Use `T0_BJD_TDB` and `period_d` to
   predict transits.
-- **<!--n:catalog.fpp_g.missing_with_fpp|Word-->Four<!--/n--> rows with TRICERATOPS values have empty `FPP_g`, `NFPP_g`, `FPP_gc` and `NFPP_gc`**, because their stars have
+- **<!--n:catalog.fpp_g.missing_with_fpp|Word-->Four<!--/n--> rows with TRICERATOPS values have empty `FPP_g`, `NFPP_g`, `NFPP_g_mean`, `FPP_gc` and `NFPP_gc`**, because their stars have
   no Gaia DR3 row or no TIC mass for MOLUSC. One of them, TIC 370244729 (3.62 d, no TIC mass), was a counted tier B
   candidate until 15 October; its tier uses the default-prior values, and with `FPP_c` 0.504 it is now tier C
   ([details](../validation/gaia_companion_limits.md)).

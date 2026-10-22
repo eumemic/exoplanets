@@ -33,8 +33,8 @@ vetting or the false-positive analysis below is wrong or incomplete.
 ## Our own estimate of the false positives
 
 - **Noise and systematics.** We ran the whole pipeline on the inverted light curves of 798,769 stars, where every dip
-  is noise or a systematic. Scaled to the search, about <!--n:false_alarms.expected_total|.0f-->46<!--/n--> of the 587 full-sky candidates are expected
-  to be false alarms (<!--n:false_alarms.expected.AB|.1f-->27.5<!--/n--> in tiers A and B, <!--n:false_alarms.expected.N|.1f-->10.1<!--/n--> in N, <!--n:false_alarms.expected.L1|.1f-->8.8<!--/n--> in L1), mostly at low MES
+  is noise or a systematic. Scaled to the search, about <!--n:false_alarms.expected_total|.0f-->48<!--/n--> of the 587 full-sky candidates are expected
+  to be false alarms (<!--n:false_alarms.expected.AB|.1f-->27.5<!--/n--> in tiers A and B, <!--n:false_alarms.expected.N|.1f-->10.1<!--/n--> in N, <!--n:false_alarms.expected.L1|.1f-->10.6<!--/n--> in L1), mostly at low MES
   ([`validation/false_alarms_inverted_798769_stars.csv`](validation/false_alarms_inverted_798769_stars.csv)).
 - **Astrophysical false positives.** The counted candidates' TRICERATOPS false-positive probabilities sum to about
   <!--n:catalog.fpp_sum|.0f-->37<!--/n-->: if they are calibrated, about that many of the 645 are eclipsing binaries or other astrophysical false
