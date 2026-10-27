@@ -70,7 +70,7 @@ Two side effects:
   search locked on four times the period). So the re-search adds signals; it does not replace the original ones.
 
 The counted candidates with Sector 94–104 transits were searched the same way. One of them, TIC 141937667
-(13.36 d, tier B, SNR 9.8), disappears with the mask: 59% of its SNR² came from orbit edges.
+(13.36 d, tier S, SNR 9.8), disappears with the mask: 59% of its SNR² came from orbit edges.
 
 ## QLP Sectors 74–79
 

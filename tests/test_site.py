@@ -59,7 +59,7 @@ class SummaryTests(unittest.TestCase):
         import csv
         rows = list(csv.DictReader(open(ROOT / 'results_public' / 'candidates_allsky.csv')))
         earlier = list(csv.DictReader(open(ROOT / 'results_public' / 'tiers_earlier_candidates.csv')))
-        n = sum(r['tier'] in ('A', 'B', 'N', 'L1') for r in rows) + sum(r['tier'] in ('A', 'B') for r in earlier)
+        n = sum(r['tier'] in ('M', 'S', 'N', 'L1') for r in rows) + sum(r['tier'] in ('M', 'S') for r in earlier)
         self.assertEqual(self.s['numbers']['catalog']['counted']['total'], n)
 
     def test_latest_release_note_gives_the_current_total(self):

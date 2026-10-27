@@ -67,7 +67,7 @@ class TestRedo(unittest.TestCase):
         SEARCHED.to_csv(self.d / "searched.csv", index=False)
         CURRENT.to_csv(self.d / "current.csv", index=False)
         lc.current_lists(self.d / "searched.csv", self.d / "current.csv", self.d / "lists.csv")
-        for name, rows in (("allsky.csv", [dict(TIC=1, P_d="3.5", tier="B"), dict(TIC=2, P_d="1.25", tier="LNFP"),
+        for name, rows in (("allsky.csv", [dict(TIC=1, P_d="3.5", tier="S"), dict(TIC=2, P_d="1.25", tier="LNFP"),
                                             dict(TIC=3, P_d="9.0", tier="C")]),
                            ("earlier.csv", [])):
             pd.DataFrame(rows, columns=["TIC", "P_d", "tier"]).to_csv(self.d / name, index=False)
@@ -79,7 +79,7 @@ class TestRedo(unittest.TestCase):
 
     def redo(self):
         lc.redo(self.d / "allsky.csv", self.d / "earlier.csv", self.d / "searched.csv", self.d / "lists.csv",
-                self.d / "current.csv", self.d / "fits.csv", self.d / "tri.csv", self.d / "redo.csv", ["A", "B", "C"])
+                self.d / "current.csv", self.d / "fits.csv", self.d / "tri.csv", self.d / "redo.csv", ["M", "S", "C"])
         return {r["TIC"]: r for r in csv.DictReader(open(self.d / "redo.csv", newline=""))}
 
     def test_rows(self):

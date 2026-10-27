@@ -13,10 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results_public"
 CANDS = ROOT / "candidates"
 
-COUNTED_ALLSKY = ["A", "B", "N", "L1"]
-COUNTED_EARLIER = ["A", "B"]
+COUNTED_ALLSKY = ["M", "S", "N", "L1"]
+COUNTED_EARLIER = ["M", "S"]
 KNOWN_TIERS = {
-    "A", "B", "C", "N", "L", "L1",
+    "M", "S", "C", "N", "L", "L1",
     "likely EB", "likely false alarm", "likely nearby FP", "reported",
 }
 REQUIRED_FILES = ["vetting.png", "vetting.json", "transit_fit.json"]
@@ -97,6 +97,14 @@ def test_predicted_midtimes_follow_ephemeris(predictions_with_ephemerides):
     expected = m["T0_BJD_TDB"] + m["epoch"] * m["period_d_eph"]
     err_min = (m["tc_BJD_TDB"] - expected).abs() * 1440
     assert err_min.max() < 0.5
+
+
+def test_predicted_tiers_follow_registry(predictions_with_ephemerides):
+    """A prediction row carries its candidate's current tier, so a candidate that left the counted tiers is not listed
+    as counted among the upcoming transits."""
+    m = predictions_with_ephemerides
+    stale = m[m["tier"] != m["tier_eph"]]
+    assert stale.empty, stale.groupby(["candidate_id", "tier", "tier_eph"]).size().to_dict()
 
 
 def test_predicted_sigma_follows_error_propagation(predictions_with_ephemerides):

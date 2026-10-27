@@ -83,7 +83,7 @@ these candidates depend on the neighbour model at that level.
 
 BF = L(offset | target) / max_k L(offset | neighbour k). For the 140 first-pass tier N signals the maximum is over the
 capable neighbours within 15″ (`results_cloud/glue/tier_recover.py`, kept by the build); for the second pass and tiers
-A, B and L1 it is over every star within 30″ to which TRICERATOPS gives a nearby-star scenario, plus the nearest
+M, S and L1 it is over every star within 30″ to which TRICERATOPS gives a nearby-star scenario, plus the nearest
 capable neighbour. Applying the largest L_k to all of TRICERATOPS's nearby-star probability bounds the sum over
 neighbours, each weighted by its own L_k, from above only when the maximum covers every star that carries some of that
 probability. The 15″ set leaves out stars at 15–30″ and stars that would need an eclipse deeper than 50%.

@@ -50,7 +50,7 @@
     var fig = r.folder
       ? '<figure><a href="' + X.GH.raw(r.folder + '/vetting.png') + '"><img src="' + X.GH.raw(r.folder + '/vetting.png') + '" loading="lazy" alt="Vetting plot of TIC ' + X.esc(r.tic) + ' at ' + X.fmt(r.P, 3) + ' d: light curve, phase-folded transit and diagnostic tests." onerror="this.closest(\'figure\').innerHTML=\'<figcaption>The vetting plot could not be loaded from GitHub.</figcaption>\'"></a>' +
         '<figcaption>Vetting plot, loaded from <code>' + X.esc(r.folder) + '/vetting.png</code> in the repository.</figcaption></figure>'
-      : '<figure style="background:var(--well)"><figcaption>No candidate folder for this signal in the repository, so no vetting plot. Folders exist for tiers A, B, C, N, L1 and L.</figcaption></figure>';
+      : '<figure style="background:var(--well)"><figcaption>No candidate folder for this signal in the repository, so no vetting plot. Folders exist for tiers M, S, C, N, L1 and L.</figcaption></figure>';
     return '<div class="detail-grid">' + fig + '<div><dl>' + dl.map(function (x) { return '<dt>' + x[0] + '</dt><dd>' + x[1] + '</dd>'; }).join('') + '</dl>' +
       '<div class="detail-links">' + (r.folder ? '<a class="btn small" href="' + X.GH.tree(r.folder) + '">Folder on GitHub</a>' : '') +
       '<a class="btn small" href="' + X.GH.exofop(r.tic) + '">ExoFOP</a>' +
@@ -130,7 +130,8 @@
     var counts = {};
     rows.forEach(function (r) { counts[r.tier] = (counts[r.tier] || 0) + 1; });
     var params = new URLSearchParams(location.search);
-    var wanted = params.get('tier') ? new Set(params.get('tier').split(',')) : null;
+    // tiers M and S were called A and B until 27 October 2026; links with the old names still work
+    var wanted = params.get('tier') ? new Set(params.get('tier').split(',').map(function (t) { return { A: 'M', B: 'S' }[t] || t; })) : null;
     ids.forEach(function (id) {
       if (!present.has(id)) return;
       var counted = X.isCountedTier(id);

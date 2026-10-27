@@ -1,5 +1,5 @@
 """When could the counted full-sky candidates have been found, and how strong are they in any one sector? For each
-candidate in tiers A, B and N (the SNR >= 9 search), the search's per-transit depths give the SNR of the transits
+candidate in tiers M, S and N (the SNR >= 9 search), the search's per-transit depths give the SNR of the transits
 observed by the end of a given sector (inverse-variance mean depth over its error), the best single-sector SNR, and
 whether any sector with transits has a SPOC 2-minute light curve. Cutting the transits this way ignores how fewer
 sectors would change the detrending and the period search. Built by the rules findability_transits, findability and

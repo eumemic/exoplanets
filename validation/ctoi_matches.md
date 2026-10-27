@@ -18,7 +18,7 @@ re-check in the README treats TCEs the same way), and a TCE with an alias period
 re-measuring it at that period. Tests: `tests/test_known_epoch.py`.
 
 Run on all 2,990 full-sky signals with the ExoFOP lists of 7 October 2026, it finds 10 CTOI matches and one TCE match
-(on a star that also has a matching CTOI). We also checked by hand the 21 CTOIs on the stars of tiers A, B, C, N, L1
+(on a star that also has a matching CTOI). We also checked by hand the 21 CTOIs on the stars of tiers M, S, C, N, L1
 and L and of the earlier candidates: the other 11 are other signals, with epochs hours to days away from our transits.
 
 ## Relabelled
@@ -29,10 +29,10 @@ The seven registered ones keep their rows in the prediction files, with tier `re
 
 | TIC | Our period (d) | Tier before | CTOI | CTOI period | Source |
 |---|---|---|---|---|---|
-| 275267824 | 16.818 | B (QLP re-search) | 275267824.01 | 739.958 d (44 times ours) | Salinas et al. 2025, MNRAS 538, 2031 |
+| 275267824 | 16.818 | S (QLP re-search) | 275267824.01 | 739.958 d (44 times ours) | Salinas et al. 2025, MNRAS 538, 2031 |
 | 266376971 | 19.826 | B | 266376971.01 | single transit | Salinas et al. 2025 |
 | 334575487 | 21.953 | B | 334575487.01 | 9.408 d (3/7 of ours) | RAVEN (Lafarga et al. 2026) |
-| 224279805 | 22.984 | B (QLP re-search) | 224279805.01 | single transit (2020); also a SPOC Sectors 1–69 TCE at 1080.26 d (47 times ours) | single-transit search |
+| 224279805 | 22.984 | S (QLP re-search) | 224279805.01 | single transit (2020); also a SPOC Sectors 1–69 TCE at 1080.26 d (47 times ours) | single-transit search |
 | 99919551 | 23.324 | B | 99919551.01 | 163.189 d (7 times ours) | Salinas et al. 2025 |
 | 147898114 | 24.567 | B | 147898114.01 | single transit | Salinas et al. 2025 |
 | 101824521 | 29.632 | B | 101824521.01 | single transit | Hawthorn et al. 2024 (arXiv:2310.17268) |
@@ -42,13 +42,13 @@ The seven registered ones keep their rows in the prediction files, with tier `re
 
 Our periods may still be useful for these CTOIs: four of the counted seven had no period and three a different one.
 
-The counted full-sky candidates fall from 613 to 606 (tier B from 303 to 296), and the total from 671 to 664.
+The counted full-sky candidates fall from 613 to 606 (tier S from 303 to 296), and the total from 671 to 664.
 
 ## TCE matches that stay counted
 
-- WASP-166 (TIC 408310006), 27.017 d, tier A (earlier searches): SPOC's Sectors 1–96 search listed two of its
+- WASP-166 (TIC 408310006), 27.017 d, tier M (earlier searches): SPOC's Sectors 1–96 search listed two of its
   transits as a 729.46 d TCE, 27 times this period. Like TIC 269728501 (50.32 d, a 754.79 d TCE, 15 times; see the
   README), it stays counted.
-- TIC 200744242, 12.270 d, tier B (QLP re-search): one event of a SPOC Sectors 1–36 TCE at 35.21 d (ExoMiner++ score
+- TIC 200744242, 12.270 d, tier S (QLP re-search): one event of a SPOC Sectors 1–36 TCE at 35.21 d (ExoMiner++ score
   0.01) falls on one of our transits, but the period ratio (2.87) is not a simple fraction and the TCE's other events
   do not; it stays counted.

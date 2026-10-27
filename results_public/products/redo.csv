@@ -1,10 +1,10 @@
 table,TIC,P_d,tier,folder,redelivered,removed,new,redo,checked
-candidates_allsky,277713416,0.956547,B,yes,,,1751,search update,2026-10-21
-candidates_allsky,294502168,1.381524,B,yes,,,1751,search update,2026-10-21
-candidates_allsky,271016943,1.444691,B,yes,,,1751,search update,2026-10-21
-candidates_allsky,357056333,2.188424,B,yes,,,1751,search update,2026-10-21
-candidates_allsky,70123637,13.123257,B,yes,,,1751,search update,2026-10-21
-candidates_allsky,323475697,17.296396,B,yes,,,1751,search update,2026-10-21
+candidates_allsky,277713416,0.956547,S,yes,,,1751,search update,2026-10-21
+candidates_allsky,294502168,1.381524,S,yes,,,1751,search update,2026-10-21
+candidates_allsky,271016943,1.444691,S,yes,,,1751,search update,2026-10-21
+candidates_allsky,357056333,2.188424,S,yes,,,1751,search update,2026-10-21
+candidates_allsky,70123637,13.123257,S,yes,,,1751,search update,2026-10-21
+candidates_allsky,323475697,17.296396,S,yes,,,1751,search update,2026-10-21
 candidates_allsky,377128527,0.860147,C,yes,,,1751,search update,2026-10-21
 candidates_allsky,74068113,1.606807,C,yes,,,1751,search update,2026-10-21
 candidates_allsky,411123239,11.873458,L,yes,,,1751,search update,2026-10-21

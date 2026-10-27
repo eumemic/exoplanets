@@ -16,8 +16,8 @@ NaN for all four and the fixed check gives these values:
 | TIC | Period (d) | Tier in the catalog | Gaia DR3 RUWE | Note |
 |---|---:|---|---:|---|
 | 156909067 | 6.667 | L1 | 3.62 | Gaia DR3 5577716114256475776, 4.06″ from the J2000 TIC position, 0.001″ from the propagated one |
-| 165827520 | 2.004 | A (earlier search) | 3.72 | the README already notes a 0.59″ companion from imaging |
-| 32636748 | 0.732 | B (earlier search) | 1.73 | |
+| 165827520 | 2.004 | M (earlier search) | 3.72 | the README already notes a 0.59″ companion from imaging |
+| 32636748 | 0.732 | S (earlier search) | 1.73 | |
 | 26432942 | not listed | C (already) | 1.65 | no change in tier |
 
 ## Fix

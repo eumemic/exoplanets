@@ -56,7 +56,7 @@ The bar is FPP < 0.5 and NFPP < 0.1, after the centroid Bayes factor.
 For the candidates counted on 10 October, the constrained FPP is a median 0.40 of the default on the same fold
 (10–90%: 0.13–0.89). For candidates whose eclipsing-binary scenarios were dropped, the median FPP falls from 0.039 to
 0.011. Most of the gain comes from the bound-companion scenarios. In the earlier TRICERATOPS runs, these were the
-largest contributor to FPP for 78% of tier A, B and L1 candidates. Gaia excludes bright companions, and the faint
+largest contributor to FPP for 78% of tier M, S and L1 candidates. Gaia excludes bright companions, and the faint
 companions that survive cannot produce the transit.
 
 The tier changes of 11 October apply the bar to the constrained values, in both directions:
@@ -65,7 +65,7 @@ The tier changes of 11 October apply the bar to the constrained values, in both 
   394657305. The earlier candidates had never been held to the TRICERATOPS bar, and now get the same centroid
   Bayes factor as the full sky.
 - Ten join:
-  - Tier B: five former tier C candidates (TIC 32372477, 147696248, 251138100, 305962190, 398516880).
+  - Tier S: five former tier C candidates (TIC 32372477, 147696248, 251138100, 305962190, 398516880).
   - Tier N: five neighbour-recovered signals (TIC 95567236, 174947296, 207141752, 219972718, 389581705), each fitted
     on 11 October. Two other recovered signals that pass the bar are grazing (b ≥ 0.9) and go to tier C.
 - Two move to likely eclipsing binary: the strong Gaia RV binaries above.

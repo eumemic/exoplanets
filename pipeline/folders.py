@@ -1,7 +1,7 @@
 """The candidate folders, built by the rules folders and earlier_folders in rules.py. A folder is never removed, so a
 published link keeps working when a signal changes tier or leaves a table.
 
-candidates/allsky/: one folder per full-sky signal in tiers A, B, C, N, L1 or L, named by its candidate_id, and every
+candidates/allsky/: one folder per full-sky signal in tiers M, S, C, N, L1 or L, named by its candidate_id, and every
 folder ever published. A folder holds vetting.json and vetting.png (the vetting metrics and plot), followup.json (pixel
 and neighbour checks), transit_fit.json, the fit the catalog uses (from the store; a refit replaces it), and
 triceratops_gaia.json, the TRICERATOPS result the catalog uses (ten runs with the default priors and ten with the Gaia

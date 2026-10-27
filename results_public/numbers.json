@@ -28,9 +28,9 @@
    "p_empty_measured": 35
   },
   "earlier_tier": {
-   "A": 24,
-   "B": 34,
-   "C": 10
+   "C": 10,
+   "M": 24,
+   "S": 34
   },
   "flags": {
    "centroid_strong": {
@@ -38,15 +38,15 @@
     "total": 100
    },
    "centroid_weak": {
-    "text": "35 `likely nearby FP`, 7 `N`, 4 `B`, 4 `L1`, 4 `C` and 2 `likely EB`",
+    "text": "35 `likely nearby FP`, 7 `N`, 4 `S`, 4 `L1`, 4 `C` and 2 `likely EB`",
     "total": 56
    },
    "desert": {
-    "text": "14 `B`, 10 `N` and 2 `L1`",
+    "text": "14 `S`, 10 `N` and 2 `L1`",
     "total": 26
    },
    "fa": {
-    "text": "22 `B`, 21 `N` and 4 `A`",
+    "text": "22 `S`, 21 `N` and 4 `M`",
     "total": 47
    },
    "rv": {
@@ -102,12 +102,12 @@
   },
   "smaller_than_4": 384,
   "tier": {
-   "A": 22,
-   "B": 294,
    "C": 551,
    "L": 72,
    "L1": 112,
+   "M": 22,
    "N": 159,
+   "S": 294,
    "likely_EB": 315,
    "likely_false_alarm": 343,
    "likely_nearby_FP": 1109,
@@ -188,8 +188,8 @@
    }
   },
   "expected": {
-   "AB": 27.548370150141007,
    "L1": 10.570085056923007,
+   "MS": 27.548370150141007,
    "N": 10.11297470255979
   },
   "expected_total": 48.231429909623806,
@@ -326,7 +326,7 @@
    "sectors": "2, 29 and 69",
    "snr_cdpp": 8.75,
    "snr_red": 9.97,
-   "tier": "B"
+   "tier": "S"
   },
   "tce_on_transit_tics": [
    200744242

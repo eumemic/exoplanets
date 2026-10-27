@@ -44,7 +44,7 @@ The same code ran on two calibration sets:
 517 of the 546 candidates counted on 11 October have difference images in at least two sectors; 29 have one and are
 not tested.
 
-**18 reject their target at p < 0.001** (14 in tier N, 4 in tier B). No known planet does, so we expect fewer than one
+**18 reject their target at p < 0.001** (14 in tier N, 4 in tier S). No known planet does, so we expect fewer than one
 of the 18 to be on target by chance. They leave the counted tiers: the 16 that a star bright enough to cause the dip
 fits (p ≥ 0.01) become likely nearby false positives, and the 2 that no catalogued star fits go to tier C. Several have
 mean offsets of 14–60″; their best single sector had passed the 15″ check.
@@ -70,13 +70,13 @@ mean offsets of 14–60″; their best single sector had passed the 15″ check.
 | 451538987 | 10.5492 | N → likely nearby FP | 8 | 9.2″ | 0.0001 | 451538984 (5.5″, 17.8) | 0.064 |
 | 463343440 | 19.9477 | N → likely nearby FP | 5 | 11.6″ | < 0.0001 | 861750026 (9.4″, 17.9) | 0.21 |
 
-**13 reject their target at 0.001 ≤ p < 0.01** (10 in tier N, 3 in tier B, one of them from the earlier searches). Known
+**13 reject their target at 0.001 ≤ p < 0.01** (10 in tier N, 3 in tier S, one of them from the earlier searches). Known
 planets with MES < 30 reach this level 1.3% of the time, so about half of the 13 could be on target. They stay counted,
 with `centroid_flag` set: TIC 18441994, 137609439, 166574088, 177021616, 184506615, 185840936, 258827696, 267824267,
 293616610, 310097407, 352414078, 407232246 and 409700778.
 
 As of 15 October 2026, 7 of the 13 are still counted: TIC 18441994, 177021616, 293616610 and 407232246 in tier N, and
-TIC 137609439, 166574088 and 258827696 in tier B. The other six, TIC 184506615, 185840936, 267824267, 310097407,
+TIC 137609439, 166574088 and 258827696 in tier S. The other six, TIC 184506615, 185840936, 267824267, 310097407,
 352414078 and 409700778, failed the TRICERATOPS bar in the single-cadence rerun of 15 October and are now likely nearby
 false positives; they keep the flag.
 

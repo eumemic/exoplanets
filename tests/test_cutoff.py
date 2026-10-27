@@ -98,9 +98,9 @@ class TestTicField(unittest.TestCase):
         self.assertEqual(tf.not_hosts(n, 5), [7, 8])                                      # within 31": no scenarios
         self.assertEqual(tf.by_star(n), {5: [7, 8, 12]})                                  # within 2': not a source
         cat, earlier = d / "allsky.csv", d / "earlier.csv"
-        cat.write_text("TIC,P_d,tier,cs_neighbour\n5,3.0,B,12\n6,2.0,B,\n")
+        cat.write_text("TIC,P_d,tier,cs_neighbour\n5,3.0,S,12\n6,2.0,S,\n")
         earlier.write_text("TIC,P_d,tier,cs_neighbour\n")
-        self.assertEqual(tf.galaxy_neighbours(n, [cat]), ["TIC 5 P 3.0 (B): TIC 12"])
+        self.assertEqual(tf.galaxy_neighbours(n, [cat]), ["TIC 5 P 3.0 (S): TIC 12"])
         self.assertEqual(tf.problems(f, cat, earlier), [6])                               # star 6 not checked
 
 

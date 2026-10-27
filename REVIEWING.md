@@ -9,7 +9,7 @@ vetting or the false-positive analysis below is wrong or incomplete.
 
 | | |
 |---|---|
-| **Candidate tables** | [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv): the full-sky search, <!--n:catalog.counted.allsky-->587<!--/n--> counted (tiers A, B, N and L1). [`results_public/tiers_earlier_candidates.csv`](results_public/tiers_earlier_candidates.csv): the earlier searches of nearby K and M dwarfs and of TOI hosts, <!--n:catalog.counted.earlier-->58<!--/n--> counted (tiers A and B). Every column is in the [data dictionary](results_public/README.md), and the [candidate explorer](https://eumemic.github.io/exoplanets/candidates.html) shows the same tables. |
+| **Candidate tables** | [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv): the full-sky search, <!--n:catalog.counted.allsky-->587<!--/n--> counted (tiers M, S, N and L1). [`results_public/tiers_earlier_candidates.csv`](results_public/tiers_earlier_candidates.csv): the earlier searches of nearby K and M dwarfs and of TOI hosts, <!--n:catalog.counted.earlier-->58<!--/n--> counted (tiers M and S). Every column is in the [data dictionary](results_public/README.md), and the [candidate explorer](https://eumemic.github.io/exoplanets/candidates.html) shows the same tables. |
 | **One candidate** | A folder per candidate in [`candidates/allsky/`](candidates/allsky/) (the earlier searches' are in [`candidates/`](candidates/)): the vetting plot and tests (`vetting.png`, `vetting.json`), centroid offsets and nearby stars (`followup.json`) and the TRICERATOPS result (`triceratops_gaia.json`). |
 | **Methods** | The [Method](README.md#method) and [Full-sky search](README.md#full-sky-search-8-october-2026) sections of the README, and a note in [`validation/`](validation/) for each check. |
 | **Predicted transits** | [`candidates/predictions.csv`](candidates/predictions.csv) and the [transit planner](https://eumemic.github.io/exoplanets/transits.html). |
@@ -34,7 +34,7 @@ vetting or the false-positive analysis below is wrong or incomplete.
 
 - **Noise and systematics.** We ran the whole pipeline on the inverted light curves of 798,769 stars, where every dip
   is noise or a systematic. Scaled to the search, about <!--n:false_alarms.expected_total|.0f-->48<!--/n--> of the 587 full-sky candidates are expected
-  to be false alarms (<!--n:false_alarms.expected.AB|.1f-->27.5<!--/n--> in tiers A and B, <!--n:false_alarms.expected.N|.1f-->10.1<!--/n--> in N, <!--n:false_alarms.expected.L1|.1f-->10.6<!--/n--> in L1), mostly at low MES
+  to be false alarms (<!--n:false_alarms.expected.MS|.1f-->27.5<!--/n--> in tiers M and S, <!--n:false_alarms.expected.N|.1f-->10.1<!--/n--> in N, <!--n:false_alarms.expected.L1|.1f-->10.6<!--/n--> in L1), mostly at low MES
   ([`validation/false_alarms_inverted_798769_stars.csv`](validation/false_alarms_inverted_798769_stars.csv)).
 - **Astrophysical false positives.** The counted candidates' TRICERATOPS false-positive probabilities sum to about
   <!--n:catalog.fpp_sum|.0f-->37<!--/n-->: if they are calibrated, about that many of the 645 are eclipsing binaries or other astrophysical false

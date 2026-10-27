@@ -41,9 +41,9 @@ def ecl(df):
 
 
 full = pd.read_csv(REPO / "results_public/candidates_allsky.csv")
-full = full[full.tier.isin(["A", "B", "N", "L1"])][["TIC", "P_d", "Rp_Re", "tier", "MES"]]
+full = full[full.tier.isin(["M", "S", "N", "L1"])][["TIC", "P_d", "Rp_Re", "tier", "MES"]]
 early = pd.read_csv(REPO / "results_public/tiers_earlier_candidates.csv")
-early = early[early.tier.isin(["A", "B"])][["TIC", "P_d", "Rp_Re", "tier"]]
+early = early[early.tier.isin(["M", "S"])][["TIC", "P_d", "Rp_Re", "tier"]]
 print(f"candidates: {len(full)} full-sky, {len(early)} earlier")
 # tier L1 came from the weakest signals (SNR 7.5-9), picked out by the false-alarm classifier
 full["src"] = np.where(full.tier == "L1", "filter", "allsky")

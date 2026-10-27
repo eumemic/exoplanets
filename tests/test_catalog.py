@@ -107,9 +107,9 @@ class TierRuleTests(unittest.TestCase):
         self.assertEqual(cat.centroid_flag(row(cs_p_target=""), P), "")
 
     def test_earlier_searches_keep_their_label_unless_a_reason_applies(self):
-        e = dict(base_tier="A", base_c_reason="", cs_p_target="")
-        self.assertEqual(cat.tier_earlier(row(**e), tri(), P), ("A", ""))
-        self.assertEqual(cat.tier_earlier(row(**e), tri(None), P), ("A", ""))
+        e = dict(base_tier="M", base_c_reason="", cs_p_target="")
+        self.assertEqual(cat.tier_earlier(row(**e), tri(), P), ("M", ""))
+        self.assertEqual(cat.tier_earlier(row(**e), tri(None), P), ("M", ""))
         self.assertEqual(cat.tier_earlier(row(**e), tri(0.6, 0.01), P), ("C", cat.TRI_FAIL))
         self.assertEqual(cat.tier_earlier(row(**e, b="0.95"), tri(0.6, 0.01), P), ("C", "grazing"))
 
@@ -138,7 +138,7 @@ class BuildTests(unittest.TestCase):
             rows.append(r)
         write_csv(d / "m_allsky.csv", rows)
         erow = {c: "" for c in cat.EARLIER if c not in cat.DERIVED_EARLIER}
-        write_csv(d / "m_earlier.csv", [dict(erow, TIC="9", P_d="7.0", b="0.2", ruwe="1.1", base_tier="B", base_c_reason="")])
+        write_csv(d / "m_earlier.csv", [dict(erow, TIC="9", P_d="7.0", b="0.2", ruwe="1.1", base_tier="S", base_c_reason="")])
         res = [dict(table="candidates_allsky", TIC=t, P_d=p, key=f"tic{t}_P{p}", FPP_mean="0.01", NFPP_mean="0.001",
                     NFPP_max="0.002", FPP_g_mean="", NFPP_g_mean="", NFPP_g_max="", degenerate="")
                for t, p in (("1", "2.0"), ("1", "5.0"), ("2", "3.0"), ("4", "6.0"))]
@@ -149,8 +149,8 @@ class BuildTests(unittest.TestCase):
                                         reason="test", source="", date="")])
         a, e = cat.build(d / "m_allsky.csv", d / "m_earlier.csv", d / "tri.csv", d / "over.csv", d / "a.csv", d / "e.csv", P)
         tiers = {(r["TIC"], r["P_d"]): (r["tier"], r["c_reason"]) for r in a}
-        self.assertEqual(tiers[("1", "2.0")], ("A", ""))         # two counted on the star
-        self.assertEqual(tiers[("2", "3.0")], ("B", ""))
+        self.assertEqual(tiers[("1", "2.0")], ("M", ""))         # two counted on the star
+        self.assertEqual(tiers[("2", "3.0")], ("S", ""))
         self.assertEqual(tiers[("3", "4.0")], ("reported", ""))
         self.assertEqual(tiers[("4", "6.0")], ("likely false alarm", ""))
         self.assertEqual([r["reported_as"] for r in a if r["TIC"] == "3"], ["2021X"])
@@ -435,7 +435,7 @@ class CentroidTableTests(unittest.TestCase):
         d = root / "b1"
         (d / "cs").mkdir(parents=True)
         (d / "list.csv").write_text("set,tier,tic,P_d,period,t0,duration_h,depth_ppm,sectors,MES,source_tic,ra,dec,key\n"
-                                    "t10,B,5,3.0,3.0,1500.0,2.0,2000,\"1,2,3\",15,,10.0,20.0,tic5_P3.0000\n")
+                                    "t10,S,5,3.0,3.0,1500.0,2.0,2000,\"1,2,3\",15,,10.0,20.0,tic5_P3.0000\n")
         secs = [dict(sector=s, east=e, north=n, quality=0.9, offset_arc=1.0) for s, e, n in ((1, 9.5, 0.3), (2, 10.4, -0.2), (3, 10.1, 0.4))]
         stars = [dict(tic=5, east=0.0, north=0.0, sep=0.0, Tmag=10.0), dict(tic=6, east=10.0, north=0.0, sep=10.0, Tmag=12.0),
                  dict(tic=7, east=10.0, north=0.1, sep=10.0, Tmag=11.0)]

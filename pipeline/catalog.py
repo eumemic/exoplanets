@@ -4,7 +4,7 @@ from their inputs by fixed rules. Built by the rule `catalog` in rules.py.
 Inputs:
 - results_public/products/measurements_allsky.csv, measurements_earlier.csv: every column that is measured rather than
   decided (fits, vetting, stellar parameters, pixel and centroid tests, binary and literature checks, the centroid Bayes
-  factor BF, classifier scores, rv_flag), and for the earlier searches the A/B/C label they were given (base_tier).
+  factor BF, classifier scores, rv_flag), and for the earlier searches the M/S/C label they were given (base_tier).
 - results_public/products/triceratops.csv: the TRICERATOPS result of each signal (triceratops_table.py).
 - results_public/products/centroids.csv: per-sector centroid results measured since the copy of the measured columns
   (centroid_table.py); where a row has one, it replaces the row's centroid columns.
@@ -32,11 +32,11 @@ The rules (pipeline/params.toml [tiers] and [flags] hold the numbers). Full sky,
    (neighbour<15") or counted (SNR >= 9).
 6. Per-sector centroids: a counted row (L1, N, SNR >= 9) whose test rejects the target with no capable neighbour that
    fits becomes C ("centroid offset in all sectors").
-7. Counted SNR >= 9 rows are A where the star has at least system_min counted rows, else B.
+7. Counted SNR >= 9 rows are M (multi) where the star has at least system_min counted rows, else S (single).
 The bar: FPP < fpp_max and NFPP < nfpp_max, using FPP_gc/NFPP_gc (Gaia limits and centroid ratio) where they exist,
 else FPP_c/NFPP_c.
 Earlier searches: C if grazing, RUWE, the bar not passed (with a result) or the centroids rejecting the target, in that
-order of c_reason; otherwise the label the search gave (A, B, or C for a reason it recorded).
+order of c_reason; otherwise the label the search gave (M, S, or C for a reason it recorded).
 Overrides are applied last.
 """
 import csv
@@ -308,7 +308,7 @@ def build(measurements_allsky, measurements_earlier, triceratops_csv, overrides_
             counted_on_star[r["TIC"]] = counted_on_star.get(r["TIC"], 0) + 1
     for r in a:
         if r["tier"] == "counted":
-            r["tier"] = "A" if counted_on_star[r["TIC"]] >= P["tiers.system_min"] else "B"
+            r["tier"] = "M" if counted_on_star[r["TIC"]] >= P["tiers.system_min"] else "S"
     for r in a:
         v = r.pop("_v")
         for k in TRI:

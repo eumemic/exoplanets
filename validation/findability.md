@@ -1,10 +1,10 @@
 # Why earlier searches missed these signals
 
 When could the counted full-sky candidates have been found, and why did the TESS pipelines not report them? The
-numbers cover the <!--n:findability.candidates-->475<!--/n--> full-sky candidates in tiers A, B and N (the SNR ≥ 9 search), <!--n:findability.first-->399<!--/n--> from the first pass and <!--n:findability.research-->76<!--/n-->
+numbers cover the <!--n:findability.candidates-->475<!--/n--> full-sky candidates in tiers M, S and N (the SNR ≥ 9 search), <!--n:findability.first-->399<!--/n--> from the first pass and <!--n:findability.research-->76<!--/n-->
 from the QLP re-search; the tier L1 candidates are weaker still. (First written on 12 October 2026 for the 438
 candidates of that day; updated on 13 October after the QLP re-search and the CTOI correction, on 14 and 15 October for the four and three candidates that
-left tiers A, B and N, [details](fpp_combination.md) and [here](catalog_crossmatch.md), and on 15 October for the
+left tiers M, S and N, [details](fpp_combination.md) and [here](catalog_crossmatch.md), and on 15 October for the
 TRICERATOPS rerun with single-cadence light curves and its corrections, [details](triceratops_single_cadence.md).) Each candidate's
 transits come from the pass that found it. Files:
 - [`findability_transits.csv.gz`](findability_transits.csv.gz): the search's per-transit depths, one row per transit,
@@ -74,4 +74,4 @@ fewer than two 2-minute transits through Sector 96, too few for a periodic searc
 
 For the <!--n:spoc.snr_cdpp.reach-->2<!--/n-->–<!--n:spoc.snr_red.reach-->7<!--/n--> candidates that reach 7.1, SPOC's search may have rejected the signal in its further statistical tests or
 given less weight to transits near data gaps; we cannot tell which without running it. The strongest is TIC <!--n:spoc.strongest.TIC-->402339417<!--/n-->
-(tier <!--n:spoc.strongest.tier-->B<!--/n-->, <!--n:spoc.strongest.P_d|.2f-->6.35<!--/n--> d, 2-minute data in Sectors <!--n:spoc.strongest.sectors-->2, 29 and 69<!--/n-->): SNR <!--n:spoc.strongest.snr_red|.1f-->10.0<!--/n--> with correlated noise, <!--n:spoc.strongest.snr_cdpp|.1f-->8.8<!--/n--> with SPOC's CDPP.
+(tier <!--n:spoc.strongest.tier-->S<!--/n-->, <!--n:spoc.strongest.P_d|.2f-->6.35<!--/n--> d, 2-minute data in Sectors <!--n:spoc.strongest.sectors-->2, 29 and 69<!--/n-->): SNR <!--n:spoc.strongest.snr_red|.1f-->10.0<!--/n--> with correlated noise, <!--n:spoc.strongest.snr_cdpp|.1f-->8.8<!--/n--> with SPOC's CDPP.

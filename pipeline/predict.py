@@ -1,5 +1,5 @@
-"""Predicted transit times for every counted candidate (tiers A, B, N and L1 of the full-sky search, tiers A and
-B of the earlier searches), with 1-sigma uncertainties, flagged where they fall inside published TESS orbit
+"""Predicted transit times for every counted candidate (tiers M, S, N and L1 of the full-sky search, tiers M and
+S of the earlier searches), with 1-sigma uncertainties, flagged where they fall inside published TESS orbit
 windows. Committing these files before the data exist makes the predictions a timestamped, falsifiable test.
 
 The fitted t0 is usually the first transit in the data, where t0 and P are strongly correlated, so adding their
@@ -32,8 +32,8 @@ from tess_stars2px import tess_stars2px_function_entry as ts2px
 
 from common import CAT, DATA, ROOT
 
-COUNTED = [("candidates_allsky.csv", "candidates/allsky", ("A", "B", "N", "L1")),
-           ("tiers_earlier_candidates.csv", "candidates", ("A", "B"))]
+COUNTED = [("candidates_allsky.csv", "candidates/allsky", ("M", "S", "N", "L1")),
+           ("tiers_earlier_candidates.csv", "candidates", ("M", "S"))]
 
 
 def orbit_windows():
@@ -170,8 +170,8 @@ def register(until_date="2027-06-30"):
     # current tier of every registered candidate, counted or not
     tiers = pd.concat([pd.read_csv(ROOT / "results_public" / f)[["TIC", "P_d", "tier"]] for f, _, _ in COUNTED])
     eph["tier"] = [next(iter(tiers.loc[match(tiers, r.TIC, r.period_d, "P_d"), "tier"]), r.tier) for r in eph.itertuples()]
-    key = dict(zip(zip(eph["TIC"], eph["period_d"].round(5)), eph["tier"]))
-    rows["tier"] = [key.get((t, round(P, 5)), x) for t, P, x in zip(rows["TIC"], rows["period_d"], rows["tier"])]
+    key = dict(zip(eph["candidate_id"], eph["tier"]))
+    rows["tier"] = [key.get(c, x) for c, x in zip(rows["candidate_id"], rows["tier"])]
     eph.to_csv(eph_f, index=False)
     rows.to_csv(pred_f, index=False)
     print(f"{len(new_eph)} candidates added ({len(new_rows)} transits from now through {until_date}); {len(eph)} registered in all, "

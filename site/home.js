@@ -4,7 +4,7 @@
   'use strict';
   var X = window.Exo, S = window.Sky, TAU = Math.PI * 2;
   var $ = function (id) { return document.getElementById(id); };
-  var COUNTED = ['A', 'B', 'N', 'L1'];
+  var COUNTED = ['M', 'S', 'N', 'L1'];
   var C = { ink: '#f4ede1', ink2: '#d3ccbe', dim: '#939cb0', amber: '#f0b25a', amberHi: '#ffd9a0', cool: '#8ec5e6', rose: '#ec95a4', grid: 'rgba(164,182,222,0.12)', grid2: 'rgba(164,182,222,0.24)', well: '#060912' };
   var MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
   var SERIF = '"Iowan Old Style", Charter, Georgia, serif';
@@ -323,7 +323,7 @@
     setLive('medR', X.fmt(medR, 1));
     setLive('small', S.n(small) + ' (' + S.pct(small, counted.length) + '%)');
     setLive('valid', S.n(valid));
-    setLive('AB', S.n(full.filter(function (r) { return r.tier === 'A' || r.tier === 'B'; }).length));
+    setLive('MS', S.n(full.filter(function (r) { return r.tier === 'M' || r.tier === 'S'; }).length));
 
     // spotlight values from the tables
     var spot = counted.filter(function (r) { return r.tic === T.tic && Math.abs(r.P - 18.908) < 0.01; })[0];
@@ -366,8 +366,8 @@
       { v: f.hi.cuts, l: 'MES ≥ 7.1, a depth that agrees between sectors, and Rp ≤ 20 R⊕' },
       { v: f.hi.clean + f.hi.close_nb + f.hi.no_image, l: 'no centroid offset (' + S.n(f.hi.clean) + ' with no TIC star within 15″ that could produce the dip either)' },
       { v: catalogue, l: 'signals in the full-sky catalogue: both passes and SNR 7.5–9, with fits and pixel, binary and TRICERATOPS checks' },
-      { v: full.length, l: 'counted full-sky candidates (tiers A, B, N, L1)', final: true },
-      { v: full.length + earlier.length, l: 'counted in all, with ' + earlier.length + ' from the earlier searches (tiers A, B)', final: true, sum: true }
+      { v: full.length, l: 'counted full-sky candidates (tiers M, S, N, L1)', final: true },
+      { v: full.length + earlier.length, l: 'counted in all, with ' + earlier.length + ' from the earlier searches (tiers M, S)', final: true, sum: true }
     ];
     var max = Math.log10(Math.max.apply(null, st.map(function (x) { return x.v; })));
     el.innerHTML = st.map(function (s) {
@@ -658,7 +658,7 @@
         [S.n(late), 'needed Sectors 97–104 to reach SNR 9; ' + S.n(at96) + ' (' + S.pct(at96, total) + '%) were there with data through Sector 96.', late / total]
       ];
       $('find-facts').innerHTML = f.map(function (x) { return '<div class="fact"><div class="v">' + x[0] + '</div><div class="l">' + x[1] + '</div><div class="meter"><i data-w="' + (100 * x[2]).toFixed(1) + '"></i></div></div>'; }).join('');
-      $('find-cap').insertAdjacentHTML('afterbegin', 'Covers the ' + S.n(total) + ' full-sky candidates in tiers A, B and N; each one\u2019s transits come from the search pass that found it. ');
+      $('find-cap').insertAdjacentHTML('afterbegin', 'Covers the ' + S.n(total) + ' full-sky candidates in tiers M, S and N; each one\u2019s transits come from the search pass that found it. ');
       o.redraw();
       S.onView(cv, function () {
         document.querySelectorAll('#find-facts .meter i').forEach(function (m) { m.style.width = m.getAttribute('data-w') + '%'; S.settle(m, 1900); });

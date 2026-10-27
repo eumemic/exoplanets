@@ -16,10 +16,17 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **False alarms counted on both passes; mean NFPP published (22 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** No tier
+- **Tiers A and B renamed M and S (27 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** Tier A (more than one
+  candidate on the star) is now tier M, for multi, and tier B (a single candidate) is now tier S, for single: the letters
+  A and B read as a ranking, which they are not. No candidate changes tier. The tables, the website, the figures and the
+  documents use the new names; the release notes below keep the old ones. `candidates/predictions.csv`, which the
+  website's transit planner reads, now carries every candidate's current tier: four candidates that had left the counted
+  tiers (TIC 247464683, 306743063 and 399202562, now likely nearby false positives, and TIC 346744851, now tier L) were
+  still listed there under their old tiers.
+- **False alarms counted on both passes; mean NFPP published (22 October 2026): 645 candidates.** No tier
   changes. The expected false alarms in tier L1 are now computed on the union of both passes, as the catalog's SNR 7.5–9
-  set is ([details](validation/false_alarm_classifier.md)): about <!--n:false_alarms.expected.L1|.1f-->10.6<!--/n--> instead of 8.8, and
-  about <!--n:false_alarms.expected_total|.0f-->48<!--/n--> among the full-sky candidates in all. The catalogs gain `NFPP_mean` and
+  set is ([details](validation/false_alarm_classifier.md)): about 10.6 instead of 8.8, and
+  about 48 among the full-sky candidates in all. The catalogs gain `NFPP_mean` and
   `NFPP_g_mean`, the mean NFPP of the runs that `FPP_c` and `FPP_gc` use, so both can be recomputed from the table. The
   centroid Bayes factor of the first-pass tier N signals considers the capable neighbours within 15″, not every star
   within 30″ that TRICERATOPS gives a scenario; widening it lowers the factor for 71 of the 159 but changes no tier
@@ -534,28 +541,28 @@ in eight parts (`run_shard.py`).
 | … likely binaries: in a binary catalog at the target or a matching eclipsing binary nearby, or fitted radius > 20 R⊕ | 140 |
 | … reported in a paper found by NASA ADS (NGTS-19b, a brown dwarf; one DTARPS candidate) | 2 |
 | … tier C: grazing (b ≥ 0.9) or Gaia RUWE > 1.4 | 184 |
-| … tier A: more than one signal on the star | 19 |
-| … tier B | 381 |
+| … tier M: more than one signal on the star | 19 |
+| … tier S | 381 |
 
 The pixel checks reject 93% of the signals that pass LEO-Vetter, mostly for a centroid offset or a
 neighbour that could produce the dip: in full-frame images most signals at these depths come from
 blended eclipsing binaries. All candidates, with fits, centroids and binary checks, are in
-[`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv); tiers A–C have a
+[`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv); tiers M, S and C have a
 folder in [`candidates/allsky/`](candidates/allsky/).
 
 **Reliability tiers.** Following an outside review, every candidate is now checked against Gaia DR3
 (RUWE, eclipsing binaries, non-single-star orbits), the TESS eclipsing-binary catalog (Prša et al.
 2022), APOGEE binaries (Kounkel et al. 2021) and VSX (`binary_check.py`), and since 15 October the TESS Ten Thousand
 eclipsing binaries (Kostov et al. 2025; [details](validation/catalog_crossmatch.md)), which flags both binaries
-that earlier passed every automated check (TIC 9994636 and TIC 235005571). Tier A (several signals
-on the star) and tier B (single) are counted as candidates; tier C (grazing, or RUWE > 1.4) is listed
-but not counted. Of the 66 earlier candidates, 24 are tier A, 36 tier B and 6 tier C
+that earlier passed every automated check (TIC 9994636 and TIC 235005571). Tier M (several signals
+on the star) and tier S (single) are counted as candidates; tier C (grazing, or RUWE > 1.4) is listed
+but not counted (tiers M and S were called A and B until 27 October 2026, as in the release notes above). Of the 66 earlier candidates, 24 are tier M, 36 tier S and 6 tier C
 ([`results_public/tiers_earlier_candidates.csv`](results_public/tiers_earlier_candidates.csv)).
 On 11 October the earlier candidates were also held to the full-sky TRICERATOPS bar (with Gaia limits and the
-centroid Bayes factor); TIC 351339274 and 394657305 fail it on NFPP and move to tier C, leaving 24 in tier A
-and 34 in tier B. On 13 October two signals set aside only for a TIC artifact joined (WASP-166 27.0 d in tier A,
-TIC 286944151 2.28 d in tier B), making 25 and 35 ([details](validation/tic_artifacts.md)). Later that day the
-proper-motion fix to the binary check (PR #13) gave TIC 165827520 (tier A) and 32636748 (tier B) Gaia RUWE values of
+centroid Bayes factor); TIC 351339274 and 394657305 fail it on NFPP and move to tier C, leaving 24 in tier M
+and 34 in tier S. On 13 October two signals set aside only for a TIC artifact joined (WASP-166 27.0 d in tier M,
+TIC 286944151 2.28 d in tier S), making 25 and 35 ([details](validation/tic_artifacts.md)). Later that day the
+proper-motion fix to the binary check (PR #13) gave TIC 165827520 (tier M) and 32636748 (tier S) Gaia RUWE values of
 3.72 and 1.73, which moved them to tier C and left 24 and 34 ([details](validation/gaia_proper_motion.md)).
 
 **Reliability and completeness, measured on a 1% pilot** (40,797 random stars; superseded by
@@ -564,8 +571,8 @@ the 798,769-star measurement in the second release below). Inverted copies of
 cuts (SNR ≥ 7.5), and none survives the pixel checks; the real light curves give 14 (12 at SNR ≥ 9, 2 at 7.5–9).
 Of 300 transits injected at a nominal (white-noise) SNR of 10, 57% are recovered at the injected
 period and 21% at SNR ≥ 9: red noise in full-frame light curves lowers the measured SNR. These are
-candidates, not validated planets; we expect false-positive rates of tens of percent in tier B,
-lower in tier A, and the remaining blind spot is companions closer than ~1–2″, which only
+candidates, not validated planets; we expect false-positive rates of tens of percent in tier S,
+lower in tier M, and the remaining blind spot is companions closer than ~1–2″, which only
 high-resolution imaging can rule out.
 
 ### Full-sky search, second release (9 October 2026)
@@ -593,7 +600,7 @@ the largest NFPP of the ten ([details](validation/fpp_combination.md)). On the c
 of the neighbour-caused signals whose source is 5–21″ away (75% within 5″), and the target for 88–96%
 of the TOI planets when tested against a neighbour 8–14″ away (76% at 5″). Tier N requires a combined FPP
 below 0.5 and NFPP below 0.1, MES ≥ 10, and the same binary, grazing and literature checks as tiers
-A and B. In this release 169 candidates met them; 111 of them had NFPP < 0.01, and 13 had FPP < 0.015 and NFPP < 0.001,
+M and S. In this release 169 candidates met them; 111 of them had NFPP < 0.01, and 13 had FPP < 0.015 and NFPP < 0.001,
 the TRICERATOPS validation thresholds, though validation also needs high-resolution imaging (the tier table below gives
 tier N in each release). The
 `FPP_c`, `NFPP_c` and `BF` columns of the catalog give the combined values and the centroid ratio. Since 15 October,
@@ -637,21 +644,21 @@ signals from the inverted ones, on search, LEO-Vetter and stellar features (`fa_
 [`validation/false_alarm_classifier.md`](validation/false_alarm_classifier.md)), selects 69 of the 382
 SNR 7.5–9 signals. Trained on the first inverted sample only, it lets through about 6 of the false
 alarms expected among them, judged on the second sample, which it never saw: about 92% are
-astrophysical, close to tier B. The 51 that also pass the binary, grazing and literature checks and
+astrophysical, close to tier S. The 51 that also pass the binary, grazing and literature checks and
 TRICERATOPS (FPP < 0.5, NFPP < 0.1) form tier L1: median radius 2.6 R⊕ (45 smaller than 4 R⊕), median
 period 11 d. The remaining 56 with MES ≥ 9 are listed as tier L and not counted. The classifier's score
-for every signal is in the catalog column `fa_score`; tier A, B and N candidates that score below 0.8, where most
+for every signal is in the catalog column `fa_score`; tier M, S and N candidates that score below 0.8, where most
 false alarms lie, are flagged (`fa_flag`) but not moved: 36 in this release, 47 on 15 October. Separately, counted
 candidates in the core of the Neptunian desert (P < 3.2 d, 4–10 R⊕; Castro-González et al. 2024), where real planets
 are rare, are flagged (`desert_flag`): 23 in this release, 26 on 15 October.
 
-**TRICERATOPS for tiers A and B.** We ran TRICERATOPS on all 322 tier A and B candidates that
+**TRICERATOPS for tiers M and S.** We ran TRICERATOPS on all 322 tier M and S candidates that
 remained after the false-alarm cut, with the same settings and the centroid ratio over capable
-neighbours within 30″. The median FPP is 0.05 (0.025 for tier A), and 41 candidates have FPP < 0.015
+neighbours within 30″. The median FPP is 0.05 (0.025 for tier M), and 41 candidates have FPP < 0.015
 and NFPP < 0.001. The 59 that fail the tier N thresholds (FPP < 0.5, NFPP < 0.1) look like eclipsing
 binaries (median radius 8.9 R⊕ against 3.6 R⊕ for the rest, median impact parameter 0.78) and move to
 tier C, so every counted full-sky candidate meets the same bar. In all, 137 first-release candidates
-moved to tier C (78 for MES < 10 and 59 for TRICERATOPS), and 4 tier A candidates became tier B
+moved to tier C (78 for MES < 10 and 59 for TRICERATOPS), and 4 tier M candidates became tier S
 because the other signal on their star moved.
 
 **Gaia limits on companions (11 October 2026).** We reran TRICERATOPS on every counted candidate
@@ -680,8 +687,8 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 
 | Tier | Full-sky first release | Second release | With Gaia limits (11 October) | Centroids in every sector (12 October) | Without TIC artifacts (13 October) | L1 re-selected (13 October) | QLP re-search (13 October) | CTOI matches and fixes (13 October) | TIC 206609457 to L1 (14 October) | TRICERATOPS run means (14 October) | TESS Ten Thousand EBs (15 October) | TRICERATOPS single-cadence (15 October) | TRICERATOPS corrections (15 October) | Tables built from their inputs (16 October) | TRICERATOPS recomputed (16 October) | Five MOLUSC samples (18 October) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 | 22 | 22 | 22 | <!--n:catalog.tier.A-->22<!--/n--> |
-| B (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 | 292 | 292 | 292 | <!--n:catalog.tier.B-->294<!--/n--> |
+| M (several candidates on the star) | 19 | 11 | 11 | 11 | 11 | 11 | 21 | 20 | 20 | 20 | 20 | 22 | 22 | 22 | 22 | <!--n:catalog.tier.M-->22<!--/n--> |
+| S (single) | 381 | 252 | 254 | 250 | 257 | 257 | 303 | 297 | 297 | 296 | 293 | 292 | 292 | 292 | 292 | <!--n:catalog.tier.S-->294<!--/n--> |
 | N (neighbour within 15″; TRICERATOPS and centroid) | – | 169 | 173 | 159 | 152 | 152 | 177 | 177 | 177 | 174 | 174 | 149 | 160 | 160 | 161 | <!--n:catalog.tier.N-->159<!--/n--> |
 | L1 (SNR 7.5–9 selected by the false-alarm classifier; TRICERATOPS) | – | 51 | 50 | 50 | 50 | 53 | 112 | 112 | 113 | 113 | 113 | 112 | 112 | 112 | 112 | <!--n:catalog.tier.L1-->112<!--/n--> |
 | C (grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in all sectors; not counted) | 184 | 456 | 455 | 457 | 457 | 457 | 534 | 531 | 531 | 532 | 531 | 530 | 529 | 547 | 552 | <!--n:catalog.tier.C-->551<!--/n--> |
@@ -691,7 +698,7 @@ candidates reject their target at p < 0.001: 16, which a nearby star fits, becom
 All <!--n:catalog.rows.allsky|,-->2,990<!--/n--> signals, with fits, centroids, binary checks and TRICERATOPS results where computed, are in
 [`results_public/candidates_allsky.csv`](results_public/candidates_allsky.csv) (column `set`: SNR ≥ 9,
 SNR 7.5–9, or neighbour within 15″; column `search`: the full-sky search or the QLP re-search; column `reported_as`: where a
-signal labelled reported was reported); tiers A, B, C, N, L1 and L have folders in
+signal labelled reported was reported); tiers M, S, C, N, L1 and L have folders in
 [`candidates/allsky/`](candidates/allsky/), and signals that have since left those tiers keep theirs; each folder holds the
 current TRICERATOPS result, where there is one, as `triceratops_gaia.json`. Since 13 October the `set` column follows the pixel checks without TIC artifacts
 (733 SNR ≥ 9 and 1,311 neighbour rows from the first pass, against 726 and 1,294 + 24 in the table above, since 7
@@ -1029,7 +1036,7 @@ date until they are rerun.
 ```
 pipeline/            code
 candidates/          one folder per candidate of the earlier searches, ephemerides.csv and predictions.csv
-candidates/allsky/   one folder per full-sky signal in tiers A, B, C, N, L1 and L
+candidates/allsky/   one folder per full-sky signal in tiers M, S, C, N, L1 and L
 figures/             figures used here
 results_public/      all signals, vetted signals, candidate and tier tables, search stage counts, novelty check
 site/                the website (built by site/build.sh, published by .github/workflows/pages.yml)

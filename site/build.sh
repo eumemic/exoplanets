@@ -50,7 +50,7 @@ for f in allsky.png toi4342.png candidates_grid.png; do cp "$ROOT/figures/$f" "$
 python3 - "$ROOT" "$OUT/data/upcoming.json" <<'PY'
 import csv, json, sys, datetime
 root, out = sys.argv[1], sys.argv[2]
-counted = {"A", "B", "N", "L1"}
+counted = {"M", "S", "N", "L1"}
 eph = {}
 with open(root + "/candidates/ephemerides.csv", newline="") as fh:
     for r in csv.DictReader(fh):

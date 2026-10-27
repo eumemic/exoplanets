@@ -30,16 +30,16 @@ binaries) keep their tiers whatever TRICERATOPS gives. Per-signal results are in
 
 ## Changes
 
-- **7 tier N candidates become tier B**, since they have no real neighbour within 15″: TIC 44005127, 67466087,
+- **7 tier N candidates become tier S**, since they have no real neighbour within 15″: TIC 44005127, 67466087,
   296941558, 355151843, 362063952, 410011615 and 414747618 (FPP_gc ≤ 0.013, NFPP_gc ≤ 0.003).
 - **2 earlier-search signals are now counted:**
-  - **WASP-166 (TIC 408310006), 27.017 d, 3.07 ± 0.09 R⊕:** tier A, since the star has a known planet. FPP_gc
+  - **WASP-166 (TIC 408310006), 27.017 d, 3.07 ± 0.09 R⊕:** tier M, since the star has a known planet. FPP_gc
     < 0.001 and NFPP_gc 0 (no star within 30″ could cause the dip). It is flagged because its centroids sit 10″
     northeast in all four usable sectors (p = 0.007 for the target), while WASP-166 b's transits, measured the same
     way, fall within 1–4″ of the star. The binary check matches WASP-166 b itself (TESS eclipsing-binary catalog and
     VSX type EP, 5.4435 d), not a binary. SPOC's Sectors 1–96 search listed two of its transits as a 729.46 d TCE,
     27 times this period, which is not a TOI ([`ctoi_matches.md`](ctoi_matches.md)).
-  - **TIC 286944151, 2.276 d, 1.21 ± 0.08 R⊕, around an M dwarf 36 pc away:** tier B, FPP_gc 0.010, NFPP_gc 0. Its
+  - **TIC 286944151, 2.276 d, 1.21 ± 0.08 R⊕, around an M dwarf 36 pc away:** tier S, FPP_gc 0.010, NFPP_gc 0. Its
     difference-image fits are poor (quality 0.13–0.46), so the centroid test has little power here (p = 0.35), but
     no star within 88″ is bright enough to cause the dip. MES 9.4 is allowed in the earlier M-dwarf samples.
 - **TIC 678621 is relabelled "reported":** its 2.58 d signal is K2 candidate EPIC 212572439 (VSX type EP:, same

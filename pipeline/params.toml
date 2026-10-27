@@ -4,10 +4,10 @@
 
 [catalog]
 # tiers counted as candidates
-counted_allsky = ["A", "B", "N", "L1"]
-counted_earlier = ["A", "B"]
+counted_allsky = ["M", "S", "N", "L1"]
+counted_earlier = ["M", "S"]
 # full-sky tiers that have a folder in candidates/allsky/ (a folder, once published, also stays)
-folder_tiers_allsky = ["A", "B", "C", "N", "L1", "L"]
+folder_tiers_allsky = ["M", "S", "C", "N", "L1", "L"]
 
 [tiers]
 # the TRICERATOPS bar for every counted candidate: FPP < fpp_max and NFPP < nfpp_max (Gaia-limited and
@@ -27,14 +27,14 @@ fa_score_h_min = 0.8
 # per-sector centroid test: the target rejected below centroid_reject_p; a neighbour that fits at centroid_neighbour_p
 centroid_reject_p = 0.001
 centroid_neighbour_p = 0.01
-# tier A: at least this many counted candidates on the star
+# tier M (multi): at least this many counted candidates on the star; else tier S (single)
 system_min = 2
 
 [flags]
 centroid_p_strong = 0.001
 centroid_p = 0.01
 fa_score_min = 0.8
-fa_flag_tiers = ["A", "B", "N"]
+fa_flag_tiers = ["M", "S", "N"]
 desert_period_max = 3.2
 desert_rp_min = 4.0
 desert_rp_max = 10.0
@@ -62,7 +62,7 @@ depth_ppm = 0.5
 [findability]
 # the candidates whose transits are measured by data date (the SNR >= 9 search's counted tiers), and how a catalog row
 # finds its signal in the search's tables
-tiers = ["A", "B", "N"]
+tiers = ["M", "S", "N"]
 match_period_rel = 0.002
 
 [registry]

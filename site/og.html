@@ -144,7 +144,7 @@
     document.getElementById('cat').textContent = fmt(cat);
     var full = counted.filter(function (r) { return r.search === 'full-sky'; }).length;
     document.getElementById('split').textContent = fmt(full) + ' full-sky + ' + fmt(counted.length - full) + ' earlier';
-    document.getElementById('legend').innerHTML = ['A', 'B', 'N', 'L1'].map(function (t) { return '<span>' + X.tierDot(t) + t + ' ' + (counts[t] || 0) + '</span>'; }).join('');
+    document.getElementById('legend').innerHTML = ['M', 'S', 'N', 'L1'].map(function (t) { return '<span>' + X.tierDot(t) + t + ' ' + (counts[t] || 0) + '</span>'; }).join('');
   });
   X.loadSummary().then(function (s) {
     document.getElementById('searched').textContent = X.format(s.funnel['full-sky search'].all.stars, 'M');

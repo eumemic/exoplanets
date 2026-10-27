@@ -27,10 +27,10 @@
   };
 
   /* Tiers as described in the README ("Reliability tiers" and the tier table).
-   * Tiers A, B, N and L1 are counted as candidates; the others are listed but not counted. */
+   * Tiers M, S, N and L1 are counted as candidates; the others are listed but not counted. */
   var TIERS = [
-    { id: 'A',  counted: true,  name: 'Tier A', text: 'More than one counted candidate on the star, or a star with TOIs (earlier searches).' },
-    { id: 'B',  counted: true,  name: 'Tier B', text: 'A single candidate on the star, with no TIC star within 15″ that could produce the dip.' },
+    { id: 'M',  counted: true,  name: 'Tier M', text: 'More than one counted candidate on the star, or a star with TOIs (earlier searches).' },
+    { id: 'S',  counted: true,  name: 'Tier S', text: 'A single candidate on the star, with no TIC star within 15″ that could produce the dip.' },
     { id: 'N',  counted: true,  name: 'Tier N', text: 'A TIC star within 15″ could produce the dip; TRICERATOPS combined with the centroid gives FPP < 0.5 and NFPP < 0.1, and MES ≥ 10.' },
     { id: 'L1', counted: true,  name: 'Tier L1', text: 'SNR 7.5–9, selected by the false-alarm classifier (hold-out score ≥ 0.8); passes TRICERATOPS and the per-sector centroid test.' },
     { id: 'C',  counted: false, name: 'Tier C', text: 'Grazing (b ≥ 0.9), Gaia RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, or a centroid offset in every sector. Listed, not counted.' },
@@ -43,8 +43,8 @@
   /* Colour and marker shape per counted tier. Four hues cannot all be told apart under colour-vision
    * deficiency in a scatter, so every chart also encodes the tier by shape. */
   var TIER_STYLE = {
-    A:  { color: '#e0a23a', shape: 'circle',   label: 'A' },
-    B:  { color: '#4a90e2', shape: 'square',   label: 'B' },
+    M:  { color: '#e0a23a', shape: 'circle',   label: 'M' },
+    S:  { color: '#4a90e2', shape: 'square',   label: 'S' },
     N:  { color: '#d8638f', shape: 'triangle', label: 'N' },
     L1: { color: '#25ad7e', shape: 'diamond',  label: 'L1' }
   };

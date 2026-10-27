@@ -1,6 +1,6 @@
 """results_public/numbers.json: every current-state number the documents quote, computed from the tables in one place,
 so README.md, results_public/README.md and validation/findability.md (through markers, dag/markers.py) and the website
-follow the data. Built by the rule numbers in rules.py. The definitions are the catalog's: counted = tiers A, B, N, L1 (full sky) and A, B (earlier
+follow the data. Built by the rule numbers in rules.py. The definitions are the catalog's: counted = tiers M, S, N, L1 (full sky) and M, S (earlier
 searches); the TRICERATOPS values a tier uses are FPP_gc/NFPP_gc where they exist, else FPP_c/NFPP_c; validation level =
 FPP < 0.015, NFPP < 0.001 and Rp < 8 Earth radii.
 """
@@ -12,7 +12,7 @@ import pandas as pd
 SETS = {"SNR>=9": "snr9", "SNR 7.5-9": "low", 'neighbour<15"': "nb"}
 FIRST, RESEARCH = "full-sky search", "QLP re-search"
 INV = ("inverted, sample 1", "inverted, sample 2")
-TIER_ORDER = ["A", "B", "N", "L1", "C", "L", "likely EB", "likely nearby FP", "likely false alarm", "reported"]
+TIER_ORDER = ["M", "S", "N", "L1", "C", "L", "likely EB", "likely nearby FP", "likely false alarm", "reported"]
 C_REASONS = {"grazing": "grazing", "RUWE > 1.4": "ruwe", "MES < 10": "mes", "TRICERATOPS FPP >= 0.5 or NFPP >= 0.1": "triceratops",
              "centroid offset in all sectors": "centroid", "no TRICERATOPS result": "no_result",
              "no TRICERATOPS result (no TIC parallax)": "no_parallax", "no transit fit": "no_fit"}
@@ -45,7 +45,7 @@ def compute(allsky_csv, earlier_csv, ephemerides_csv, predictions_csv, funnel_cs
     val_a = ca.index[(f[ca.index] < 0.015) & (n[ca.index] < 0.001) & (ca.Rp_Re < 8)]
     val_e = ce.index[(fe[ce.index] < 0.015) & (ne[ce.index] < 0.001) & (ce.Rp_Re < 8)]
     tiers = {slug(t): int((a.tier == t).sum()) for t in TIER_ORDER}
-    other = int((~a.tier.isin(["A", "B", "N", "L1", "C", "L"])).sum())
+    other = int((~a.tier.isin(["M", "S", "N", "L1", "C", "L"])).sum())
     nofit = a[a.b.isna()]
     tri = a.FPP.notna()
     lnfp = a[a.tier == "likely nearby FP"]
@@ -63,7 +63,7 @@ def compute(allsky_csv, earlier_csv, ephemerides_csv, predictions_csv, funnel_cs
             "counted": {"total": len(ca) + len(ce), "allsky": len(ca), "earlier": len(ce)},
             "validation": {"total": len(val_a) + len(val_e), "allsky": len(val_a), "earlier": len(val_e)},
             "tier": {**tiers, "other": other},
-            "earlier_tier": {t: int((e.tier == t).sum()) for t in ("A", "B", "C")},
+            "earlier_tier": {t: int((e.tier == t).sum()) for t in ("M", "S", "C")},
             "set": {SETS[s]: int((a["set"] == s).sum()) for s in SETS},
             "c_reason": {C_REASONS[k]: int(c_reasons.get(k, 0)) for k in C_REASONS},
             "c_reason_empty": int((a.tier != "C").sum()),
@@ -147,8 +147,8 @@ def false_alarms(funnel_csv, tri_inverted_csv, scores_csv, inverted_low_csv, all
         rate[key] = scale * inv / real
         fa["mes_bins"].append({"bin": key, "lo": lo, "hi": hi, "real": real, "inverted": inv, "fraction": rate[key]})
     a = pd.read_csv(allsky_csv)
-    ab = a[a.tier.isin(["A", "B"])]
-    exp_ab = float(sum(rate["lt10" if m < 10 else ("10_12" if m < 12 else "ge12")] for m in ab.MES))
+    ms = a[a.tier.isin(["M", "S"])]
+    exp_ms = float(sum(rate["lt10" if m < 10 else ("10_12" if m < 12 else "ge12")] for m in ms.MES))
     # tier N: TRICERATOPS run on the first sample's inverted close-neighbour false alarms
     tri = pd.read_csv(tri_inverted_csv, dtype=str)
     tri = tri[tri.band == "SNR>=9"]
@@ -168,7 +168,7 @@ def false_alarms(funnel_csv, tri_inverted_csv, scores_csv, inverted_low_csv, all
     cl = {"cut": cut, "clean_low": len(low_cat), "selected": sel, "inverted_clean_low": n_inv,
           "holdout_pass": passing, "holdout_n": len(i2), "expected_false_alarms": exp_cl, "purity": 1 - exp_cl / sel,
           "baseline_false_alarms": n_fa}
-    fa["expected"] = {"AB": exp_ab, "N": tri_pass * stars / f[INV[0]]["all"]["stars"],
+    fa["expected"] = {"MS": exp_ms, "N": tri_pass * stars / f[INV[0]]["all"]["stars"],
                       "L1": exp_cl / sel * int((a.tier == "L1").sum())}
     fa["expected_total"] = sum(fa["expected"].values())
     return {"false_alarms": fa, "classifier": cl}

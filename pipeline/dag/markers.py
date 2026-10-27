@@ -4,7 +4,7 @@ A number that must follow the data is written between markers that GitHub does n
 
     <!--n:counted.total-->644<!--/n-->            the value of counted.total in the numbers file
     <!--n:counted.total|,-->644<!--/n-->          with thousands separators (1,138)
-    <!--n:tiers.allsky.A|word-->two<!--/n-->       as a word (zero to twenty); |Word capitalises it
+    <!--n:tiers.allsky.M|word-->two<!--/n-->       as a word (zero to twenty); |Word capitalises it
     <!--n:x.median|.3f-->0.013<!--/n-->           with a format specification
 
 In a table row the format's bar is written \\| (<!--n:counted.total\\|,-->644<!--/n-->): GitHub splits a table row at

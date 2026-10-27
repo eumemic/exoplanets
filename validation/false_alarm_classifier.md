@@ -58,7 +58,7 @@ SNR 7.5–9 clean signals, the baseline expected false-alarm count is
 | 0.90 | 16 | 0 | 100% |
 
 Tier L1 takes the cut at 0.80 (`score_h` in [`false_alarm_classifier_scores.csv.gz`](false_alarm_classifier_scores.csv.gz)),
-which matches the purity of tier B (about 91–94%). Selected signals must also pass the grazing, RUWE,
+which matches the purity of tier S (about 91–94%). Selected signals must also pass the grazing, RUWE,
 binary and literature checks and TRICERATOPS (FPP < 0.5, NFPP < 0.1), like every other counted candidate.
 
 The released ~92% estimate transfers the retention fraction from **all pixel classes** in the
