@@ -16,7 +16,30 @@ the newest TESS sectors (97–105) with every earlier sector of 9,979 nearby K a
 second, added on 8 October 2026, looks for additional planets around the hosts of 6,430 TESS
 Objects of Interest (TOIs) after masking the known TOIs.
 
-- **Tiers A and B renamed M and S (27 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** Tier A (more than one
+- **Corrections from a review of the AJ draft (27 October 2026): <!--n:catalog.counted.total-->645<!--/n--> candidates.** No
+  tier changes; these correct statements in the notes below.
+  - The validation thresholds FPP < 0.015 and NFPP < 0.001 are those Giacalone et al. (2021) set for TOIs observed at
+    2-minute cadence; they found no validation region with 30-minute data and did not make imaging a requirement. Only
+    26 of the 254 candidates at that level use 2-minute data, so "meet the validation thresholds apart from imaging"
+    below overstates what these counts mean; we now call it the validation level.
+  - The injection test of the SNR 7.5–9 band had 300 distinct transits, not 700 (two re-searches of 200 of them were
+    counted again): 57% are recovered at the injected period, 21% at SNR ≥ 9 and 48% at SNR ≥ 7.5. The band has 301,000
+    signals, not 302,000.
+  - The pull toward the target in the per-sector centroid test (16 October) comes from failed fits: each of the six
+    calibration signals concerned has a sector whose fitted PRF barely correlates with the difference image. Dropping
+    such fits leaves the calibration nearly unchanged, so the test is kept. TOI-913's fits are all good, so the test does
+    exclude TIC 407126406 as the source of its 5.45 d signal (p = 0.0007)
+    ([details](validation/centroid_sectors.md)).
+  - Widening the Bayes factor's neighbour set (22 October) lowers BF by more than 5% for 11 of the 159 tier N
+    candidates, not 71; the other decreases are within the catalog's rounding of BF.
+  - With one MOLUSC sample per star (18 October), the means of different samples differed by no more than the
+    run-to-run error of a ten-run mean, so the five samples average over the simulation rather than remove a measured
+    dependence.
+  - Searched again with the QLP orbit-edge mask, two more counted candidates, TIC 363779498 and 53550126, fall just
+    below SNR 9 because the mask removes one transit each; both score above the classifier's tier L1 cut and stay
+    counted
+    ([details](validation/qlp_orbit_edges.md)).
+- **Tiers A and B renamed M and S (27 October 2026): 645 candidates.** Tier A (more than one
   candidate on the star) is now tier M, for multi, and tier B (a single candidate) is now tier S, for single: the letters
   A and B read as a ranking, which they are not. No candidate changes tier. The tables, the website, the figures and the
   documents use the new names; the release notes below keep the old ones. `candidates/predictions.csv`, which the
@@ -601,7 +624,7 @@ of the neighbour-caused signals whose source is 5–21″ away (75% within 5″)
 of the TOI planets when tested against a neighbour 8–14″ away (76% at 5″). Tier N requires a combined FPP
 below 0.5 and NFPP below 0.1, MES ≥ 10, and the same binary, grazing and literature checks as tiers
 M and S. In this release 169 candidates met them; 111 of them had NFPP < 0.01, and 13 had FPP < 0.015 and NFPP < 0.001,
-the TRICERATOPS validation thresholds, though validation also needs high-resolution imaging (the tier table below gives
+the thresholds Giacalone et al. (2021) set for validation with 2-minute data (the tier table below gives
 tier N in each release). The
 `FPP_c`, `NFPP_c` and `BF` columns of the catalog give the combined values and the centroid ratio. Since 15 October,
 TRICERATOPS gets the transits of one cadence, the one whose in-transit points carry the most information, modelled with
@@ -628,15 +651,15 @@ requires MES ≥ 10. TRICERATOPS cannot recognise noise: on the 24 inverted
 false alarms with a close neighbour in the first sample it passed 5, but only 1 of them has MES ≥ 10, so we expect about
 10 false alarms among the 169 tier N candidates
 ([`validation/triceratops_inverted_close_neighbour.csv`](validation/triceratops_inverted_close_neighbour.csv)).
-These rates apply to the full-sky search; the earlier samples keep their tiers, because their hosts
-(TOI hosts and M dwarfs) have far more planets per star, so the same false-alarm rate per star is a
-much smaller fraction of their candidates.
+These rates apply to the full-sky search; the earlier samples were not inverted and keep their tiers. At the
+full-sky rate per star (19 clean inverted signals at SNR ≥ 9 in 798,769 stars), their 123,713 searched stars would give
+about 3 false alarms among their 58 counted candidates.
 
-**The SNR 7.5–9 band.** Injections show why a lower threshold is tempting: of 700 transits injected at
-a nominal SNR of 10 into random full-sky targets, 22% are recovered at SNR ≥ 9 and 48% at SNR ≥ 7.5
+**The SNR 7.5–9 band.** Injections show why a lower threshold is tempting: of 300 transits injected at
+a nominal SNR of 10 into random full-sky targets, 21% are recovered at SNR ≥ 9 and 48% at SNR ≥ 7.5
 ([`validation/injection_recovery_allsky_snr10_n700.csv`](validation/injection_recovery_allsky_snr10_n700.csv)).
 We re-downloaded the light curves of the 267,000 stars with a signal at SNR 7.5–9 and vetted their
-302,000 signals the same way (`collect.py --from-signals`): 382 pass every check, but about 314 of them
+301,000 signals the same way (`collect.py --from-signals`): 382 pass every check, but about 314 of them
 are expected to be false alarms.
 
 **A false-alarm classifier (tier L1).** A gradient-boosted classifier trained to tell the real search's
@@ -666,8 +689,8 @@ and on every signal that had failed only the TRICERATOPS bar: ten runs with the 
 with limits from Gaia DR3, on the same light curves. MOLUSC (Wood et al. 2021) removes bound companions
 that Gaia would have resolved or that would raise the star's RUWE above its measured value. For 141
 bright stars, the Gaia epoch-RV scatter rules out an eclipsing binary on the target. The median FPP of
-the counted candidates falls from 0.042 to 0.013, and 236 meet the validation thresholds apart from
-imaging (62 before). The bar now uses the constrained values, in both directions:
+the counted candidates falls from 0.042 to 0.013, and 236 have FPP < 0.015 and NFPP < 0.001
+(62 before). The bar now uses the constrained values, in both directions:
 - 5 candidates leave, all within the run-to-run scatter of the threshold.
 - 10 join: 5 from tier C and 5 neighbour-recovered signals, which were fitted for this update.
 - TIC 94673748 and 258641782, whose Gaia RVs vary by 26 and 57 km/s, become likely eclipsing binaries.
@@ -746,9 +769,10 @@ git history.
 The approach follows Pavel Rabtsevich's search that found TIC 4206066
 ([write-up](https://doi.org/10.5281/zenodo.22967456), [data](https://doi.org/10.5281/zenodo.22999133)):
 detect a signal in recent TESS data and confirm it in archival sectors. SPOC's latest
-multi-sector search covers Sectors 1–96, and stars observed only in full-frame images never get a
-SPOC multi-sector search at all. A shallow transit that is 5–8σ per sector can stay below every
-single-sector threshold while reaching 10–20σ when all sectors are combined.
+multi-sector search of its 2-minute targets covers Sectors 1–96, and the full-frame-image light curves of the other
+stars (TESS-SPOC) are searched one sector at a time and, once so far, over Sectors 56–69. A transit at
+5–7σ per sector stays below SPOC's 7.1σ threshold in every sector but reaches 10σ or more when enough sectors are
+combined.
 
 1. **Targets** (`fetch_targets.py`, `build_targets.py`): TIC 8.2 dwarfs with T ≤ 11.5,
    0.1 < R* ≤ 0.75 R☉, Teff ≤ 5300 K, observed by QLP in Sectors 97–105: 9,979 stars.

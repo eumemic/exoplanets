@@ -27,8 +27,8 @@ vetting or the false-positive analysis below is wrong or incomplete.
 6. **TRICERATOPS**: ten runs with the default priors and ten with Gaia limits on bound companions (MOLUSC, five samples
    per star), on the light curves of one cadence, combined with a centroid Bayes factor where a capable star lies
    within 30″. A candidate is counted with FPP < 0.5, NFPP < 0.1 and MES ≥ 10 (tier L1: SNR 7.5–9, selected by a
-   false-alarm classifier). <!--n:catalog.validation.total-->254<!--/n--> also meet FPP < 0.015, NFPP < 0.001 and Rp < 8 R⊕, the validation
-   thresholds apart from imaging.
+   false-alarm classifier). <!--n:catalog.validation.total-->254<!--/n--> also meet FPP < 0.015, NFPP < 0.001 and Rp < 8 R⊕, the
+   thresholds Giacalone et al. (2021) set for validation with 2-minute data; only 26 of them use 2-minute data.
 
 ## Our own estimate of the false positives
 

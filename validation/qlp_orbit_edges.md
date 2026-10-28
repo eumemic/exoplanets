@@ -70,7 +70,13 @@ Two side effects:
   search locked on four times the period). So the re-search adds signals; it does not replace the original ones.
 
 The counted candidates with Sector 94–104 transits were searched the same way. One of them, TIC 141937667
-(13.36 d, tier S, SNR 9.8), disappears with the mask: 59% of its SNR² came from orbit edges.
+(13.36 d, tier S, SNR 9.8), disappears with the mask: 59% of its SNR² came from orbit edges, where about a fifth of the
+data lie. Two more fall below SNR 9 with the mask, TIC 363779498 (9.24 d, tier S; 9.15 to 8.05) and TIC 53550126
+(6.60 d, tier N; 9.62 to 8.70), because it removes one transit each, which carried 17–18% of their SNR² (for TIC
+53550126 a transit of 1,536 ± 317 ppm, against 433–552 ppm for its other transits in these sectors). Both score above
+the classifier's tier L1 cut (`fa_score_h` 0.90 and 0.87) and stay counted, since the re-search adds signals and does
+not replace the original ones. The others are
+found again at their periods.
 
 ## QLP Sectors 74–79
 

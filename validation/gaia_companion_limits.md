@@ -13,7 +13,9 @@ simulates 200,000 companions per host, drawn from the period and mass-ratio dist
 It rejects those that Gaia would have resolved (its contrast curve for Gaia) and those whose astrometric signal would
 raise the host's RUWE above the measured value. TRICERATOPS 1.1.0 then draws the companions in its bound-companion
 scenarios (planet or eclipsing binary on the target or on the companion) from the survivors with periastron beyond
-10 au, instead of from its default prior. In this mode every simulated host has a companion, which is conservative.
+10 au, instead of from its default prior. In this mode every simulated host has a companion, while only about half of Sun-like stars have one; scaling the
+bound-companion scenarios to that rate would lower the FPP of 579 of the 645 counted candidates (27 October 2026) and
+raise it for the other 66, by at most 21% (0.049).
 For the median host, 34% of simulated companions are excluded, and 27% of the draws are survivors beyond 10 au.
 
 MOLUSC's own code is unchanged. The wrapper makes these changes:
@@ -73,8 +75,9 @@ The tier changes of 11 October apply the bar to the constrained values, in both 
 All the signals that cross the bar were within the run-to-run scatter of it before.
 
 Of the 546 candidates counted after these changes, 236 have FPP < 0.015 and NFPP < 0.001 with the Gaia limits
-(62 with default priors). These are the validation thresholds of Giacalone et al. (2021), but validation also
-requires high-resolution imaging, which most of these stars lack. One counted candidate, TIC 370244729, has no TIC
+(62 with default priors). These are the thresholds Giacalone et al. (2021) set for validating TOIs observed at
+2-minute cadence; most of these candidates use FFI data, for which the thresholds were not calibrated, and most of
+their stars have no high-resolution imaging. One counted candidate, TIC 370244729, has no TIC
 mass and keeps its default-prior values.
 
 As of 15 October 2026 TIC 370244729 is tier C: with single-cadence input its default-prior `FPP_c` is 0.504, which

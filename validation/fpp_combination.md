@@ -26,8 +26,7 @@ per-run NFPP to its JSON output, and `pipeline/fpp_combine.py` holds the combina
 - 786 values of `FPP_c` and 351 of `FPP_gc` change by more than 0.0015 (smaller differences come from the rounding of
   `BF` in the catalog and are left as they were). None is negative now.
 - The median `FPP_c` of the counted candidates goes from 0.041 to 0.042 and the median `FPP_gc` from 0.012 to 0.013.
-  301 counted candidates now meet the TRICERATOPS validation thresholds apart from imaging (FPP < 0.015 and
-  NFPP < 0.001), against 305 before. Since 15 October these counts leave out candidates larger than 8 R⊕, to which the
+  301 counted candidates now have FPP < 0.015 and NFPP < 0.001, against 305 before. Since 15 October these counts leave out candidates larger than 8 R⊕, to which the
   thresholds do not apply (Giacalone et al. 2021): 288.
 
 ## Tier changes
@@ -63,15 +62,15 @@ single-cadence TRICERATOPS rerun are `FPP_gc` 0.005 and `NFPP_gc` 0.0064.
 ## The neighbour likelihood at low SNR (18 October 2026)
 
 The neighbour hypothesis of BF uses the offsets of TOI planets in the same MES range, shifted to the neighbour's
-separation in a random direction. On issue #2 the per-sector centroids of signals from neighbours turned out to be
-pulled toward the target at low SNR ([`centroid_sectors.md`](centroid_sectors.md)); if BF's offset were pulled the same
-way, BF would favour the target and `NFPP_c` would be too low. On the 202 signals caused by TOIs on neighbouring stars
+separation in a random direction. On issue #2 the per-sector centroids of six signals from neighbours turned out to be
+shifted toward the target, by failed fits as it later proved ([`centroid_sectors.md`](centroid_sectors.md)); if BF's
+offset were shifted the same way, BF would favour the target and `NFPP_c` would be too low. On the 202 signals caused by TOIs on neighbouring stars
 (calibration set of [`centroid_sectors.md`](centroid_sectors.md)), the model predicts the measured offsets: in each MES
 range the median measured offset is 0.99–1.01 times the model's, and the model puts on average 0.47 ± 0.02 of its
 probability below the measured offset for MES < 20 (0.52 for MES 7.1–12; 0.5 if calibrated). Fitted as a pull of the
 neighbour's position toward the target by a fraction f, the offsets give f ≈ 0.02, with 95% upper limits of 0.06 for
-neighbours within 15″ and 0.16 at 15–30″ for MES < 20. BF uses the offset in the best-quality sector, where the pull
-seen in the per-sector test, which comes from sectors with little signal, does not appear.
+neighbours within 15″ and 0.16 at 15–30″ for MES < 20. BF uses the offset in the best-quality sector, which is never a failed fit, so the shift
+seen in the per-sector test does not appear.
 
 Recomputing BF for the 406 counted rows whose inputs are available (29 others lack them) with f = 0.02 moves one
 candidate across NFPP 0.1 (TIC 288979445, 0.099 to 0.103) and takes two at NFPP 0.0010 off the validation level. With
@@ -89,7 +88,8 @@ neighbours, each weighted by its own L_k, from above only when the maximum cover
 probability. The 15″ set leaves out stars at 15–30″ and stars that would need an eclipse deeper than 50%.
 
 Taking the maximum instead over every star that the Gaia-limited runs (`probs_m_mean` in each stored result) give
-nearby-star probability, with the TIC positions, lowers BF for 71 of the 159 tier N candidates. With the new BF, none
+nearby-star probability, with the TIC positions, lowers BF by more than 5% for 11 of the 159 tier N candidates (by
+more than 10% for 3); the other 60 decreases are within the catalog's rounding of BF to two significant figures. With the new BF, none
 fails FPP_gc < 0.5 or NFPP_gc < 0.1 and the 36 at the validation level stay there; the recomputation reproduces the
 catalog's FPP_gc and NFPP_gc for all 159 with the old BF. The catalog keeps the old BF.
 

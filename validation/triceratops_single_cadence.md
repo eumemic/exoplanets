@@ -64,7 +64,7 @@ failed its setup twice and keeps its earlier values. The cadence used: 200 secon
   - 14 tier C signals now pass and are counted, among them both signals of TIC 229511659 (5.27 and 7.08 d), which are
     now tier M.
 - Counted candidates: 632 (575 full-sky: 22 A, 292 B, 149 N, 112 L1; 57 from the earlier searches), against 658.
-- Meeting the validation thresholds apart from imaging (FPP < 0.015, NFPP < 0.001, smaller than 8 R⊕, from the
+- At the validation level (FPP < 0.015, NFPP < 0.001, smaller than 8 R⊕, from the
   catalog's rounded values): 267 (240 full-sky, 27 earlier), against 288.
 - TIC 160420269: `FPP_gc` 0.33, tier S (it was about 1e-7). TIC 37068395, the 1.1% deep candidate of the test above, uses
   a single 10-minute sector here (more in-transit information than its 200-second sector) and stays tier S (0.003).
@@ -161,7 +161,7 @@ because they were reported elsewhere, keep their first-release `triceratops_fpp.
   the earlier searches returns to tier M, and TIC 201310621 moves from tier C to likely nearby false positive (it now
   passes TRICERATOPS, but its per-sector centroids reject the target and fit a neighbour 18″ away).
 - Counted candidates: 644 (586 full-sky: 22 A, 292 B, 160 N, 112 L1; 58 from the earlier searches), against 632.
-- Meeting the validation thresholds apart from imaging: 252 (224 full-sky, 28 earlier), against 267. Of the 20 that
+- At the validation level: 252 (224 full-sky, 28 earlier), against 267. Of the 20 that
   drop below them, 13 had runs without the blended-star scenarios or with a cut-off MOLUSC file; 5 rise above them.
 - For signals as deep as these 17–19 R⊕ ones the ten runs scatter widely. The ten Gaia-limited runs of TIC 160420269
   range from 0.02 to 0.98 (mean 0.59 ± 0.12; with the cut-off MOLUSC file it was 0.33 ± 0.10), so its tier, and those

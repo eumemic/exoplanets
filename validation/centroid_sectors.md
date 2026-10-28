@@ -33,7 +33,7 @@ The same code ran on two calibration sets:
 | Signals | With ≥ 2 sectors | Target rejected at p < 0.001 | at p < 0.01 | True source fits (p ≥ 0.01) |
 |---|---|---|---|---|
 | Known planets | 565 | 0 | 3 (0.5%) | – |
-| … with MES < 30 | 160 | 0 | 2 (1.3%) | – |
+| … with MES < 30 | 161 | 0 | 2 (1.2%) | – |
 | Signals from neighbouring stars | 175 | 127 (73%) | 141 (81%) | 164 (94%) |
 | … source within 15″ | 50 | 38% | | 90% |
 | … source 15–30″ away | 39 | 77% | | 100% |
@@ -71,7 +71,7 @@ mean offsets of 14–60″; their best single sector had passed the 15″ check.
 | 463343440 | 19.9477 | N → likely nearby FP | 5 | 11.6″ | < 0.0001 | 861750026 (9.4″, 17.9) | 0.21 |
 
 **13 reject their target at 0.001 ≤ p < 0.01** (10 in tier N, 3 in tier S, one of them from the earlier searches). Known
-planets with MES < 30 reach this level 1.3% of the time, so about half of the 13 could be on target. They stay counted,
+planets with MES < 30 reach this level 1.2% of the time, so about half of the 13 could be on target. They stay counted,
 with `centroid_flag` set: TIC 18441994, 137609439, 166574088, 177021616, 184506615, 185840936, 258827696, 267824267,
 293616610, 310097407, 352414078, 407232246 and 409700778.
 
@@ -90,16 +90,19 @@ The counted candidates are now 470 from the full sky (11 A, 250 B, 159 N, 50 L1)
   neighbour, so it removes only the clearest cases there.
 - It assumes the same spread in every sector, although the per-sector SNR differs; the calibration measures how often it
   flags real planets.
-- At low SNR the centroids of a signal from a neighbour are pulled toward the target. Of the calibration signals from
-  neighbours 20–60″ away, the six whose per-sector centroids scatter by 14–22″ per axis land 3–14″ closer to the target
-  than the source (mean 9 ± 1.5″, about a quarter of the separation); with less scatter the pull is under 1″. The test
-  compares the mean with the neighbours' catalogue positions, so at low SNR it overstates the evidence against a
-  neighbour, while it does not make real planets fail the target test.
+- The test uses every fitted sector, whatever the fit's quality (the correlation of the fitted PRF with the
+  difference image), and a failed fit can land far from the source. Of the calibration signals from neighbours 20–60″
+  away, the six whose per-sector centroids scatter by 14–22″ per axis each have a sector with a correlation below 0.12,
+  and their mean offsets lie 3–14″ closer to the target than the source (under 1″ for the other 99); without those
+  sectors the shortfall is −0.3 to 5.5″. So a failed fit can overstate the evidence against a neighbour. (An earlier
+  version of this note read the shift as a pull toward the target at low SNR.) Dropping fits with correlations below
+  0.05–0.2 leaves the calibration nearly unchanged (no known planet rejected at p < 0.001; 75–76% of the neighbour-caused
+  signals rejected, against 73%) but moves candidates near the thresholds: at 0.12, 3 of the 18 rejections and 2 of the
+  13 flags lapse and one of these candidates would be rejected, as would one second-pass candidate (TIC 287531666). The test is kept as calibrated.
 - Two signals outside the catalog were tested as well. TOI-913's 5.45 d signal (issue #2) has a mean offset of 5.3″ east
   across 8 sectors, with a large scatter: p = 0.49 for TOI-913 and 0.62 for the giant 9.5″ away, so the test cannot
-  tell them apart. It gives p = 0.0007 for TIC 407126406, 27″ east, but 0.01–0.03 when that star's expected position
-  is pulled in by a quarter to a third as above, so it does not exclude that star either; TIC 407126397, 57″ away, stays
-  excluded (p ≤ 10⁻⁵). WASP-166's 27.0 d signal sits 10″ northeast in 4 sectors (p = 0.007 for WASP-166, 0.02 for the
+  tell them apart. It gives p = 0.0007 for TIC 407126406, 27″ east, so the test excludes that star: all 8 fits are good
+  (correlations 0.22–0.69), so the shift above does not apply. TIC 407126397, 57″ away, is excluded too (p ≤ 10⁻⁵). WASP-166's 27.0 d signal sits 10″ northeast in 4 sectors (p = 0.007 for WASP-166, 0.02 for the
   star 6.7″ east), while WASP-166 b's transits, measured the same way, fall within 1–4″ of the star.
 
 ## Files
