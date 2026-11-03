@@ -739,13 +739,13 @@
    },
    "inputs": {
     "results_public/products/fits.csv": "3fa9792adbb7c8ae521b2d2009df1b2503255a3313a44aa3c9b198278420db45",
-    "results_public/products/redo.csv": "f7eb4902f3c70c001303a3abde7372175af01a5ce21cb456b458a128a0925181",
+    "results_public/products/redo.csv": "3c320ed5c1438c0e7dea1294248f35f692f097b44a35b18db801992d5cc07032",
     "results_public/products/stage_code.json": "a640eb3d96262e2f2724dc2956b5b668fffe1d1d34c07075430364b6e2433b28"
    },
    "outputs": {},
    "params": {},
    "result": "passed",
-   "stamp": "4b3f4127c3a1159ab5bdca50f9a76ad1c17175fbac2d234d42025b99e8a04b16"
+   "stamp": "4467204763919f738ad27514d0a30ac4c18e20b433729bac3085410b3b2e35d9"
   },
   "fits_match_catalog": {
    "code": {
@@ -930,14 +930,14 @@
     }
    },
    "inputs": {
-    "results_public/products/lightcurves_current.csv": "c10aa6a685625ad6e61d787a157cb035ce733735c4f995d750edd81d3104465a",
+    "results_public/products/lightcurves_current.csv": "91f95ae331ce3e83ffd934275fb3f2e40ebbcf459df9c2f106d416b0789bc0b3",
     "results_public/products/lightcurves_searched.csv": "889d8835547694bee6a4f2a4d50b32f44180db72cf179e3264ecf5c8c2beeaff"
    },
    "outputs": {
     "results_public/products/lightcurves.csv": "889d8835547694bee6a4f2a4d50b32f44180db72cf179e3264ecf5c8c2beeaff"
    },
    "params": {},
-   "stamp": "645047ffe1381e0dd52ee4cf66ab98b4ca2aaa7e877cbcc9397e259620368f9b"
+   "stamp": "4eb577074597e675489631f5549fa99286613a1f329fd3fec92dab4886053a24"
   },
   "lightcurves_searched": {
    "code": {
@@ -1222,13 +1222,13 @@
     "results_public/candidates_allsky.csv": "74a3ac6d12962b6570fdf5c23ac39f8b0f598dc38476d9e82ab4c90713ed7607",
     "results_public/products/fits.csv": "3fa9792adbb7c8ae521b2d2009df1b2503255a3313a44aa3c9b198278420db45",
     "results_public/products/lightcurves.csv": "889d8835547694bee6a4f2a4d50b32f44180db72cf179e3264ecf5c8c2beeaff",
-    "results_public/products/lightcurves_current.csv": "c10aa6a685625ad6e61d787a157cb035ce733735c4f995d750edd81d3104465a",
+    "results_public/products/lightcurves_current.csv": "91f95ae331ce3e83ffd934275fb3f2e40ebbcf459df9c2f106d416b0789bc0b3",
     "results_public/products/lightcurves_searched.csv": "889d8835547694bee6a4f2a4d50b32f44180db72cf179e3264ecf5c8c2beeaff",
     "results_public/products/triceratops.csv": "3b60e5e6b885e1611f7b4c2f744ba9cecdd3a35a4ad49ccb3bee64b5dae6f79f",
     "results_public/tiers_earlier_candidates.csv": "bfd1185f0e1c849fc2cd8ddf2f035d98a89fa9e6841cd2e0d0466fdeef7617ae"
    },
    "outputs": {
-    "results_public/products/redo.csv": "f7eb4902f3c70c001303a3abde7372175af01a5ce21cb456b458a128a0925181"
+    "results_public/products/redo.csv": "3c320ed5c1438c0e7dea1294248f35f692f097b44a35b18db801992d5cc07032"
    },
    "params": {
     "catalog.folder_tiers_allsky": [
@@ -1240,7 +1240,7 @@
      "L"
     ]
    },
-   "stamp": "23830ee451940f42bb2e1a653293fce29955281be12ffa1abd5c61438734b3d1"
+   "stamp": "d5b4f5ac812f1d8cefb00795c4f7a22302912d8c013e06cafa4a8d8caab12632"
   },
   "registry": {
    "code": {
