@@ -2,7 +2,7 @@
 
 This page defines every column of the tables in this directory and of `candidates/ephemerides.csv` and
 `candidates/predictions.csv`. Counts are those of the current tables: the build (`pipeline/rules.py`) writes them to
-`numbers.json` and fills them in here (<!--n:catalog.counted.total-->645<!--/n--> candidates). The method behind each table is in the
+`numbers.json` and fills them in here (<!--n:catalog.counted.total-->639<!--/n--> candidates). The method behind each table is in the
 [top-level README](../README.md) and in [`validation/`](../validation/). Where none of these states what a column
 means, the entry says "not documented; appears to be" and gives the likeliest reading.
 
@@ -67,17 +67,17 @@ of these labels, spelled exactly as shown. The rules that assign them are in `pi
 | `tier` | Definition | Counted as a candidate | Rows in `candidates_allsky.csv` |
 |---|---|---|---|
 | `M` | Several counted candidates on the star (multi) | yes | <!--n:catalog.tier.M-->22<!--/n--> |
-| `S` | A single candidate on the star | yes | <!--n:catalog.tier.S-->294<!--/n--> |
-| `N` | A TIC star within 15″ could produce the dip; the TRICERATOPS and centroid probabilities combined give FPP < 0.5 and NFPP < 0.1, with MES ≥ 10, a transit fit and the same binary, grazing and RUWE checks as tier S | yes | <!--n:catalog.tier.N-->159<!--/n--> |
-| `L1` | SNR 7.5–9, selected by the false-alarm classifier (`fa_score_h` ≥ 0.80); passes TRICERATOPS and the per-sector centroid test | yes | <!--n:catalog.tier.L1-->112<!--/n--> |
+| `S` | A single candidate on the star | yes | <!--n:catalog.tier.S-->290<!--/n--> |
+| `N` | A TIC star within 15″ could produce the dip; the TRICERATOPS and centroid probabilities combined give FPP < 0.5 and NFPP < 0.1, with MES ≥ 10, a transit fit and the same binary, grazing and RUWE checks as tier S | yes | <!--n:catalog.tier.N-->158<!--/n--> |
+| `L1` | SNR 7.5–9, selected by the false-alarm classifier (`fa_score_h` ≥ 0.80); passes TRICERATOPS and the per-sector centroid test | yes | <!--n:catalog.tier.L1-->111<!--/n--> |
 | `C` | Grazing, RUWE > 1.4, MES < 10, TRICERATOPS FPP ≥ 0.5 or NFPP ≥ 0.1, no TRICERATOPS result, no transit fit, or a centroid offset in all sectors; listed but not counted (reason in `c_reason`) | no | <!--n:catalog.tier.C-->551<!--/n--> |
 | `L` | SNR 7.5–9, MES ≥ 9, not selected as tier L1 | no | <!--n:catalog.tier.L-->72<!--/n--> |
 | `likely EB` | Likely binary: a binary catalog lists the target, a matching eclipsing binary is nearby, or the fitted radius exceeds 20 R⊕; the Gaia RV binaries also carry it | no | <!--n:catalog.tier.likely_EB-->315<!--/n--> |
 | `likely nearby FP` | Likely nearby false positive: there is evidence that the signal comes from a nearby star. Either the signal is in set `neighbour<15"` (a capable TIC star within 15″) and its TRICERATOPS result fails the bar (<!--n:catalog.lnfp.by_triceratops\|,-->1,100<!--/n--> rows), or its per-sector centroids reject the target and fit a capable neighbour (<!--n:catalog.lnfp.by_centroids-->86<!--/n--> rows; <!--n:catalog.lnfp.by_both-->77<!--/n--> have both). A neighbour-set signal without a TRICERATOPS result is tier C, not this | no | <!--n:catalog.tier.likely_nearby_FP\|,-->1,109<!--/n--> |
 | `likely false alarm` | Set `SNR 7.5-9` with MES below 9 and not selected as tier L1 (<!--n:catalog.lfa.low_band-->342<!--/n--> rows), and TIC 141937667 (13.36 d), whose signal came from the QLP orbit-edge systematic (an override; [details](../validation/qlp_orbit_edges.md)). The false-alarm classifier note uses the label for signals that fall below its score cut | no | <!--n:catalog.lfa.total-->343<!--/n--> |
-| `reported` | A matching signal is already reported elsewhere: in the literature check, in a paper found through NASA ADS, or as a community TOI with a single transit or another period ([details](../validation/ctoi_matches.md)); `reported_as` says where | no | <!--n:catalog.tier.reported-->13<!--/n--> |
+| `reported` | A matching signal is already reported elsewhere: in the literature check, in a paper found through NASA ADS, or as a community TOI with a single transit or another period ([details](../validation/ctoi_matches.md)); `reported_as` says where | no | <!--n:catalog.tier.reported-->19<!--/n--> |
 
-Tiers M, S, N and L1 together are the <!--n:catalog.counted.allsky-->587<!--/n--> counted full-sky candidates. In `tiers_earlier_candidates.csv` only tiers
+Tiers M, S, N and L1 together are the <!--n:catalog.counted.allsky-->581<!--/n--> counted full-sky candidates. In `tiers_earlier_candidates.csv` only tiers
 `M`, `S` and `C` occur, and tiers `M` and `S` are counted (<!--n:catalog.counted.earlier-->58<!--/n--> rows). The rules that assign
 the tiers are listed at the top of `pipeline/catalog.py`, which builds both tables. `ephemerides.csv` and `predictions.csv` keep the
 rows of candidates that later left the counted tiers, with their current tier, so every label above can occur there.
@@ -263,7 +263,7 @@ candidate has them; <!--n:catalog.fpp_g.missing_with_fpp-->4<!--/n--> uncounted 
 | `set` | Group the signal came from; values in [The `set` column](#the-set-column) | text | never empty |
 | `tier` | Reliability tier; values in [Tier labels](#tier-labels) | text | never empty |
 | `c_reason` | Reason for tier C; values in [Flag columns](#flag-columns) | text | not tier C (<!--n:catalog.c_reason_empty\|,-->2,439<!--/n--> rows) |
-| `reported_as` | Where a signal labelled `reported` was reported: a CTOI (with its period, or `single transit`), a K2 candidate, or an ADS bibcode | text | not tier `reported` (<!--n:catalog.reported_as_empty\|,-->2,977<!--/n--> rows) |
+| `reported_as` | Where a signal labelled `reported` was reported: a CTOI (with its period, or `single transit`), a K2 candidate, or an ADS bibcode | text | not tier `reported` (<!--n:catalog.reported_as_empty\|,-->2,971<!--/n--> rows) |
 | `fa_flag` | Low classifier score; see [Flag columns](#flag-columns) | text | no flag |
 | `desert_flag` | Neptunian desert; see [Flag columns](#flag-columns) | text | no flag |
 | `search` | `full-sky search` (the first pass) or `QLP re-search` (the second pass of 13 October; [details](../validation/qlp_orbit_edges.md)) | text | never empty |
@@ -359,7 +359,7 @@ candidate that leaves the counted tiers stays listed with its new tier.
 
 ### `candidates/ephemerides.csv`
 
-One row per registered candidate: <!--n:registry.rows|,-->740<!--/n--> rows, of which <!--n:registry.counted_now-->645<!--/n--> are counted now.
+One row per registered candidate: <!--n:registry.rows|,-->740<!--/n--> rows, of which <!--n:registry.counted_now-->639<!--/n--> are counted now.
 
 | Column | Meaning | Units, timescale | Empty means |
 |---|---|---|---|
@@ -524,8 +524,8 @@ a candidates table, so its `prefilter` is computed with the pre-filters and its 
   candidate until 15 October; its tier uses the default-prior values, and with `FPP_c` 0.504 it is now tier C
   ([details](../validation/gaia_companion_limits.md)).
 - **`fa_score` and tier L1 use different scores.** `fa_score` is the out-of-fold score; tier L1 is selected on the
-  hold-out score, published since 13 October as `fa_score_h` (cut 0.80). All <!--n:catalog.tier.L1-->112<!--/n--> tier L1 rows have `fa_score_h` ≥ 0.80,
-  and <!--n:catalog.l1_low_fa_score-->31<!--/n--> of them have `fa_score` < 0.80. `fa_flag` applies to tiers M, S and N only, so those are not flagged.
+  hold-out score, published since 13 October as `fa_score_h` (cut 0.80). All <!--n:catalog.tier.L1-->111<!--/n--> tier L1 rows have `fa_score_h` ≥ 0.80,
+  and <!--n:catalog.l1_low_fa_score-->30<!--/n--> of them have `fa_score` < 0.80. `fa_flag` applies to tiers M, S and N only, so those are not flagged.
 - **Two depths.** `depth_ppm` in the candidate tables is the vetting box depth, whereas `depth_ppm` in `ephemerides.csv`
   is the depth of the fitted model, so the two differ slightly for the same signal (493 and 484 ppm for TIC 137499615
   at 0.9919 d). `duration_h` in `ephemerides.csv` and `predictions.csv` is the fitted T14, as is `T14_h` in the

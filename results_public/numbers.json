@@ -17,9 +17,9 @@
   "c_reason_empty": 2439,
   "centroid_flagged_counted": 17,
   "counted": {
-   "allsky": 587,
+   "allsky": 581,
    "earlier": 58,
-   "total": 645
+   "total": 639
   },
   "cs": {
    "counted_unmeasured": 0,
@@ -64,10 +64,10 @@
    "missing_with_fpp": 4
   },
   "fpp_not_run": 684,
-  "fpp_sum": 36.670199,
-  "from_research": 114,
-  "hosts": 574,
-  "l1_low_fa_score": 31,
+  "fpp_sum": 36.486199,
+  "from_research": 111,
+  "hosts": 568,
+  "l1_low_fa_score": 30,
   "lfa": {
    "low_band": 342,
    "total": 343
@@ -83,13 +83,13 @@
    "default": 0.043,
    "gaia": 0.015
   },
-  "median_radius": 3.08,
+  "median_radius": 3.12,
   "nofit": {
    "text": "1,037 `likely nearby FP`, 142 `C`, 114 `likely EB`, 1 `likely false alarm` and 1 `reported`",
    "total": 1295
   },
   "papers_empty": 2988,
-  "reported_as_empty": 2977,
+  "reported_as_empty": 2971,
   "reported_ctoi": 10,
   "rows": {
    "allsky": 2990,
@@ -100,24 +100,24 @@
    "nb": 1571,
    "snr9": 857
   },
-  "smaller_than_4": 384,
+  "smaller_than_4": 378,
   "tier": {
    "C": 551,
    "L": 72,
-   "L1": 112,
+   "L1": 111,
    "M": 22,
-   "N": 159,
-   "S": 294,
+   "N": 158,
+   "S": 290,
    "likely_EB": 315,
    "likely_false_alarm": 343,
    "likely_nearby_FP": 1109,
-   "other": 1780,
-   "reported": 13
+   "other": 1786,
+   "reported": 19
   },
   "validation": {
-   "allsky": 226,
+   "allsky": 224,
    "earlier": 28,
-   "total": 254
+   "total": 252
   }
  },
  "classifier": {
@@ -188,11 +188,11 @@
    }
   },
   "expected": {
-   "L1": 10.570085056923007,
-   "MS": 27.548370150141007,
+   "L1": 10.475709297486194,
+   "MS": 27.177090317544735,
    "N": 10.11297470255979
   },
-  "expected_total": 48.231429909623806,
+  "expected_total": 47.76577431759072,
   "inverted_stars": 798769,
   "mes_bins": [
    {
@@ -236,28 +236,28 @@
   },
   "best_sector": {
    "below_7_1": {
-    "frac": 0.5578947368421052,
-    "n": 265
+    "frac": 0.5574468085106383,
+    "n": 262
    },
    "below_9": {
-    "frac": 0.7473684210526316,
-    "n": 355
+    "frac": 0.7468085106382979,
+    "n": 351
    },
-   "median": 6.646824300447692
+   "median": 6.647095361868658
   },
-  "candidates": 475,
+  "candidates": 470,
   "ffi_only": {
-   "frac": 0.8126315789473684,
-   "n": 386
+   "frac": 0.8148936170212766,
+   "n": 383
   },
-  "first": 399,
-  "first_by_s96": 0.9273182957393483,
+  "first": 397,
+  "first_by_s96": 0.929471032745592,
   "late": {
-   "first": 22,
-   "n": 51,
-   "research": 29
+   "first": 21,
+   "n": 49,
+   "research": 28
   },
-  "research": 76,
+  "research": 73,
   "sectors": {
    "median": 5.0,
    "p10": 2.0,
@@ -265,33 +265,33 @@
   },
   "through": {
    "26": {
-    "frac": 0.11368421052631579,
+    "frac": 0.1148936170212766,
     "n": 54
    },
    "55": {
-    "frac": 0.40421052631578946,
-    "n": 192
+    "frac": 0.40638297872340423,
+    "n": 191
    },
    "69": {
-    "frac": 0.5978947368421053,
-    "n": 284
+    "frac": 0.6,
+    "n": 282
    },
    "83": {
-    "frac": 0.7178947368421053,
-    "n": 341
+    "frac": 0.7212765957446808,
+    "n": 339
    },
    "96": {
-    "frac": 0.871578947368421,
-    "n": 414
+    "frac": 0.874468085106383,
+    "n": 411
    }
   },
-  "two_min": 89
+  "two_min": 87
  },
  "funnel": {
   "rows": 154
  },
  "registry": {
-  "counted_now": 645,
+  "counted_now": 639,
   "median_next_sigma_min": 10.8,
   "planned_empty": 346,
   "predictions": 50258,
@@ -299,11 +299,11 @@
   "tess_sector_empty": 49426
  },
  "spoc": {
-  "candidates": 89,
+  "candidates": 87,
   "few": 13,
   "ratio_red": 0.8694063926940638,
   "ratio_white": 0.9066578792784791,
-  "rest": 76,
+  "rest": 74,
   "snr_cdpp": {
    "max": 8.75,
    "reach": 2
