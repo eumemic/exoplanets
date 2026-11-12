@@ -1,7 +1,7 @@
 """Multi-sector transit search: clean, detrend, bin, BLS on a stellar-density-aware grid.
 
 Usage: python search.py targets.txt [--procs N] [--out results/search] [--mask-tois]
-                         [--pmin 0.5] [--pmax 30] [--premask results/search]
+                         [--pmin 0.5] [--pmax 30] [--premask results/search] [--harmonic-despot]
 Writes one JSON per star with up to MAX_SIGNALS signals (iterative masking). With --mask-tois,
 every TOI on the star is masked before the search, so it looks for additional planets; with
 --premask, so is every signal (SNR >= 7) an earlier search found on the star.
@@ -34,6 +34,10 @@ SEASON_MAX = float(os.environ.get("EXO_SEASON_MAX", "0")) or None
 # False-alarm calibration: with EXO_INVERT=1 the detrended residuals are negated, so any dip
 # the pipeline finds is a false alarm (real transits become bumps and are not searched).
 INVERT = os.environ.get("EXO_INVERT") == "1"
+# --harmonic-despot: on stars cooler than DESPOT_TEFF_MAX, pre-whiten each sector with
+# harmonic_despot.py (Foundation-0/exoplanets-frontier) instead of prewhiten(). Off by default.
+HARMONIC_DESPOT = False
+DESPOT_TEFF_MAX = 4000.0
 G = 2.959122e-4           # AU^3 / (Msun d^2)
 RSUN_AU = 0.00465047
 
@@ -106,9 +110,12 @@ def prewhiten(t, f, pvar, nharm=4):
     return f - model + 1.0
 
 
-def prepare(sectors, window):
+def prepare(sectors, window, teff=None):
     """Detrend each sector, clip flares, attach empirical errors. Spot modulation faster than
-    ~3 d survives a 0.5-1 d biweight, so such sectors are prewhitened first."""
+    ~3 d survives a 0.5-1 d biweight, so such sectors are prewhitened first. With
+    HARMONIC_DESPOT and teff < DESPOT_TEFF_MAX, harmonic_despot runs on every sector instead
+    (falling back to the default path when it keeps fewer than 200 points)."""
+    despot = bool(HARMONIC_DESPOT and teff is not None and np.isfinite(teff) and teff < DESPOT_TEFF_MAX)
     out = []
     for s in sectors:
         t, f = s["time"], s["flux"]
@@ -122,6 +129,14 @@ def prepare(sectors, window):
             continue
         prot, var_snr = rotation_period(t, f)
         fast = bool(np.isfinite(prot) and prot < 3.0 and var_snr > 3.0)
+        method = "fourier" if fast else None
+        if despot:
+            from harmonic_despot import harmonic_despot
+
+            fe = np.asarray(s.get("flux_err", np.full(len(o), np.nan)), float)[o][ok]
+            td, fd, _, _ = harmonic_despot(t, f, fe)
+            if len(td) >= 200:
+                t, f, fast, method = td, fd, False, "harmonic_despot"
         if fast:
             f = prewhiten(t, f, prot)
         r = f / biweight_trend(t, f, window) - 1.0
@@ -136,7 +151,8 @@ def prepare(sectors, window):
         e = rolling_std(t, r)
         e = np.maximum(e, 0.5 * sig)
         out.append(dict(sector=s["sector"], prov=s["provenance"], t=t, r=r, e=e,
-                        exptime=s["exptime"], prot=prot, var_snr=var_snr, prewhitened=fast))
+                        exptime=s["exptime"], prot=prot, var_snr=var_snr,
+                        prewhitened=method is not None, prewhiten_method=method))
     return out
 
 
@@ -388,7 +404,7 @@ def _search_star(args):
     rho = float(np.clip(rho, 0.3, 30))
     pmax_dur = expected_duration(P_MAX, rho)
     window = float(np.clip(3.0 * pmax_dur, 0.5, 1.0))
-    prep = prepare(sectors, window)
+    prep = prepare(sectors, window, teff=star.get("Teff"))
     if not prep:
         return tic, {"tic": tic, "error": "no usable data"}
     def binned(minutes):
@@ -417,6 +433,8 @@ def _search_star(args):
                   noise_ppm=float(robust_std(ru) * 1e6),
                   prot=[float(p["prot"]) for p in prep], var_snr=[float(p["var_snr"]) for p in prep],
                   n_prewhitened=int(sum(p["prewhitened"] for p in prep)), signals=[])
+    if HARMONIC_DESPOT:
+        result["prewhiten_method"] = [p["prewhiten_method"] for p in prep]
     masks = [np.ones(len(x), bool) for x in (tc, tf, tu)]
     result["masked_tois"] = []
     for toi in tois:
@@ -491,8 +509,9 @@ def star_tois(tic, toi_table):
                  dur_h=float(r["Duration (hours)"])) for _, r in rows.iterrows()]
 
 
-def _set_method(semi, max_signals=3, stack=False, pmin=0.5, pmax=30.0):
-    global SEMICOHERENT, MAX_SIGNALS, STACK, P_MIN, P_MAX
+def _set_method(semi, max_signals=3, stack=False, pmin=0.5, pmax=30.0, despot=False):
+    global SEMICOHERENT, MAX_SIGNALS, STACK, P_MIN, P_MAX, HARMONIC_DESPOT
+    HARMONIC_DESPOT = despot
     SEMICOHERENT = semi
     MAX_SIGNALS = max_signals
     STACK = stack
@@ -520,6 +539,8 @@ def main():
     ap.add_argument("--pmin", type=float, default=P_MIN)
     ap.add_argument("--pmax", type=float, default=P_MAX)
     ap.add_argument("--premask", help="directory of an earlier search; its signals are masked first")
+    ap.add_argument("--harmonic-despot", action="store_true",
+                    help=f"pre-whiten stars with Teff < {DESPOT_TEFF_MAX:.0f} K with harmonic_despot.py")
     a = ap.parse_args()
     global SEMICOHERENT, STACK
     SEMICOHERENT = a.method == "semi"
@@ -536,7 +557,7 @@ def main():
     print(f"{len(todo)} stars to search", flush=True)
     t0 = time.time()
     with Pool(a.procs, initializer=_set_method,
-              initargs=(SEMICOHERENT, a.max_signals, STACK, a.pmin, a.pmax)) as pool:
+              initargs=(SEMICOHERENT, a.max_signals, STACK, a.pmin, a.pmax, a.harmonic_despot)) as pool:
         for i, (tic, res) in enumerate(pool.imap_unordered(search_star, todo, chunksize=1), 1):
             with open(f"{a.out}/{tic}.json", "w") as fh:
                 json.dump(res, fh, default=float)
